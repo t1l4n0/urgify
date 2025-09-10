@@ -42,6 +42,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     if (configValue) {
       try {
         const parsedConfig = JSON.parse(configValue);
+        // RICHTIG: Defaults zuerst, dann das Geladene (überschreibt Defaults)
         settings = { ...settings, ...parsedConfig };
       } catch (error) {
         console.error("Error parsing stock alert config:", error);

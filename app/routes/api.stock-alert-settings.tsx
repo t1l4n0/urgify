@@ -8,8 +8,21 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return json({ error: "Method not allowed" }, { status: 405 });
   }
 
-  try {
-    const formData = await request.formData();
+         try {
+           // Check available scopes for debugging
+           const scopeResponse = await admin.graphql(`
+             query getCurrentAppInstallation {
+               currentAppInstallation {
+                 accessScopes {
+                   handle
+                 }
+               }
+             }
+           `);
+           const scopeData = await scopeResponse.json();
+           console.log("Available scopes:", scopeData.data?.currentAppInstallation?.accessScopes?.map((s: any) => s.handle) || []);
+
+           const formData = await request.formData();
     const getStr = (key: string, fallback = "") => {
       const v = formData.get(key);
       if (v === null || v === undefined) return fallback;
@@ -62,18 +75,18 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     // Save all settings as a single JSON metafield
     const settings = {
-      globalThreshold,
-      lowStockMessage,
-      isEnabled,
-      fontSize,
-      textColor,
-      backgroundColor,
-      stockCounterAnimation,
-      stockCounterPosition,
-      showForAllProducts,
-      showBasedOnInventory,
-      showOnlyBelowThreshold,
-      customThreshold,
+      stock_alert_enabled: isEnabled === "true",
+      global_threshold: parseInt(globalThreshold) || 5,
+      low_stock_message: lowStockMessage,
+      font_size: fontSize,
+      text_color: textColor,
+      background_color: backgroundColor,
+      stock_counter_animation: stockCounterAnimation,
+      stock_counter_position: stockCounterPosition,
+      show_for_all_products: showForAllProducts === "true",
+      show_based_on_inventory: showBasedOnInventory === "true",
+      show_only_below_threshold: showOnlyBelowThreshold === "true",
+      custom_threshold: parseInt(customThreshold) || 100,
     };
 
     const metafields = [
@@ -86,44 +99,31 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
     ];
 
-    const response = await admin.graphql(`#graphql
-      mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
-        metafieldsSet(metafields: $metafields) {
-          metafields {
-            id
-            namespace
-            key
-            value
-            type
-          }
-          userErrors {
-            field
-            message
-            code
-          }
-        }
-      }
-    `, { variables: { metafields } });
+           const response = await admin.graphql(`#graphql
+             mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+               metafieldsSet(metafields: $metafields) {
+                 metafields {
+                   id
+                   namespace
+                   key
+                   value
+                   type
+                 }
+                 userErrors {
+                   field
+                   message
+                   code
+                 }
+               }
+             }
+           `, { variables: { metafields } });
 
-    const data = await response.json();
-    const userErrors = data?.data?.metafieldsSet?.userErrors || [];
-    if (userErrors.length > 0) {
-      console.error("Metafield error:", userErrors);
-      
-      // Check if it's a scope/permission error
-      const scopeError = userErrors.find(err => 
-        err.message?.includes('scope') || 
-        err.message?.includes('permission') ||
-        err.message?.includes('access')
-      );
-      
-      if (scopeError) {
-        console.log("Scope error detected, redirecting to re-auth");
-        return authRedirect;
-      }
-      
-      throw new Error(`Failed to save metafields: ${userErrors[0]?.message || 'Unknown error'}`);
-    }
+           const data = await response.json();
+           const userErrors = data?.data?.metafieldsSet?.userErrors || [];
+           if (userErrors.length > 0) {
+             console.error("Metafield error:", userErrors);
+             throw new Error(`Failed to save metafields: ${userErrors[0]?.message || 'Unknown error'}`);
+           }
 
     return json({ 
       success: true, 

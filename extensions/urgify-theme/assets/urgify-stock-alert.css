@@ -1,0 +1,165 @@
+/* Urgify Stock Alert - Multiple Animated Styles */
+.urgify-stock-alert {
+  /* Keep border in sync with text color unless explicitly overridden */
+  --urgify-border: var(--urgify-text-color, #ffffff);
+  padding: 1.5rem 2rem;
+  border: 4px solid var(--urgify-border, #e74c3c);
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: var(--urgify-font-size, 18px);
+  margin: 1.5rem 0;
+  background: var(--urgify-bg, #e74c3c);
+  color: var(--urgify-text-color, #ffffff);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: var(--urgify-animation, scarcityPulse 2s infinite);
+  box-shadow: 0 8px 25px rgba(231, 76, 60, 0.5);
+  position: relative;
+  overflow: hidden;
+  font-family: 'Arial Black', Arial, sans-serif;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.urgify-stock-alert::before {
+  content: var(--urgify-icon, "");
+  font-size: 24px;
+  margin-right: 12px;
+  animation: flameBlink 1s infinite;
+}
+
+.urgify-stock-alert::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #ff6b35, #e74c3c, #c0392b, #ff6b35);
+  border-radius: 12px;
+  z-index: -1;
+  animation: borderGlow 3s linear infinite;
+}
+
+.urgify-stock-alert--critical {
+  border-color: var(--urgify-border-critical, #8e44ad);
+  background: var(--urgify-bg-critical, linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%));
+  color: var(--urgify-text-critical, #ffffff);
+  animation: var(--urgify-animation-critical, criticalShake 0.5s infinite);
+  box-shadow: 0 10px 30px rgba(142, 68, 173, 0.6);
+  transform: scale(1.05);
+}
+
+.urgify-stock-alert--critical::before {
+  content: var(--urgify-icon-critical, "");
+  font-size: 28px;
+  animation: criticalBlink 0.6s infinite;
+}
+
+.urgify-stock-alert--critical::after {
+  background: linear-gradient(45deg, #8e44ad, #9b59b6, #e74c3c, #8e44ad);
+  animation: criticalBorderGlow 1.5s linear infinite;
+}
+
+.urgify-stock-alert__text {
+  display: inline-block;
+  font-size: inherit;
+  line-height: 1.2;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  font-weight: 900;
+}
+
+/* Premium Scarcity Animations */
+@keyframes scarcityPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.5);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 12px 35px rgba(231, 76, 60, 0.7);
+  }
+}
+
+@keyframes criticalShake {
+  0%, 100% { 
+    transform: scale(1.05) translateX(0); 
+  }
+  25% { 
+    transform: scale(1.05) translateX(-2px); 
+  }
+  75% { 
+    transform: scale(1.05) translateX(2px); 
+  }
+}
+
+/* Bounce animation used by Advanced styling options */
+@keyframes urgifyBounce {
+  0%, 20%, 53%, 80%, 100% { 
+    transform: translate3d(0,0,0); 
+  }
+  40%, 43% { 
+    transform: translate3d(0, -8px, 0); 
+  }
+  70% { 
+    transform: translate3d(0, -4px, 0); 
+  }
+  90% { 
+    transform: translate3d(0, -2px, 0); 
+  }
+}
+
+@keyframes flameBlink {
+  0%, 50% { opacity: 1; transform: scale(1); }
+  25% { opacity: 0.7; transform: scale(1.1); }
+  75% { opacity: 0.8; transform: scale(0.9); }
+}
+
+@keyframes criticalBlink {
+  0%, 20% { opacity: 1; transform: scale(1); }
+  10% { opacity: 0.3; transform: scale(1.2); }
+  30%, 100% { opacity: 0.6; transform: scale(0.8); }
+}
+
+@keyframes borderGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes criticalBorderGlow {
+  0% { background-position: 0% 50%; }
+  25% { background-position: 50% 0%; }
+  50% { background-position: 100% 50%; }
+  75% { background-position: 50% 100%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Style Rotation Animations removed - they were overriding custom background colors */
+
+/* Responsive */
+@media (max-width: 768px) {
+  .urgify-stock-alert {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .urgify-stock-alert {
+    background: var(--urgify-bg, #3d2f00);
+    color: var(--urgify-text-color, #ffd700);
+    border-color: var(--urgify-border, var(--urgify-text-color, #ffd700));
+  }
+  
+  .urgify-stock-alert--critical {
+    background: var(--urgify-bg, #4a1a1a);
+    color: var(--urgify-text-color, #ff6b6b);
+    border-color: var(--urgify-border, var(--urgify-text-color, #ff6b6b));
+  }
+}
+

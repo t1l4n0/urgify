@@ -1,0 +1,35 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "4e7fa9d45ac70f745a7ff4d762f9a6ca"
+name = "Urgify"
+handle = "urgify"
+application_url = "https://urgify.fly.dev/app"
+embedded = true
+
+[build]
+include_config_on_deploy = true
+
+[webhooks]
+api_version = "2025-07"
+
+  [[webhooks.subscriptions]]
+  uri = "https://urgify.fly.dev/webhooks/customers/data_request"
+  compliance_topics = [ "customers/data_request" ]
+
+  [[webhooks.subscriptions]]
+  uri = "https://urgify.fly.dev/webhooks/customers/redact"
+  compliance_topics = [ "customers/redact" ]
+
+  [[webhooks.subscriptions]]
+  uri = "https://urgify.fly.dev/webhooks/shop/redact"
+  compliance_topics = [ "shop/redact" ]
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_products,read_themes,write_products,write_themes"
+
+[auth]
+redirect_urls = [ "https://urgify.fly.dev/auth/callback" ]
+
+[pos]
+embedded = false

@@ -1,0 +1,56 @@
+# Extension configuration
+name = "Urgify – Urgency Suite"
+type = "theme_app_extension"
+version = "1.0.0"
+
+# Define the extension
+[[extensions]]
+type = "theme_app_extension"
+name = "urgify-theme"
+handle = "urgify-theme"
+
+# Assets to be bundled and served
+[[extensions.assets]]
+source = "assets/urgify.min.js"
+destination = "assets/urgify.min.js"
+
+[[extensions.assets]]
+source = "assets/urgify.min.css"
+destination = "assets/urgify.min.css"
+
+[[extensions.assets]]
+source = "assets/urgify-stock-alert.js"
+destination = "assets/urgify-stock-alert.js"
+
+[[extensions.assets]]
+source = "assets/urgify-stock-alert.css"
+destination = "assets/urgify-stock-alert.css"
+
+
+# Blocks definition
+[[extensions.blocks]]
+type = "liquid"
+name = "Urgify – Countdown"
+source = "blocks/countdown.liquid"
+
+# Stock alert is now injected via app embed; remove standalone block
+
+[[extensions.blocks]]
+type = "liquid"
+name = "Urgify – Limited Offer"
+source = "blocks/limited-offer.liquid"
+
+[[extensions.blocks]]
+type = "liquid"
+name = "Urgify – Scarcity Banner"
+source = "blocks/scarcity-banner.liquid"
+
+[[extensions.blocks]]
+type = "liquid"
+name = "Urgify – Urgency Notification"
+source = "blocks/urgency-notification.liquid"
+
+[[extensions.blocks]]
+type = "liquid"
+name = "Urgify – Core"
+source = "blocks/app-embed.liquid"

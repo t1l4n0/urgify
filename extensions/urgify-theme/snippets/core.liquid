@@ -1,0 +1,14 @@
+{% comment %}
+  Global app embed: injects stock alert automatically on product pages
+  when enabled via Urgify settings. No manual block placement required.
+{% endcomment %}
+{% liquid
+  assign enabled = shop.metafields.urgify.stock_alert_enabled
+%}
+
+{%- if enabled == true or enabled == 'true' -%}
+  <link rel="stylesheet" href="{{ 'urgify-stock-alert.css' | asset_url }}">
+  {% render 'urgify-stock-alert-auto' %}
+{%- endif -%}
+
+

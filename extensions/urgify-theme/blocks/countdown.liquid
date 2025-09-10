@@ -1,0 +1,148 @@
+<div id="countdown-urgify-{{ block.id }}" 
+     class="urgify-countdown" 
+     data-urgify="countdown"
+     data-block-id="{{ block.id }}"
+     data-start-date="{{ block.settings.start_datetime }}"
+     data-end-date="{{ block.settings.end_datetime }}"
+     data-countdown-mode="{{ block.settings.countdown_mode | default: 'countdown_to_end' }}"
+     data-settings='{{ block.settings | json | escape }}'
+     style="background: {{ block.settings.background_color | default: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)' }}; color: {{ block.settings.font_color | default: 'white' }};">
+
+  {% assign alignment = block.settings.content_alignment | default: 'center' %}
+
+  <div class="align-{{ alignment }}">
+    <div class="urgify-countdown-unit">
+      <div class="urgify-countdown-number countdown-days">00</div>
+      <div class="urgify-countdown-label">Days</div>
+    </div>
+    
+    <div class="urgify-countdown-unit">
+      <div class="urgify-countdown-number countdown-hours">00</div>
+      <div class="urgify-countdown-label">Hours</div>
+    </div>
+    
+    <div class="urgify-countdown-unit">
+      <div class="urgify-countdown-number countdown-minutes">00</div>
+      <div class="urgify-countdown-label">Minutes</div>
+    </div>
+    
+    <div class="urgify-countdown-unit">
+      <div class="urgify-countdown-number countdown-seconds">00</div>
+      <div class="urgify-countdown-label">Seconds</div>
+    </div>
+  </div>
+
+  {% if block.settings.show_start_message %}
+    <div class="urgify-countdown-message countdown-start-message" style="display: none;">
+      {{ block.settings.start_message_text | default: 'Starting soon!' }}
+    </div>
+  {% endif %}
+
+  {% if block.settings.show_end_message %}
+    <div class="urgify-countdown-message countdown-end-message" style="display: none;">
+      {{ block.settings.end_message_text | default: 'Time is up!' }}
+    </div>
+  {% endif %}
+</div>
+
+{% schema %}
+{
+  "name": "Urgify – Countdown",
+  "target": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Urgify – Countdown Configuration",
+      "info": "Create urgency with countdown timers for sales, launches, and limited offers."
+    },
+    {
+      "type": "header",
+      "content": "Date & Time Settings"
+    },
+    {
+      "type": "text",
+      "id": "start_datetime",
+      "label": "Start Date & Time",
+      "info": "Format: YYYY-MM-DD HH:MM (e.g., 2024-12-25 10:00)"
+    },
+    {
+      "type": "text",
+      "id": "end_datetime",
+      "label": "End Date & Time",
+      "info": "Format: YYYY-MM-DD HH:MM (e.g., 2024-12-31 23:59)"
+    },
+    {
+      "type": "select",
+      "id": "countdown_mode",
+      "label": "Countdown Mode",
+      "options": [
+        {"value": "countdown_to_start", "label": "Countdown to Start"},
+        {"value": "countdown_to_end", "label": "Countdown to End"}
+      ],
+      "default": "countdown_to_end",
+      "info": "Whether to count down to the start or end time"
+    },
+    {
+      "type": "header",
+      "content": "Messages"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_start_message",
+      "label": "Show Message When Countdown Starts",
+      "default": true,
+      "info": "Display a message when the countdown reaches the start time"
+    },
+    {
+      "type": "text",
+      "id": "start_message_text",
+      "label": "Start Message Text",
+      "default": "Starting soon!",
+      "info": "Message to show when countdown starts"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_end_message",
+      "label": "Show Message When Countdown Ends",
+      "default": true,
+      "info": "Display a message when the countdown reaches the end time"
+    },
+    {
+      "type": "text",
+      "id": "end_message_text",
+      "label": "End Message Text",
+      "default": "Time is up!",
+      "info": "Message to show when countdown ends"
+    },
+    {
+      "type": "header",
+      "content": "Colors & Alignment"
+    },
+    {
+      "type": "color",
+      "id": "font_color",
+      "label": "Font Color",
+      "default": "#ffffff",
+      "info": "Sets color for text and numbers"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Color",
+      "default": "#ff6b35",
+      "info": "Sets background for the entire block"
+    },
+    {
+      "type": "select",
+      "id": "content_alignment",
+      "label": "Content Alignment",
+      "options": [
+        {"value": "left", "label": "Left"},
+        {"value": "center", "label": "Center"},
+        {"value": "right", "label": "Right"}
+      ],
+      "default": "center"
+    }
+  ]
+}
+{% endschema %}

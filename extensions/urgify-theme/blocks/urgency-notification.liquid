@@ -1,0 +1,97 @@
+<div id="urgency-notification-urgify-{{ block.id }}" 
+     class="urgify-urgency-notification" 
+     data-urgify="urgency-notification"
+     data-block-id="{{ block.id }}"
+     style="background: {{ block.settings.background_color | default: '#dc3545' }}; color: {{ block.settings.font_color | default: 'white' }}; display: none;">
+
+  {% if block.settings.show_close_button %}
+    <button class="notification-close" onclick="this.parentElement.style.display='none'">×</button>
+  {% endif %}
+  
+  {% if block.settings.show_icon %}
+    <span class="notification-icon">{{ block.settings.icon | default: '🚨' }}</span>
+  {% endif %}
+  
+  <span class="notification-message">
+    {{ block.settings.message | default: 'Urgent: Limited time offer ending soon!' }}
+  </span>
+</div>
+
+{% schema %}
+{
+  "name": "Urgify – Notification",
+  "target": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Urgify – Urgency Notification Configuration",
+      "info": "Display urgent notifications as popup messages to create immediate urgency."
+    },
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "message",
+      "label": "Notification Message",
+      "default": "Urgent: Limited time offer ending soon!",
+      "info": "Message to display in the notification"
+    },
+    {
+      "type": "header",
+      "content": "Icon"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon",
+      "label": "Show Icon",
+      "default": true,
+      "info": "Display an icon next to the message"
+    },
+    {
+      "type": "text",
+      "id": "icon",
+      "label": "Icon",
+      "default": "🚨",
+      "info": "Emoji or icon to display (e.g., 🚨, ⚠️, 🔥)"
+    },
+    {
+      "type": "header",
+      "content": "Behavior"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_close_button",
+      "label": "Show Close Button",
+      "default": true,
+      "info": "Allow users to close the notification"
+    },
+    {
+      "type": "number",
+      "id": "auto_close_delay",
+      "label": "Auto Close Delay (seconds)",
+      "default": 0,
+      "info": "Automatically close after this many seconds (0 = no auto close)"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "font_color",
+      "label": "Font Color",
+      "default": "#ffffff",
+      "info": "Sets color for text and icons"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Color",
+      "default": "#dc3545",
+      "info": "Sets background for the notification"
+    }
+  ]
+}
+{% endschema %}

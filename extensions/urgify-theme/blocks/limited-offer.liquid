@@ -1,0 +1,131 @@
+<div id="limited-offer-urgify-{{ block.id }}" 
+     class="urgify-limited-offer" 
+     data-urgify="limited-offer"
+     data-block-id="{{ block.id }}"
+     style="background: {{ block.settings.background_color | default: 'linear-gradient(135deg, #dc3545 0%, #e74c3c 100%)' }}; color: {{ block.settings.font_color | default: 'white' }};">
+
+  {% assign alignment = block.settings.content_alignment | default: 'center' %}
+  
+  <div class="align-{{ alignment }}">
+    {% if block.settings.show_badge %}
+      <div class="offer-badge">
+        {{ block.settings.badge_text | default: 'Limited Time Offer' }}
+      </div>
+    {% endif %}
+    
+    {% if block.settings.title != blank %}
+      <div class="offer-title">
+        {{ block.settings.title }}
+      </div>
+    {% endif %}
+    
+    {% if block.settings.description != blank %}
+      <div class="offer-description">
+        {{ block.settings.description }}
+      </div>
+    {% endif %}
+    
+    {% if block.settings.show_timer %}
+      <div class="offer-timer">
+        {{ block.settings.timer_text | default: 'Hurry! Limited time only!' }}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Urgify – Limited Offer",
+  "target": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Urgify – Limited Offer Configuration",
+      "info": "Create urgency with limited time offers and special deals."
+    },
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Offer Title",
+      "default": "Special Offer",
+      "info": "Main headline for the offer"
+    },
+    {
+      "type": "textarea",
+      "id": "description",
+      "label": "Offer Description",
+      "default": "Don't miss out on this amazing deal!",
+      "info": "Description text for the offer"
+    },
+    {
+      "type": "header",
+      "content": "Badge"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_badge",
+      "label": "Show Badge",
+      "default": true,
+      "info": "Display a badge above the title"
+    },
+    {
+      "type": "text",
+      "id": "badge_text",
+      "label": "Badge Text",
+      "default": "Limited Time Offer",
+      "info": "Text to display in the badge"
+    },
+    {
+      "type": "header",
+      "content": "Timer"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_timer",
+      "label": "Show Timer Text",
+      "default": true,
+      "info": "Display urgency timer text"
+    },
+    {
+      "type": "text",
+      "id": "timer_text",
+      "label": "Timer Text",
+      "default": "Hurry! Limited time only!",
+      "info": "Text to display for urgency"
+    },
+    {
+      "type": "header",
+      "content": "Colors & Alignment"
+    },
+    {
+      "type": "color",
+      "id": "font_color",
+      "label": "Font Color",
+      "default": "#ffffff",
+      "info": "Sets color for text"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Color",
+      "default": "#dc3545",
+      "info": "Sets background for the entire block"
+    },
+    {
+      "type": "select",
+      "id": "content_alignment",
+      "label": "Content Alignment",
+      "options": [
+        {"value": "left", "label": "Left"},
+        {"value": "center", "label": "Center"},
+        {"value": "right", "label": "Right"}
+      ],
+      "default": "center"
+    }
+  ]
+}
+{% endschema %}

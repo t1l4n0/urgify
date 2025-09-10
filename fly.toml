@@ -1,0 +1,49 @@
+# fly.toml app configuration file generated for countify
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+
+app = "urgify"
+primary_region = "fra"
+
+[build]
+
+[env]
+  PORT = "3000"
+  NODE_ENV = "production"
+  HOST = "0.0.0.0"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+  
+  # Verbesserte Load Balancing Konfiguration
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+  # Verbesserte Health Checks
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "15s"
+    method = "GET"
+    path = "/health"
+    timeout = "10s"
+    protocol = "http"
+    tls_skip_verify = false
+
+[deploy]
+  release_command = "npx prisma migrate deploy"
+
+[processes]
+  app = "npm run start"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 1024
+  processes = ["app"]

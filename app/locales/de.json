@@ -1,0 +1,15 @@
+{
+  "login": {
+    "title": "Anmelden",
+    "shopDomainLabel": "Shop-Domain",
+    "shopDomainHelp": "beispiel.myshopify.com",
+    "submit": "Anmelden"
+  },
+  "errorBoundary": {
+    "unexpected": "Ein unerwarteter Fehler ist aufgetreten.",
+    "title": "Fehler",
+    "somethingWrong": "Etwas ist schief gelaufen",
+    "tryAgain": "Erneut versuchen",
+    "showDetails": "Fehlerdetails anzeigen"
+  }
+}

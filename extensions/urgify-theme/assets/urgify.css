@@ -1,0 +1,511 @@
+/* ========================================
+   Urgify - Unified Urgency Suite Styles
+   ======================================== */
+
+/* Base Variables */
+:root {
+  --urgify-primary: #ff6b35;
+  --urgify-secondary: #f7931e;
+  --urgify-success: #28a745;
+  --urgify-warning: #ffc107;
+  --urgify-danger: #dc3545;
+  --urgify-info: #17a2b8;
+  --urgify-light: #f8f9fa;
+  --urgify-dark: #343a40;
+  --urgify-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --urgify-border-radius: 8px;
+  --urgify-transition: all 0.3s ease;
+}
+
+/* ========================================
+   Base Urgify Block Styles
+   ======================================== */
+
+[data-urgify] {
+  font-family: var(--urgify-font-family);
+  transition: var(--urgify-transition);
+  margin: 10px 0;
+}
+
+/* Alignment classes */
+.align-left { text-align: left; }
+.align-center { text-align: center; }
+.align-right { text-align: right; }
+
+/* ========================================
+   Countdown Styles
+   ======================================== */
+
+.urgify-countdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--urgify-primary) 0%, var(--urgify-secondary) 100%);
+  border-radius: var(--urgify-border-radius);
+  color: white;
+  box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+  animation: urgifyPulse 2s infinite;
+}
+
+.urgify-countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.urgify-countdown-number {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 5px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.urgify-countdown-label {
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.9;
+}
+
+.urgify-countdown-message {
+  display: none;
+  width: 100%;
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-top: 15px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+}
+
+/* ========================================
+   Stock Alert Styles
+   ======================================== */
+
+.urgify-stock-alert {
+  padding: 15px;
+  border-radius: var(--urgify-border-radius);
+  transition: var(--urgify-transition);
+}
+
+.urgify-stock-alert .stock-alert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: var(--urgify-border-radius);
+  font-weight: 500;
+  animation: stockAlertPulse 2s infinite;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 2px solid;
+}
+
+.urgify-stock-alert .low-stock {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+  border-color: var(--urgify-warning);
+  color: #856404;
+}
+
+.urgify-stock-alert .critical-stock {
+  background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+  border-color: var(--urgify-danger);
+  color: #721c24;
+  animation: criticalStockPulse 1.5s infinite;
+}
+
+.urgify-stock-alert .stock-alert-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+  animation: stockAlertBounce 1s infinite;
+}
+
+.urgify-stock-alert .stock-alert-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.urgify-stock-alert .stock-alert-message {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.urgify-stock-alert .stock-alert-urgency {
+  font-size: 0.8rem;
+  font-weight: 500;
+  opacity: 0.8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.urgify-stock-alert .stock-level {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 6px;
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+.urgify-stock-alert .stock-level-label {
+  font-weight: 500;
+  opacity: 0.7;
+}
+
+.urgify-stock-alert .stock-level-count {
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* ========================================
+   Limited Offer Styles
+   ======================================== */
+
+.urgify-limited-offer {
+  background: linear-gradient(135deg, var(--urgify-danger) 0%, #e74c3c 100%);
+  color: white;
+  padding: 20px;
+  border-radius: var(--urgify-border-radius);
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+  animation: limitedOfferPulse 3s infinite;
+}
+
+.urgify-limited-offer .offer-badge {
+  display: inline-block;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.urgify-limited-offer .offer-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.urgify-limited-offer .offer-description {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin-bottom: 15px;
+}
+
+.urgify-limited-offer .offer-timer {
+  font-size: 1.2rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 10px 20px;
+  border-radius: 6px;
+  display: inline-block;
+}
+
+/* ========================================
+   Scarcity Banner Styles
+   ======================================== */
+
+.urgify-scarcity-banner {
+  background: linear-gradient(135deg, var(--urgify-warning) 0%, #ff8c00 100%);
+  color: white;
+  padding: 15px 20px;
+  border-radius: var(--urgify-border-radius);
+  text-align: center;
+  box-shadow: 0 3px 10px rgba(255, 193, 7, 0.3);
+  animation: scarcityBannerPulse 2.5s infinite;
+}
+
+.urgify-scarcity-banner .scarcity-icon {
+  font-size: 1.5rem;
+  margin-right: 10px;
+  animation: scarcityIconBounce 1.5s infinite;
+}
+
+.urgify-scarcity-banner .scarcity-message {
+  font-size: 1.1rem;
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* ========================================
+   Urgency Notification Styles
+   ======================================== */
+
+.urgify-urgency-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--urgify-danger);
+  color: white;
+  padding: 15px 20px;
+  border-radius: var(--urgify-border-radius);
+  box-shadow: 0 4px 20px rgba(220, 53, 69, 0.4);
+  z-index: 9999;
+  max-width: 300px;
+  animation: urgencyNotificationSlide 0.5s ease-out;
+}
+
+.urgify-urgency-notification .notification-icon {
+  font-size: 1.3rem;
+  margin-right: 10px;
+  animation: urgencyIconPulse 1s infinite;
+}
+
+.urgify-urgency-notification .notification-message {
+  font-size: 0.9rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.urgify-urgency-notification .notification-close {
+  position: absolute;
+  top: 5px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.urgify-urgency-notification .notification-close:hover {
+  opacity: 1;
+}
+
+/* ========================================
+   Animations
+   ======================================== */
+
+@keyframes urgifyPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+  }
+}
+
+@keyframes stockAlertPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    transform: scale(1.02);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  }
+}
+
+@keyframes criticalStockPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+  }
+}
+
+@keyframes stockAlertBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes limitedOfferPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+  }
+  50% {
+    transform: scale(1.01);
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+  }
+}
+
+@keyframes scarcityBannerPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 3px 10px rgba(255, 193, 7, 0.3);
+  }
+  50% {
+    transform: scale(1.01);
+    box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+  }
+}
+
+@keyframes scarcityIconBounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes urgencyNotificationSlide {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes urgencyIconPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* ========================================
+   Hover Effects
+   ======================================== */
+
+[data-urgify]:hover {
+  transform: translateY(-2px);
+}
+
+.urgify-countdown:hover {
+  box-shadow: 0 6px 20px rgba(255, 107, 53, 0.4);
+}
+
+.urgify-stock-alert .stock-alert:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.urgify-stock-alert .critical-stock:hover {
+  box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+}
+
+/* ========================================
+   Responsive Design
+   ======================================== */
+
+@media (max-width: 768px) {
+  .urgify-countdown {
+    padding: 15px;
+    gap: 10px;
+  }
+  
+  .urgify-countdown-number {
+    font-size: 1.5rem;
+  }
+  
+  .urgify-countdown-label {
+    font-size: 0.7rem;
+  }
+  
+  .urgify-stock-alert .stock-alert {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  
+  .urgify-stock-alert .stock-alert-icon {
+    font-size: 1.3rem;
+  }
+  
+  .urgify-stock-alert .stock-alert-message {
+    font-size: 0.9rem;
+  }
+  
+  .urgify-urgency-notification {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .urgify-countdown {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .urgify-countdown-unit {
+    min-width: 50px;
+  }
+  
+  .urgify-countdown-number {
+    font-size: 1.3rem;
+  }
+  
+  .urgify-stock-alert .stock-alert {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+    padding: 12px;
+  }
+  
+  .urgify-stock-alert .stock-alert-content {
+    align-items: center;
+  }
+  
+  .urgify-stock-alert .stock-alert-icon {
+    font-size: 1.2rem;
+  }
+  
+  .urgify-stock-alert .stock-alert-message {
+    font-size: 0.85rem;
+  }
+}
+
+/* ========================================
+   Dark Mode Support
+   ======================================== */
+
+@media (prefers-color-scheme: dark) {
+  .urgify-stock-alert .low-stock {
+    background: linear-gradient(135deg, #3d2f00 0%, #5a4a00 100%);
+    color: #ffd700;
+  }
+  
+  .urgify-stock-alert .critical-stock {
+    background: linear-gradient(135deg, #4a1a1a 0%, #6b2c2c 100%);
+    color: #ff6b6b;
+  }
+  
+  .urgify-stock-alert .stock-level {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.9);
+  }
+  
+  .urgify-stock-alert .stock-level-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+}

@@ -1,0 +1,20 @@
+{% comment %}
+  Urgify App Embed block. This creates a proper Theme App Embed entry
+  that merchants can enable in the Theme Editor. It loads the core snippet
+  and auto-injects the stock alert when enabled in the admin app.
+{% endcomment %}
+
+{% render 'core' %}
+
+{% schema %}
+{
+  "name": "Urgify – Core",
+  "target": "body",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": []
+}
+{% endschema %}
+
+

@@ -1,0 +1,142 @@
+import type { MetaFunction } from "@remix-run/node";
+import { json } from "@remix-run/node";
+import { useLoaderData } from "@remix-run/react";
+
+export const meta: MetaFunction = () => {
+  return [
+    { title: "Privacy Policy - Urgify" },
+    { name: "description", content: "Privacy Policy for Urgify - Urgency and Scarcity App for Shopify" },
+  ];
+};
+
+export const loader = async () => {
+  return json({
+    lastUpdated: "2025-01-04",
+  });
+};
+
+export default function PrivacyPolicy() {
+  const { lastUpdated } = useLoaderData<typeof loader>();
+
+  return (
+    <div style={{ fontFamily: "system-ui, sans-serif", lineHeight: "1.8", maxWidth: "800px", margin: "0 auto", padding: "20px" }}>
+      <h1>Privacy Policy</h1>
+      <p><strong>Last updated: {lastUpdated}</strong></p>
+
+      <h2>1. Introduction</h2>
+      <p>
+        Urgify ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Shopify app and related services.
+      </p>
+
+      <h2>2. Information We Collect</h2>
+      
+      <h3>2.1 Information You Provide</h3>
+      <ul>
+        <li>Shop configuration and settings</li>
+        <li>Extension preferences and customizations</li>
+        <li>Support communications</li>
+      </ul>
+
+      <h3>2.2 Information We Collect Automatically</h3>
+      <ul>
+        <li>App usage statistics and performance metrics</li>
+        <li>Error logs and debugging information</li>
+        <li>Shopify store information necessary for app functionality</li>
+      </ul>
+
+      <h3>2.3 Information from Shopify</h3>
+      <ul>
+        <li>Store name and basic information</li>
+        <li>Theme information for extension integration</li>
+        <li>Product data for stock alerts and scarcity features</li>
+      </ul>
+
+      <h2>3. How We Use Your Information</h2>
+      <p>We use the collected information to:</p>
+      <ul>
+        <li>Provide and maintain our urgency and scarcity features</li>
+        <li>Process countdown timers and stock alerts</li>
+        <li>Customize extension settings and appearance</li>
+        <li>Provide customer support</li>
+        <li>Improve our app functionality and user experience</li>
+        <li>Comply with legal obligations</li>
+      </ul>
+
+      <h2>4. Data Storage and Security</h2>
+      <p>
+        We implement appropriate technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. Your data is stored securely on our servers and is encrypted in transit and at rest.
+      </p>
+
+      <h2>5. Data Sharing and Disclosure</h2>
+      <p>We do not sell, trade, or otherwise transfer your personal information to third parties, except:</p>
+      <ul>
+        <li>When required by law or legal process</li>
+        <li>To protect our rights, property, or safety</li>
+        <li>With your explicit consent</li>
+        <li>To service providers who assist in app operations (under strict confidentiality agreements)</li>
+      </ul>
+
+      <h2>6. Shopify Integration</h2>
+      <p>
+        Our app integrates with Shopify and may access certain store data as necessary to provide our urgency and scarcity features. This integration is governed by Shopify's terms of service and privacy policy.
+      </p>
+
+      <h2>7. Data Retention</h2>
+      <p>
+        We retain your information only as long as necessary to provide our services and comply with legal obligations. When you uninstall our app, we will delete your data within 30 days, unless we are required to retain it for legal reasons.
+      </p>
+
+      <h2>8. Your Rights</h2>
+      <p>Depending on your location, you may have the following rights:</p>
+      <ul>
+        <li>Access to your personal information</li>
+        <li>Correction of inaccurate information</li>
+        <li>Deletion of your personal information</li>
+        <li>Restriction of processing</li>
+        <li>Data portability</li>
+        <li>Objection to processing</li>
+      </ul>
+
+      <h2>9. Cookies and Tracking</h2>
+      <p>
+        Our app may use cookies and similar technologies to enhance functionality and user experience. These are used solely for app operation and are not used for advertising or tracking purposes.
+      </p>
+
+      <h2>10. International Data Transfers</h2>
+      <p>
+        Your information may be transferred to and processed in countries other than your own. We ensure appropriate safeguards are in place to protect your information in accordance with this Privacy Policy.
+      </p>
+
+      <h2>11. Children's Privacy</h2>
+      <p>
+        Our app is not intended for use by children under 13 years of age. We do not knowingly collect personal information from children under 13.
+      </p>
+
+      <h2>12. Changes to This Privacy Policy</h2>
+      <p>
+        We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last updated" date.
+      </p>
+
+      <h2>13. Contact Us</h2>
+      <p>
+        If you have any questions about this Privacy Policy or our data practices, please contact us at:
+      </p>
+      <ul>
+        <li>Email: tilanoroser@gmail.com</li>
+        <li>Website: https://urgify.fly.dev</li>
+      </ul>
+
+      <h2>14. Compliance</h2>
+      <p>
+        This Privacy Policy complies with applicable data protection laws, including GDPR, CCPA, and other relevant privacy regulations. We are committed to maintaining the highest standards of data protection and privacy.
+      </p>
+
+      <hr style={{ margin: "40px 0", border: "none", borderTop: "1px solid #eee" }} />
+      
+      <p style={{ fontSize: "14px", color: "#666" }}>
+        <strong>Urgify</strong> - Creating urgency and scarcity to your Shopify store sales.<br />
+        This Privacy Policy is effective as of {lastUpdated} and applies to all users of the Urgify app.
+      </p>
+    </div>
+  );
+}

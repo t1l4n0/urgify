@@ -1,0 +1,90 @@
+<div id="scarcity-banner-urgify-{{ block.id }}" 
+     class="urgify-scarcity-banner" 
+     data-urgify="scarcity-banner"
+     data-block-id="{{ block.id }}"
+     style="background: {{ block.settings.background_color | default: 'linear-gradient(135deg, #ffc107 0%, #ff8c00 100%)' }}; color: {{ block.settings.font_color | default: 'white' }};">
+
+  {% assign alignment = block.settings.content_alignment | default: 'center' %}
+  
+  <div class="align-{{ alignment }}">
+    {% if block.settings.show_icon %}
+      <span class="scarcity-icon">{{ block.settings.icon | default: '⚠️' }}</span>
+    {% endif %}
+    
+    <span class="scarcity-message">
+      {{ block.settings.message | default: 'Limited quantity available - Order now!' }}
+    </span>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Urgify – Scarcity Banner",
+  "target": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Urgify – Scarcity Banner Configuration",
+      "info": "Create urgency with scarcity messaging and limited availability warnings."
+    },
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "message",
+      "label": "Scarcity Message",
+      "default": "Limited quantity available - Order now!",
+      "info": "Message to display about limited availability"
+    },
+    {
+      "type": "header",
+      "content": "Icon"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icon",
+      "label": "Show Icon",
+      "default": true,
+      "info": "Display an icon next to the message"
+    },
+    {
+      "type": "text",
+      "id": "icon",
+      "label": "Icon",
+      "default": "⚠️",
+      "info": "Emoji or icon to display (e.g., ⚠️, 🔥, ⏰)"
+    },
+    {
+      "type": "header",
+      "content": "Colors & Alignment"
+    },
+    {
+      "type": "color",
+      "id": "font_color",
+      "label": "Font Color",
+      "default": "#ffffff",
+      "info": "Sets color for text and icons"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Color",
+      "default": "#ffc107",
+      "info": "Sets background for the entire block"
+    },
+    {
+      "type": "select",
+      "id": "content_alignment",
+      "label": "Content Alignment",
+      "options": [
+        {"value": "left", "label": "Left"},
+        {"value": "center", "label": "Center"},
+        {"value": "right", "label": "Right"}
+      ],
+      "default": "center"
+    }
+  ]
+}
+{% endschema %}

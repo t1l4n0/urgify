@@ -1,0 +1,15 @@
+{
+  "login": {
+    "title": "Log in",
+    "shopDomainLabel": "Shop domain",
+    "shopDomainHelp": "example.myshopify.com",
+    "submit": "Log in"
+  },
+  "errorBoundary": {
+    "unexpected": "An unexpected error occurred.",
+    "title": "Error",
+    "somethingWrong": "Something went wrong",
+    "tryAgain": "Try again",
+    "showDetails": "Show error details"
+  }
+}

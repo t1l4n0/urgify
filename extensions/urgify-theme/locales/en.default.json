@@ -1,0 +1,13 @@
+{
+  "countdown": {
+    "heading": "Countdown",
+    "days": "days",
+    "hours": "hours",
+    "minutes": "minutes",
+    "seconds": "seconds",
+    "min": "min",
+    "sec": "sec",
+    "finished": "Countdown finished!",
+    "expired": "Countdown expired"
+  }
+}

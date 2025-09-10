@@ -1,0 +1,49 @@
+{% liquid
+  assign enabled = shop.metafields.urgify.stock_alert_enabled
+  assign threshold = shop.metafields.urgify.stock_alert_threshold | default: 5
+  assign critical_threshold = shop.metafields.urgify.stock_alert_critical_threshold | default: 2
+  assign low_msg = shop.metafields.urgify.stock_alert_low_text | default: 'Only {{qty}} left in stock!'
+  assign critical_msg = shop.metafields.urgify.stock_alert_critical_text | default: 'Hurry! Only {{qty}} remaining!'
+%}
+
+{%- comment -%} Show block if enabled is true, or if no metafields are set yet (default to enabled) {%- endcomment -%}
+{%- if enabled == true or enabled == 'true' or enabled == blank -%}
+  <div id="urgify-stock-alert-{{ block.id }}"
+       class="urgify-stock-alert"
+       hidden
+       data-threshold="{{ threshold | escape }}"
+       data-critical-threshold="{{ critical_threshold | escape }}"
+       data-low-message="{{ low_msg | escape }}"
+       data-critical-message="{{ critical_msg | escape }}">
+    <span class="urgify-stock-alert__text"></span>
+  </div>
+
+  {%- comment -%} Varianten-Bestände als JSON ausgeben {%- endcomment -%}
+  <script type="application/json" id="urgify-variant-qty-{{ block.id }}">
+  {
+  {%- for v in product.variants -%}
+    "{{ v.id }}": {{ v.inventory_quantity | default: 0 }}{% unless forloop.last %},{% endunless %}
+  {%- endfor -%}
+  }
+  </script>
+
+  <script src="{{ 'urgify-stock-alert.js' | asset_url }}" defer></script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Urgify – Stock Alert",
+  "target": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Urgify – Stock Alert Configuration",
+      "info": "This block is controlled entirely from the Urgify Admin App. No additional settings needed here."
+    },
+    {
+      "type": "paragraph",
+      "content": "To configure stock alerts, go to your Urgify Admin App and adjust the global settings. This block will automatically display stock alerts based on your admin configuration."
+    }
+  ]
+}
+{% endschema %}

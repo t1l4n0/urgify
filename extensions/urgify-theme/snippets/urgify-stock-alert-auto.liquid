@@ -1,0 +1,62 @@
+{% comment %}
+  Automatically renders the stock alert block near the add-to-cart form
+  when the app is enabled. This avoids manual placement.
+{% endcomment %}
+
+{% liquid
+  assign enabled = shop.metafields.urgify.stock_alert_enabled
+  assign threshold = shop.metafields.urgify.global_threshold | default: 5
+  assign low_msg = shop.metafields.urgify.low_stock_message | default: 'Only {{qty}} left in stock!'
+  
+  assign font_size = shop.metafields.urgify.font_size | default: '18px'
+  assign text_color = shop.metafields.urgify.text_color | default: '#ffffff'
+  assign background_color = shop.metafields.urgify.background_color | default: '#e74c3c'
+  assign animation = shop.metafields.urgify.stock_counter_animation | default: 'pulse'
+  assign shake = 'disabled'
+  assign position = shop.metafields.urgify.stock_counter_position | default: 'above'
+
+  assign tracks_inventory = false
+  for v in product.variants
+    if v.inventory_management
+      assign tracks_inventory = true
+      break
+    endif
+  endfor
+%}
+
+{% if enabled == true or enabled == 'true' %}
+  {{ 'urgify-stock-alert.css' | asset_url | stylesheet_tag }}
+  <div id="urgify-stock-alert-auto" class="urgify-stock-alert" hidden
+       data-threshold="{{ threshold | escape }}"
+       data-low-message="{{ low_msg | escape }}"
+       data-message="{{ low_msg | escape }}"
+       
+       data-font-size="{{ font_size | escape }}"
+       data-text-color="{{ text_color | escape }}"
+       data-background-color="{{ background_color | escape }}"
+       data-animation="{{ animation | escape }}"
+       data-shake="{{ shake | escape }}"
+       data-position="{{ position | escape }}"
+       data-tracks-inventory="{{ tracks_inventory }}">
+    <style>
+      #urgify-stock-alert-auto {
+        --urgify-font-size: {{ font_size | escape }};
+        --urgify-text-color: {{ text_color | escape }};
+        --urgify-bg: {{ background_color | escape }};
+        --urgify-border: {{ text_color | escape }};
+      }
+    </style>
+    <span class="urgify-stock-alert__text"></span>
+  </div>
+
+  <script type="application/json" id="urgify-variant-qty-auto">
+  {
+  {%- for v in product.variants -%}
+    "{{ v.id }}": {{ v.inventory_quantity | default: 0 }}{% unless forloop.last %},{% endunless %}
+  {%- endfor -%}
+  }
+  </script>
+  <script src="{{ 'urgify-stock-alert.js' | asset_url }}" defer></script>
+{% endif %}
+
+

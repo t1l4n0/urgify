@@ -60,91 +60,29 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       throw new Error("Could not retrieve shop ID");
     }
 
-    // Save to Shop Metafields
+    // Save all settings as a single JSON metafield
+    const settings = {
+      globalThreshold,
+      lowStockMessage,
+      isEnabled,
+      fontSize,
+      textColor,
+      backgroundColor,
+      stockCounterAnimation,
+      stockCounterPosition,
+      showForAllProducts,
+      showBasedOnInventory,
+      showOnlyBelowThreshold,
+      customThreshold,
+    };
+
     const metafields = [
       {
         ownerId: shopId,
         namespace: "urgify",
-        key: "stock_alert_enabled",
-        value: isEnabled === "true" ? "true" : "false",
-        type: "single_line_text_field"
-      },
-      {
-        ownerId: shopId,
-        namespace: "urgify",
-        key: "global_threshold",
-        value: globalThreshold as string,
-        type: "number_integer"
-      },
-      {
-        ownerId: shopId,
-        namespace: "urgify",
-        key: "low_stock_message",
-        value: lowStockMessage as string,
-        type: "multi_line_text_field"
-      },
-      {
-        ownerId: shopId,
-        namespace: "urgify",
-        key: "font_size",
-        value: fontSize as string,
-        type: "single_line_text_field"
-      },
-      {
-        ownerId: shopId,
-        namespace: "urgify",
-        key: "text_color",
-        value: textColor as string,
-        type: "single_line_text_field"
-      },
-      {
-        ownerId: shopId,
-        namespace: "urgify",
-        key: "background_color",
-        value: backgroundColor as string,
-        type: "single_line_text_field"
-      },
-      {
-        ownerId: shopId,
-        namespace: "urgify",
-        key: "stock_counter_animation",
-        value: stockCounterAnimation,
-        type: "single_line_text_field"
-      },
-      {
-        ownerId: shopId,
-        namespace: "urgify",
-        key: "stock_counter_position",
-        value: stockCounterPosition,
-        type: "single_line_text_field"
-      },
-      {
-        ownerId: shopId,
-        namespace: "urgify",
-        key: "show_for_all_products",
-        value: showForAllProducts === "true" ? "true" : "false",
-        type: "single_line_text_field"
-      },
-      {
-        ownerId: shopId,
-        namespace: "urgify",
-        key: "show_based_on_inventory",
-        value: showBasedOnInventory === "true" ? "true" : "false",
-        type: "single_line_text_field"
-      },
-      {
-        ownerId: shopId,
-        namespace: "urgify",
-        key: "show_only_below_threshold",
-        value: showOnlyBelowThreshold === "true" ? "true" : "false",
-        type: "single_line_text_field"
-      },
-      {
-        ownerId: shopId,
-        namespace: "urgify",
-        key: "custom_threshold",
-        value: customThreshold as string,
-        type: "number_integer"
+        key: "stock_alert_config",
+        value: JSON.stringify(settings),
+        type: "json"
       }
     ];
 

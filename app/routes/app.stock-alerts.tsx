@@ -8,79 +8,45 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
 
   try {
-    // Fetch shop metafields for stock alert settings
-    const metafieldsResponse = await admin.graphql(`
-      query getShopMetafields {
+    // Fetch shop metafield for stock alert settings (single JSON metafield)
+    const metafieldResponse = await admin.graphql(`
+      query getShopMetafield {
         shop {
-          metafields(first: 20, namespace: "urgify") {
-            edges {
-              node {
-                id
-                namespace
-                key
-                value
-                type
-              }
-            }
+          metafield(namespace: "urgify", key: "stock_alert_config") {
+            value
+            type
           }
         }
       }
     `);
 
-    const metafieldsData = await metafieldsResponse.json();
-    const metafields = metafieldsData.data?.shop?.metafields?.edges?.map((edge: any) => edge.node) || [];
+    const metafieldData = await metafieldResponse.json();
+    const configValue = metafieldData.data?.shop?.metafield?.value;
     
-    // Parse metafields into settings - prioritize new keys, fallback to old keys
-    const settings = {
-      stock_alert_enabled: metafields.find(m => m.key === "stock_alert_enabled")?.value === "true" || false,
-      global_threshold: parseInt(
-        metafields.find(m => m.key === "global_threshold")?.value || 
-        metafields.find(m => m.key === "stock_alert_threshold")?.value || 
-        "5"
-      ),
-      low_stock_message: 
-        metafields.find(m => m.key === "low_stock_message")?.value || 
-        metafields.find(m => m.key === "stock_alert_low_text")?.value || 
-        metafields.find(m => m.key === "stock_alert_text")?.value || 
-        "Only {{qty}} left in stock!",
-      font_size: 
-        metafields.find(m => m.key === "font_size")?.value || 
-        metafields.find(m => m.key === "stock_alert_font_size")?.value || 
-        "18px",
-      text_color: 
-        metafields.find(m => m.key === "text_color")?.value || 
-        metafields.find(m => m.key === "stock_alert_text_color")?.value || 
-        "#ffffff",
-      background_color: 
-        metafields.find(m => m.key === "background_color")?.value || 
-        metafields.find(m => m.key === "stock_alert_background_color")?.value || 
-        "#e74c3c",
-      stock_counter_animation: 
-        metafields.find(m => m.key === "stock_counter_animation")?.value || 
-        metafields.find(m => m.key === "stock_alert_animation")?.value || 
-        "pulse",
-      stock_counter_position: 
-        metafields.find(m => m.key === "stock_counter_position")?.value || 
-        metafields.find(m => m.key === "stock_alert_position")?.value || 
-        "above",
-      show_for_all_products: 
-        metafields.find(m => m.key === "show_for_all_products")?.value === "true" || 
-        metafields.find(m => m.key === "stock_alert_show_all_products")?.value === "true" || 
-        false,
-      show_based_on_inventory: 
-        metafields.find(m => m.key === "show_based_on_inventory")?.value === "true" || 
-        metafields.find(m => m.key === "stock_alert_show_based_inventory")?.value === "true" || 
-        false,
-      show_only_below_threshold: 
-        metafields.find(m => m.key === "show_only_below_threshold")?.value === "true" || 
-        metafields.find(m => m.key === "stock_alert_show_only_below_threshold")?.value === "true" || 
-        true,
-      custom_threshold: parseInt(
-        metafields.find(m => m.key === "custom_threshold")?.value || 
-        metafields.find(m => m.key === "stock_alert_custom_threshold")?.value || 
-        "5"
-      ),
+    // Parse JSON metafield or use defaults
+    let settings = {
+      stock_alert_enabled: false,
+      global_threshold: 5,
+      low_stock_message: "Only {{qty}} left in stock!",
+      font_size: "18px",
+      text_color: "#ffffff",
+      background_color: "#e74c3c",
+      stock_counter_animation: "pulse",
+      stock_counter_position: "above",
+      show_for_all_products: false,
+      show_based_on_inventory: false,
+      show_only_below_threshold: false,
+      custom_threshold: 100,
     };
+
+    if (configValue) {
+      try {
+        const parsedConfig = JSON.parse(configValue);
+        settings = { ...settings, ...parsedConfig };
+      } catch (error) {
+        console.error("Error parsing stock alert config:", error);
+      }
+    }
 
     // Fetch products with inventory levels
     const response = await admin.graphql(`

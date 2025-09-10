@@ -2,7 +2,7 @@ import { json, type ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+  const { admin, redirect: authRedirect } = await authenticate.admin(request);
 
   if (request.method !== "POST") {
     return json({ error: "Method not allowed" }, { status: 405 });
@@ -109,6 +109,19 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const userErrors = data?.data?.metafieldsSet?.userErrors || [];
     if (userErrors.length > 0) {
       console.error("Metafield error:", userErrors);
+      
+      // Check if it's a scope/permission error
+      const scopeError = userErrors.find(err => 
+        err.message?.includes('scope') || 
+        err.message?.includes('permission') ||
+        err.message?.includes('access')
+      );
+      
+      if (scopeError) {
+        console.log("Scope error detected, redirecting to re-auth");
+        return authRedirect;
+      }
+      
       throw new Error(`Failed to save metafields: ${userErrors[0]?.message || 'Unknown error'}`);
     }
 

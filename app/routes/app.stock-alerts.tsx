@@ -1,4 +1,4 @@
-import { json, type LoaderFunctionArgs } from "@remix-run/node";
+import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
 import { Card, Page, Layout, Text, Button, Banner, List, Badge, BlockStack, InlineStack, InlineGrid, Select, TextField, FormLayout, Form, Divider, Checkbox, Box, RadioButton, ChoiceList, Tabs, ButtonGroup, Toast, ContextualSaveBar, ColorPicker, Popover } from "@shopify/polaris";
@@ -97,6 +97,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           variants: product.variants?.edges?.map((edge: any) => edge.node) || [],
           lowStock: (product.totalInventory || 0) <= (settings.global_threshold || 5),
         })),
+    }, { 
+      headers: { 
+        "Cache-Control": "no-store" 
+      } 
     });
   } catch (error) {
     console.error("Error fetching data:", error);
@@ -117,7 +121,145 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       },
       products: [], 
       error: "Failed to fetch data" 
+    }, { 
+      headers: { 
+        "Cache-Control": "no-store" 
+      } 
     });
+  }
+};
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const { admin, redirect } = await authenticate.admin(request);
+
+  if (request.method !== "POST") {
+    return json({ error: "Method not allowed" }, { status: 405 });
+  }
+
+  try {
+    // Check available scopes for debugging
+    const scopeResponse = await admin.graphql(`
+      query getCurrentAppInstallation {
+        currentAppInstallation {
+          accessScopes {
+            handle
+          }
+        }
+      }
+    `);
+    const scopeData = await scopeResponse.json();
+    console.log("Available scopes:", scopeData.data?.currentAppInstallation?.accessScopes?.map((s: any) => s.handle) || []);
+
+    const formData = await request.formData();
+    const getStr = (key: string, fallback = "") => {
+      const v = formData.get(key);
+      if (v === null || v === undefined) return fallback;
+      return String(v);
+    };
+
+    const globalThreshold = getStr("globalThreshold", "5");
+    const lowStockMessage = getStr("lowStockMessage", "Only {{qty}} left in stock!");
+    const isEnabled = getStr("isEnabled", "false");
+    const fontSize = getStr("fontSize", "18px");
+    const textColor = getStr("textColor", "#ffffff");
+    const backgroundColor = getStr("backgroundColor", "#e74c3c");
+    const showForAllProducts = getStr("showForAllProducts", "false");
+    const showBasedOnInventory = getStr("showBasedOnInventory", "true");
+    const showOnlyBelowThreshold = getStr("showOnlyBelowThreshold", "false");
+    const customThreshold = getStr("customThreshold", "100");
+    const stockCounterAnimation = getStr("stockCounterAnimation", "pulse");
+    const stockCounterPosition = getStr("stockCounterPosition", "above");
+
+    console.log("Saving Stock Alert Settings to Shop Metafields:", {
+      globalThreshold,
+      lowStockMessage,
+      isEnabled,
+      fontSize,
+      textColor,
+      backgroundColor,
+      stockCounterAnimation,
+      stockCounterPosition,
+      showForAllProducts,
+      showBasedOnInventory,
+      showOnlyBelowThreshold,
+      customThreshold,
+    });
+
+    // First, get the shop ID
+    const shopResponse = await admin.graphql(`
+      query getShop {
+        shop {
+          id
+        }
+      }
+    `);
+
+    const shopData = await shopResponse.json();
+    const shopId = shopData.data?.shop?.id;
+
+    if (!shopId) {
+      throw new Error("Could not retrieve shop ID");
+    }
+
+    // Save all settings as a single JSON metafield
+    const settings = {
+      stock_alert_enabled: isEnabled === "true",
+      global_threshold: parseInt(globalThreshold) || 5,
+      low_stock_message: lowStockMessage,
+      font_size: fontSize,
+      text_color: textColor,
+      background_color: backgroundColor,
+      stock_counter_animation: stockCounterAnimation,
+      stock_counter_position: stockCounterPosition,
+      show_for_all_products: showForAllProducts === "true",
+      show_based_on_inventory: showBasedOnInventory === "true",
+      show_only_below_threshold: showOnlyBelowThreshold === "true",
+      custom_threshold: parseInt(customThreshold) || 100,
+    };
+
+    const metafields = [
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "stock_alert_config",
+        value: JSON.stringify(settings),
+        type: "json"
+      }
+    ];
+
+    const response = await admin.graphql(`#graphql
+      mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) {
+          metafields {
+            id
+            namespace
+            key
+            value
+            type
+          }
+          userErrors {
+            field
+            message
+            code
+          }
+        }
+      }
+    `, { variables: { metafields } });
+
+    const data = await response.json();
+    const userErrors = data?.data?.metafieldsSet?.userErrors || [];
+    if (userErrors.length > 0) {
+      console.error("Metafield error:", userErrors);
+      throw new Error(`Failed to save metafields: ${userErrors[0]?.message || 'Unknown error'}`);
+    }
+
+    // Wichtig im Embedded-Kontext: Redirect erzwingt Navigation und Revalidation
+    return redirect("/app/stock-alerts?saved=1");
+  } catch (error) {
+    console.error("Error saving stock alert settings:", error);
+    return json({
+      error: "Failed to save settings: " + (error as Error).message
+    }, { status: 500 });
   }
 };
 
@@ -141,6 +283,22 @@ export default function StockAlertsSimple() {
   
   const [isDirty, setIsDirty] = useState(false);
   const [toastActive, setToastActive] = useState(false);
+
+  // Sobald der Loader neue Daten liefert, lokale Felder aktualisieren:
+  useEffect(() => {
+    setGlobalThreshold(String(settings.global_threshold || 5));
+    setLowStockMessage(String(settings.low_stock_message || "Only {{qty}} left in stock!"));
+    setIsEnabled(Boolean(settings.stock_alert_enabled));
+    setFontSize(String(settings.font_size || "18px"));
+    setTextColor(String(settings.text_color || "#ffffff"));
+    setBackgroundColor(String(settings.background_color || "#e74c3c"));
+    setStockCounterAnimation(String(settings.stock_counter_animation || "pulse"));
+    setStockCounterPosition(String(settings.stock_counter_position || "above"));
+    setShowForAllProducts(Boolean(settings.show_for_all_products));
+    setShowBasedOnInventory(Boolean(settings.show_based_on_inventory));
+    setShowOnlyBelowThreshold(Boolean(settings.show_only_below_threshold));
+    setCustomThreshold(String(settings.custom_threshold || "5"));
+  }, [settings]);
 
   const safeProducts = Array.isArray(products) ? products : [];
   const lowStockProducts = safeProducts.filter((product: any) => {
@@ -175,7 +333,7 @@ export default function StockAlertsSimple() {
         showOnlyBelowThreshold: showOnlyBelowThreshold.toString(),
         customThreshold,
       },
-      { method: "POST", action: "/api/stock-alert-settings", encType: "application/x-www-form-urlencoded" }
+      { method: "POST", encType: "application/x-www-form-urlencoded" }
     );
   }, [globalThreshold, lowStockMessage, isEnabled, fontSize, textColor, backgroundColor, stockCounterAnimation, stockCounterPosition, showForAllProducts, showBasedOnInventory, showOnlyBelowThreshold, customThreshold, fetcher]);
 

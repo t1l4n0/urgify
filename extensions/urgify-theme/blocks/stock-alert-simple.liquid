@@ -16,6 +16,11 @@
        data-critical-threshold="{{ critical_threshold | escape }}"
        data-low-message="{{ low_msg | escape }}"
        data-critical-message="{{ critical_msg | escape }}">
+    <style>
+      #urgify-stock-alert-{{ block.id }} {
+        background: #e74c3c !important;
+      }
+    </style>
     <span class="urgify-stock-alert__text"></span>
   </div>
 

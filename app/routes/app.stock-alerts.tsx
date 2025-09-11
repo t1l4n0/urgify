@@ -333,7 +333,7 @@ export default function StockAlertsSimple() {
         showOnlyBelowThreshold: showOnlyBelowThreshold.toString(),
         customThreshold,
       },
-      { method: "POST", encType: "application/x-www-form-urlencoded" }
+      { method: "POST", action: "/app/stock-alerts", encType: "application/x-www-form-urlencoded" }
     );
   }, [globalThreshold, lowStockMessage, isEnabled, fontSize, textColor, backgroundColor, stockCounterAnimation, stockCounterPosition, showForAllProducts, showBasedOnInventory, showOnlyBelowThreshold, customThreshold, fetcher]);
 

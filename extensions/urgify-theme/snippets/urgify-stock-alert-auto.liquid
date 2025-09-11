@@ -4,16 +4,17 @@
 {% endcomment %}
 
 {% liquid
-  assign enabled = shop.metafields.urgify.stock_alert_enabled
-  assign threshold = shop.metafields.urgify.global_threshold | default: 5
-  assign low_msg = shop.metafields.urgify.low_stock_message | default: 'Only {{qty}} left in stock!'
-  
-  assign font_size = shop.metafields.urgify.font_size | default: '18px'
-  assign text_color = shop.metafields.urgify.text_color | default: '#ffffff'
-  assign background_color = shop.metafields.urgify.background_color | default: '#e74c3c'
-  assign animation = shop.metafields.urgify.stock_counter_animation | default: 'pulse'
+  assign config = shop.metafields.urgify.stock_alert_config.value
+  assign enabled = config.stock_alert_enabled | default: shop.metafields.urgify.stock_alert_enabled
+  assign threshold = config.global_threshold | default: shop.metafields.urgify.global_threshold | default: 5
+  assign low_msg = config.low_stock_message | default: shop.metafields.urgify.low_stock_message | default: 'Only {{qty}} left in stock!'
+
+  assign font_size = config.font_size | default: shop.metafields.urgify.font_size | default: '18px'
+  assign text_color = config.text_color | default: shop.metafields.urgify.text_color | default: '#ffffff'
+  assign background_color = config.background_color | default: shop.metafields.urgify.background_color | default: '#e74c3c'
+  assign animation = config.stock_counter_animation | default: shop.metafields.urgify.stock_counter_animation | default: 'pulse'
   assign shake = 'disabled'
-  assign position = shop.metafields.urgify.stock_counter_position | default: 'above'
+  assign position = config.stock_counter_position | default: shop.metafields.urgify.stock_counter_position | default: 'above'
 
   assign tracks_inventory = false
   for v in product.variants
@@ -30,7 +31,7 @@
        data-threshold="{{ threshold | escape }}"
        data-low-message="{{ low_msg | escape }}"
        data-message="{{ low_msg | escape }}"
-       
+
        data-font-size="{{ font_size | escape }}"
        data-text-color="{{ text_color | escape }}"
        data-background-color="{{ background_color | escape }}"
@@ -49,6 +50,11 @@
     <span class="urgify-stock-alert__text"></span>
   </div>
 
+  {%- if config != blank -%}
+    <script>
+      window.__urgifyConfig = {{ config | json }};
+    </script>
+  {%- endif -%}
   <script type="application/json" id="urgify-variant-qty-auto">
   {
   {%- for v in product.variants -%}

@@ -38,7 +38,7 @@
   left: -2px;
   right: -2px;
   bottom: -2px;
-  background: linear-gradient(45deg, #ff6b35, #e74c3c, #c0392b, #ff6b35);
+  background: var(--urgify-bg, linear-gradient(45deg, #ff6b35, #e74c3c, #c0392b, #ff6b35));
   border-radius: 12px;
   z-index: -1;
   animation: borderGlow 3s linear infinite;

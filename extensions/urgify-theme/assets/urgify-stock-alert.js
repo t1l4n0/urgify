@@ -10,14 +10,18 @@
     if (!host) return;
 
     const blockId = host.id.includes('auto') ? 'auto' : host.id.split('-').pop();
-    const threshold = parseInt(host.dataset.threshold, 10) || 5;
-    const template = host.dataset.message || host.dataset.lowMessage || 'Only {{qty}} left in stock!';
-    const fontSize = host.dataset.fontSize || null;
-    const textColor = host.dataset.textColor || null;
-    const backgroundColor = host.dataset.backgroundColor || null;
-    const animation = host.dataset.animation || 'pulse';
+    const cfg = window.__urgifyConfig || {};
+    const threshold = parseInt(cfg.global_threshold || host.dataset.threshold, 10) || 5;
+    const template = cfg.low_stock_message || host.dataset.message || host.dataset.lowMessage || 'Only {{qty}} left in stock!';
+    const fontSize = cfg.font_size || host.dataset.fontSize || null;
+    const textColor = cfg.text_color || host.dataset.textColor || null;
+    const backgroundColor = cfg.background_color || host.dataset.backgroundColor || null;
+    const animation = cfg.stock_counter_animation || host.dataset.animation || 'pulse';
     const shake = host.dataset.shake || 'disabled';
     const tracksInventory = host.dataset.tracksInventory === 'true';
+    if (cfg.stock_counter_position && host.id === 'urgify-stock-alert-auto') {
+      host.dataset.position = cfg.stock_counter_position;
+    }
 
     // Varianten-Bestände aus dem Script-Tag lesen:
     let invMap = {};

@@ -1,8 +1,24 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
-import { useLoaderData, useFetcher } from "@remix-run/react";
+import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
-import { Card, Page, Layout, Text, Button, Banner, List, Badge, BlockStack, InlineStack, InlineGrid, Select, TextField, FormLayout, Form, Divider, Checkbox, Box, RadioButton, ChoiceList, Tabs, ButtonGroup, Toast, ContextualSaveBar, ColorPicker, Popover } from "@shopify/polaris";
-import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  Card,
+  Page,
+  Layout,
+  Text,
+  Banner,
+  List,
+  Badge,
+  BlockStack,
+  InlineStack,
+  Select,
+  TextField,
+  FormLayout,
+  Checkbox,
+  Toast,
+  ContextualSaveBar,
+} from "@shopify/polaris";
+import { useState, useCallback, useEffect } from "react";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -130,7 +146,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin, redirect } = await authenticate.admin(request);
+  const { admin } = await authenticate.admin(request);
 
   if (request.method !== "POST") {
     return json({ error: "Method not allowed" }, { status: 405 });
@@ -253,8 +269,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       throw new Error(`Failed to save metafields: ${userErrors[0]?.message || 'Unknown error'}`);
     }
 
-    // Wichtig im Embedded-Kontext: Redirect erzwingt Navigation und Revalidation
-    return redirect("/app/stock-alerts?saved=1");
+    return json({ success: true });
   } catch (error) {
     console.error("Error saving stock alert settings:", error);
     return json({
@@ -266,6 +281,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 export default function StockAlertsSimple() {
   const { settings, products, error } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
+  const revalidator = useRevalidator();
   
   // Simple state management
   const [globalThreshold, setGlobalThreshold] = useState(String(settings.global_threshold || 5));
@@ -343,9 +359,11 @@ export default function StockAlertsSimple() {
       setToastActive(true);
       const timer = setTimeout(() => setToastActive(false), 4000);
       setIsDirty(false);
+      revalidator.revalidate();
+      fetcher.reset();
       return () => clearTimeout(timer);
     }
-  }, [fetcher.state, fetcher.data]);
+  }, [fetcher, revalidator]);
 
   const getStockBadge = (inventory: number) => {
     const safeInventory = Number(inventory) || 0;

@@ -1,8 +1,8 @@
 import { authenticate } from "../shopify.server";
-import { ActionFunctionArgs } from "@remix-run/node";
+import type { ActionFunctionArgs } from "@remix-run/node";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { topic, shop, session, admin } = await authenticate.webhook(request);
+  const { topic } = await authenticate.webhook(request);
 
   if (!topic) {
     return new Response("Missing topic", { status: 400 });

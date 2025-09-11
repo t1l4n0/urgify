@@ -357,13 +357,8 @@ export default function StockAlertsSimple() {
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data?.success) {
       setToastActive(true);
-      const timer = setTimeout(() => setToastActive(false), 4000);
       setIsDirty(false);
       revalidator.revalidate();
-      fetcher.reset();
-      return () => clearTimeout(timer);
-    }
-  }, [fetcher, revalidator]);
 
   const getStockBadge = (inventory: number) => {
     const safeInventory = Number(inventory) || 0;

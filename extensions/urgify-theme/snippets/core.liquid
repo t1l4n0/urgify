@@ -4,13 +4,6 @@
 {% endcomment %}
 {% liquid
   assign config = shop.metafields.urgify.stock_alert_config.value
-%}
-
-<link rel="stylesheet" href="{{ 'urgify-stock-alert.css' | asset_url }}">
-{%- if config != blank -%}
-  <script>
-    window.__urgifyConfig = JSON.parse({{ config | json }});
-  </script>
 {%- endif -%}
 {% render 'urgify-stock-alert-auto' %}
 

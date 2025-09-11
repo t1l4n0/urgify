@@ -1,20 +1,6 @@
 {% liquid
   assign config = shop.metafields.urgify.stock_alert_config.value
-  assign threshold = 5
-  assign critical_threshold = 2
-  assign low_msg = 'Only {{qty}} left in stock!'
-  assign critical_msg = 'Hurry! Only {{qty}} remaining!'
-%}
 
-<div id="urgify-stock-alert-{{ block.id }}"
-     class="urgify-stock-alert"
-     hidden
-     data-threshold="{{ threshold | escape }}"
-     data-critical-threshold="{{ critical_threshold | escape }}"
-     data-low-message="{{ low_msg | escape }}"
-     data-critical-message="{{ critical_msg | escape }}">
-  <span class="urgify-stock-alert__text"></span>
-</div>
 
 {%- comment -%} Varianten-Bestände als JSON ausgeben {%- endcomment -%}
 <script type="application/json" id="urgify-variant-qty-{{ block.id }}">
@@ -25,10 +11,6 @@
 }
 </script>
 
-{%- if config != blank -%}
-  <script>
-    window.__urgifyConfig = JSON.parse({{ config | json }});
-  </script>
 {%- endif -%}
 <script src="{{ 'urgify-stock-alert.js' | asset_url }}" defer></script>
 

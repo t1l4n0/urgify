@@ -5,15 +5,6 @@
 
 {% liquid
   assign config = shop.metafields.urgify.stock_alert_config.value
-  assign threshold = 5
-  assign low_msg = 'Only {{qty}} left in stock!'
-
-  assign font_size = '18px'
-  assign text_color = '#ffffff'
-  assign background_color = '#e74c3c'
-  assign animation = 'pulse'
-  assign shake = 'disabled'
-  assign position = 'above'
 
   assign tracks_inventory = false
   for v in product.variants
@@ -24,32 +15,6 @@
   endfor
 %}
 
-<div id="urgify-stock-alert-auto" class="urgify-stock-alert" hidden
-     data-threshold="{{ threshold | escape }}"
-     data-low-message="{{ low_msg | escape }}"
-     data-message="{{ low_msg | escape }}"
-
-     data-font-size="{{ font_size | escape }}"
-     data-text-color="{{ text_color | escape }}"
-     data-background-color="{{ background_color | escape }}"
-     data-animation="{{ animation | escape }}"
-     data-shake="{{ shake | escape }}"
-     data-position="{{ position | escape }}"
-     data-tracks-inventory="{{ tracks_inventory }}">
-  <style>
-    #urgify-stock-alert-auto {
-      --urgify-font-size: {{ font_size | escape }};
-      --urgify-text-color: {{ text_color | escape }};
-      --urgify-bg: {{ background_color | escape }};
-      --urgify-border: {{ text_color | escape }};
-    }
-  </style>
-  <span class="urgify-stock-alert__text"></span>
-</div>
-
-{%- if config != blank -%}
-  <script>
-    window.__urgifyConfig = JSON.parse({{ config | json }});
   </script>
 {%- endif -%}
 <script type="application/json" id="urgify-variant-qty-auto">
@@ -60,5 +25,3 @@
 }
 </script>
 <script src="{{ 'urgify-stock-alert.js' | asset_url }}" defer></script>
-
-

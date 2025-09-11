@@ -1,6 +1,6 @@
 {% liquid
   assign config = shop.metafields.urgify.stock_alert_config.value
-
+%}
 
 {%- comment -%} Varianten-Bestände als JSON ausgeben {%- endcomment -%}
 <script type="application/json" id="urgify-variant-qty-{{ block.id }}">
@@ -10,8 +10,6 @@
 {%- endfor -%}
 }
 </script>
-
-{%- endif -%}
 <script src="{{ 'urgify-stock-alert.js' | asset_url }}" defer></script>
 
 {% schema %}

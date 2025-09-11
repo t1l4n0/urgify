@@ -359,6 +359,15 @@ export default function StockAlertsSimple() {
       setToastActive(true);
       setIsDirty(false);
       revalidator.revalidate();
+      
+      // Auto-hide toast after 3 seconds
+      const timer = setTimeout(() => {
+        setToastActive(false);
+      }, 3000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [fetcher.state, fetcher.data?.success, revalidator]);
 
   const getStockBadge = (inventory: number) => {
     const safeInventory = Number(inventory) || 0;

@@ -117,7 +117,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function TestMetafields() {
-  const { metafields, rawData, error } = useLoaderData<typeof loader>();
+  const { metafields, error } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const [testValue, setTestValue] = useState("");
 

@@ -11,6 +11,9 @@
 
     const blockId = host.id.includes('auto') ? 'auto' : host.id.split('-').pop();
     const cfg = window.__urgifyConfig || {};
+    if (cfg.stock_alert_enabled === false || cfg.stock_alert_enabled === 'false') {
+      return;
+    }
     const threshold = parseInt(cfg.global_threshold || host.dataset.threshold, 10) || 5;
     const template = cfg.low_stock_message || host.dataset.message || host.dataset.lowMessage || 'Only {{qty}} left in stock!';
     const fontSize = cfg.font_size || host.dataset.fontSize || null;

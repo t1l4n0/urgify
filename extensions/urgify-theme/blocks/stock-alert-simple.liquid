@@ -1,10 +1,10 @@
 {% liquid
   assign config = shop.metafields.urgify.stock_alert_config.value
-  assign enabled = config.stock_alert_enabled | default: shop.metafields.urgify.stock_alert_enabled
-  assign threshold = config.global_threshold | default: shop.metafields.urgify.stock_alert_threshold | default: 5
-  assign critical_threshold = config.critical_threshold | default: shop.metafields.urgify.stock_alert_critical_threshold | default: 2
-  assign low_msg = config.low_stock_message | default: shop.metafields.urgify.stock_alert_low_text | default: 'Only {{qty}} left in stock!'
-  assign critical_msg = config.critical_message | default: shop.metafields.urgify.stock_alert_critical_text | default: 'Hurry! Only {{qty}} remaining!'
+  assign enabled = shop.metafields.urgify.stock_alert_enabled
+  assign threshold = shop.metafields.urgify.stock_alert_threshold | default: 5
+  assign critical_threshold = shop.metafields.urgify.stock_alert_critical_threshold | default: 2
+  assign low_msg = shop.metafields.urgify.stock_alert_low_text | default: 'Only {{qty}} left in stock!'
+  assign critical_msg = shop.metafields.urgify.stock_alert_critical_text | default: 'Hurry! Only {{qty}} remaining!'
 %}
 
 {%- comment -%} Show block if enabled is true, or if no metafields are set yet (default to enabled) {%- endcomment -%}
@@ -30,7 +30,7 @@
 
   {%- if config != blank -%}
     <script>
-      window.__urgifyConfig = {{ config | json }};
+      window.__urgifyConfig = JSON.parse({{ config | json }});
     </script>
   {%- endif -%}
   <script src="{{ 'urgify-stock-alert.js' | asset_url }}" defer></script>

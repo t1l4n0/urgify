@@ -353,13 +353,18 @@ export default function StockAlertsSimple() {
     );
   }, [globalThreshold, lowStockMessage, isEnabled, fontSize, textColor, backgroundColor, stockCounterAnimation, stockCounterPosition, showForAllProducts, showBasedOnInventory, showOnlyBelowThreshold, customThreshold, fetcher]);
 
-  // Show success toast when save is successful
+  // Show success banner when save is successful
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data?.success) {
       setToastActive(true);
-      const timer = setTimeout(() => setToastActive(false), 4000);
       setIsDirty(false);
       revalidator.revalidate();
+      
+      // Auto-hide banner after 2.5 seconds
+      const timer = setTimeout(() => {
+        setToastActive(false);
+      }, 2500);
+      
       return () => clearTimeout(timer);
     }
   }, [fetcher.state, fetcher.data, revalidator]);
@@ -538,8 +543,9 @@ export default function StockAlertsSimple() {
       )}
       
       {toastActive && (
-        <Toast
-          content="Settings saved successfully!"
+        <Banner
+          title="Settings saved successfully!"
+          status="success"
           onDismiss={() => setToastActive(false)}
         />
       )}

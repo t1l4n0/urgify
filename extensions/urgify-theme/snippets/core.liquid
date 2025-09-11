@@ -3,11 +3,17 @@
   when enabled via Urgify settings. No manual block placement required.
 {% endcomment %}
 {% liquid
-  assign enabled = shop.metafields.urgify.stock_alert_enabled
+  assign config = shop.metafields.urgify.stock_alert_config.value
+  assign enabled = config.stock_alert_enabled | default: shop.metafields.urgify.stock_alert_enabled
 %}
 
 {%- if enabled == true or enabled == 'true' -%}
   <link rel="stylesheet" href="{{ 'urgify-stock-alert.css' | asset_url }}">
+  {%- if config != blank -%}
+    <script>
+      window.__urgifyConfig = {{ config | json }};
+    </script>
+  {%- endif -%}
   {% render 'urgify-stock-alert-auto' %}
 {%- endif -%}
 

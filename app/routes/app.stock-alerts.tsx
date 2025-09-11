@@ -1,8 +1,24 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
-import { Card, Page, Layout, Text, Button, Banner, List, Badge, BlockStack, InlineStack, InlineGrid, Select, TextField, FormLayout, Form, Divider, Checkbox, Box, RadioButton, ChoiceList, Tabs, ButtonGroup, Toast, ContextualSaveBar, ColorPicker, Popover } from "@shopify/polaris";
-import { useState, useCallback, useEffect, useRef } from "react";
+import {
+  Card,
+  Page,
+  Layout,
+  Text,
+  Banner,
+  List,
+  Badge,
+  BlockStack,
+  InlineStack,
+  Select,
+  TextField,
+  FormLayout,
+  Checkbox,
+  Toast,
+  ContextualSaveBar,
+} from "@shopify/polaris";
+import { useState, useCallback, useEffect } from "react";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);

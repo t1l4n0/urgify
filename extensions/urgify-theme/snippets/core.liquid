@@ -4,17 +4,14 @@
 {% endcomment %}
 {% liquid
   assign config = shop.metafields.urgify.stock_alert_config.value
-  assign enabled = shop.metafields.urgify.stock_alert_enabled
 %}
 
-{%- if enabled == true or enabled == 'true' -%}
-  <link rel="stylesheet" href="{{ 'urgify-stock-alert.css' | asset_url }}">
-  {%- if config != blank -%}
-    <script>
-      window.__urgifyConfig = JSON.parse({{ config | json }});
-    </script>
-  {%- endif -%}
-  {% render 'urgify-stock-alert-auto' %}
+<link rel="stylesheet" href="{{ 'urgify-stock-alert.css' | asset_url }}">
+{%- if config != blank -%}
+  <script>
+    window.__urgifyConfig = JSON.parse({{ config | json }});
+  </script>
 {%- endif -%}
+{% render 'urgify-stock-alert-auto' %}
 
 

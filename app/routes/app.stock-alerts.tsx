@@ -359,13 +359,6 @@ export default function StockAlertsSimple() {
       setToastActive(true);
       setIsDirty(false);
       revalidator.revalidate();
-      
-      // Auto-hide toast after 3 seconds
-      const timer = setTimeout(() => {
-        setToastActive(false);
-      }, 3000);
-      
-      return () => clearTimeout(timer);
     }
   }, [fetcher.state, fetcher.data?.success, revalidator]);
 
@@ -388,15 +381,27 @@ export default function StockAlertsSimple() {
     );
   }
 
+  const toastMarkup = toastActive ? (
+    <Toast
+      content="Settings saved successfully!"
+      duration={3000}
+      onDismiss={() => {
+        setToastActive(false);
+        fetcher.reset?.();
+      }}
+    />
+  ) : null;
+
   return (
-    <Page>
-      <Layout>
-        <Layout.Section>
-          <Card>
-            <BlockStack gap="400">
-              <Text variant="headingMd" as="h2">
-                Stock Alert Settings
-              </Text>
+    <Frame>
+      <Page>
+        <Layout>
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="400">
+                <Text variant="headingMd" as="h2">
+                  Stock Alert Settings
+                </Text>
               
               <FormLayout>
                 <Checkbox
@@ -542,12 +547,8 @@ export default function StockAlertsSimple() {
         />
       )}
       
-      {toastActive && (
-        <Toast
-          content="Settings saved successfully!"
-          onDismiss={() => setToastActive(false)}
-        />
-      )}
-    </Page>
+      </Page>
+      {toastMarkup}
+    </Frame>
   );
 }

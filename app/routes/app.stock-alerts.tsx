@@ -2,6 +2,7 @@ import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-r
 import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
 import {
+  Frame,
   Card,
   Page,
   Layout,

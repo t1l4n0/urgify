@@ -234,6 +234,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       custom_threshold: parseInt(customThreshold) || 100,
     };
 
+    // Speichere sowohl JSON-Metafield als auch individuelle Metafields für Liquid-Templates
     const metafields = [
       {
         ownerId: shopId,
@@ -241,6 +242,90 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         key: "stock_alert_config",
         value: JSON.stringify(settings),
         type: "json"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "stock_alert_enabled",
+        value: settings.stock_alert_enabled.toString(),
+        type: "boolean"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "global_threshold",
+        value: settings.global_threshold.toString(),
+        type: "number_integer"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "low_stock_message",
+        value: settings.low_stock_message,
+        type: "single_line_text_field"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "font_size",
+        value: settings.font_size,
+        type: "single_line_text_field"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "text_color",
+        value: settings.text_color,
+        type: "single_line_text_field"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "background_color",
+        value: settings.background_color,
+        type: "single_line_text_field"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "stock_counter_animation",
+        value: settings.stock_counter_animation,
+        type: "single_line_text_field"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "stock_counter_position",
+        value: settings.stock_counter_position,
+        type: "single_line_text_field"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "show_for_all_products",
+        value: settings.show_for_all_products.toString(),
+        type: "boolean"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "show_based_on_inventory",
+        value: settings.show_based_on_inventory.toString(),
+        type: "boolean"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "show_only_below_threshold",
+        value: settings.show_only_below_threshold.toString(),
+        type: "boolean"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "custom_threshold",
+        value: settings.custom_threshold.toString(),
+        type: "number_integer"
       }
     ];
 

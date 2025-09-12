@@ -1,5 +1,14 @@
 {% liquid
   assign config = shop.metafields.urgify.stock_alert_config.value
+  
+  assign enabled = shop.metafields.urgify.stock_alert_enabled
+  assign threshold = shop.metafields.urgify.global_threshold | default: 5
+  assign low_msg = shop.metafields.urgify.low_stock_message | default: 'Only {{qty}} left in stock!'
+  assign font_size = shop.metafields.urgify.font_size | default: '18px'
+  assign text_color = shop.metafields.urgify.text_color | default: '#ffffff'
+  assign background_color = shop.metafields.urgify.background_color | default: '#e74c3c'
+  assign animation = shop.metafields.urgify.stock_counter_animation | default: 'pulse'
+  assign position = shop.metafields.urgify.stock_counter_position | default: 'above'
 %}
 
 {%- comment -%} Varianten-Bestände als JSON ausgeben {%- endcomment -%}
@@ -10,6 +19,30 @@
 {%- endfor -%}
 }
 </script>
+
+{%- comment -%} Show block if enabled is true, or if no metafields are set yet (default to enabled) {%- endcomment -%}
+{%- if enabled == true or enabled == 'true' or enabled == blank -%}
+  <div id="urgify-stock-alert-{{ block.id }}"
+       class="urgify-stock-alert"
+       hidden
+       data-threshold="{{ threshold | escape }}"
+       data-low-message="{{ low_msg | escape }}"
+       data-font-size="{{ font_size | escape }}"
+       data-text-color="{{ text_color | escape }}"
+       data-background-color="{{ background_color | escape }}"
+       data-animation="{{ animation | escape }}"
+       data-position="{{ position | escape }}">
+    <style>
+      #urgify-stock-alert-{{ block.id }} {
+        background: {{ background_color | escape }} !important;
+        color: {{ text_color | escape }};
+        font-size: {{ font_size | escape }};
+      }
+    </style>
+    <span class="urgify-stock-alert__text"></span>
+  </div>
+{%- endif -%}
+
 <script src="{{ 'urgify-stock-alert.js' | asset_url }}" defer></script>
 
 {% schema %}

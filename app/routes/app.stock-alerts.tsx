@@ -19,7 +19,7 @@ import {
   Toast,
   ContextualSaveBar,
 } from "@shopify/polaris";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -300,6 +300,7 @@ export default function StockAlertsSimple() {
   
   const [isDirty, setIsDirty] = useState(false);
   const [toastActive, setToastActive] = useState(false);
+  const shownRef = useRef(false);        // Gate gegen erneutes Öffnen
 
   // Sobald der Loader neue Daten liefert, lokale Felder aktualisieren:
   useEffect(() => {
@@ -354,9 +355,16 @@ export default function StockAlertsSimple() {
     );
   }, [globalThreshold, lowStockMessage, isEnabled, fontSize, textColor, backgroundColor, stockCounterAnimation, stockCounterPosition, showForAllProducts, showBasedOnInventory, showOnlyBelowThreshold, customThreshold, fetcher]);
 
-  // Show success toast when save is successful
+  // Show success toast when save is successful (nur Rising-Edge)
   useEffect(() => {
-    if (fetcher.state === "idle" && fetcher.data?.success) {
+    // Bei neuem Submit/Reload Gate zurücksetzen
+    if (fetcher.state === "submitting" || fetcher.state === "loading") {
+      shownRef.current = false;
+      return;
+    }
+
+    if (fetcher.state === "idle" && fetcher.data?.success && !shownRef.current) {
+      shownRef.current = true;          // einmalig pro Erfolg
       setToastActive(true);
       setIsDirty(false);
       revalidator.revalidate();
@@ -384,12 +392,9 @@ export default function StockAlertsSimple() {
 
   const toastMarkup = toastActive ? (
     <Toast
-      content="Settings saved successfully!"
+      content={fetcher.data?.message ?? "Settings saved successfully!"}
       duration={3000}
-      onDismiss={() => {
-        setToastActive(false);
-        fetcher.reset?.();
-      }}
+      onDismiss={() => setToastActive(false)}
     />
   ) : null;
 

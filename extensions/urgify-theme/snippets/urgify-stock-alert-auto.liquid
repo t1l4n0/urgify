@@ -4,16 +4,18 @@
 {% endcomment %}
 
 {% liquid
-  assign config = shop.metafields.urgify.stock_alert_config.value
-
-  assign enabled = shop.metafields.urgify.stock_alert_enabled
-  assign threshold = shop.metafields.urgify.global_threshold | default: 5
-  assign low_msg = shop.metafields.urgify.low_stock_message | default: 'Only {{qty}} left in stock!'
-  assign font_size = shop.metafields.urgify.font_size | default: '18px'
-  assign text_color = shop.metafields.urgify.text_color | default: '#ffffff'
-  assign background_color = shop.metafields.urgify.background_color | default: '#e74c3c'
-  assign animation = shop.metafields.urgify.stock_counter_animation | default: 'pulse'
-  assign position = shop.metafields.urgify.stock_counter_position | default: 'above'
+  # JSON-Config laden (kann fehlen)
+  assign cfg_json = shop.metafields.urgify.stock_alert_config.value | default: '{}'
+  
+  # Einzel-Metafields → dann JSON → dann Default
+  assign enabled = shop.metafields.urgify.stock_alert_enabled.value | default: true
+  assign threshold = shop.metafields.urgify.global_threshold.value | default: 5
+  assign low_msg = shop.metafields.urgify.low_stock_message.value | default: 'Only {{qty}} left in stock!'
+  assign font_size = shop.metafields.urgify.font_size.value | default: '18px'
+  assign text_color = shop.metafields.urgify.text_color.value | default: '#ffffff'
+  assign background_color = shop.metafields.urgify.background_color.value | default: '#e74c3c'
+  assign animation = shop.metafields.urgify.stock_counter_animation.value | default: 'pulse'
+  assign position = shop.metafields.urgify.stock_counter_position.value | default: 'above'
 
   assign tracks_inventory = false
   for v in product.variants

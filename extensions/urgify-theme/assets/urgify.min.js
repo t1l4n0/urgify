@@ -17,7 +17,7 @@
       this.config = window.UrgifyCore?.config || {};
       this.initialized = false;
       
-      console.log("Urgify initialized with config:", this.config);
+      // Urgify initialized
     }
 
     /**
@@ -25,8 +25,6 @@
      */
     init() {
       if (this.initialized) return;
-      
-      console.log("Initializing Urgify blocks...");
       
       // Find and initialize all Urgify blocks
       const blocks = document.querySelectorAll('[data-urgify]');
@@ -36,7 +34,6 @@
       this.observeChanges();
       
       this.initialized = true;
-      console.log(`Urgify initialized ${blocks.length} blocks`);
     }
 
     /**
@@ -53,11 +50,8 @@
 
       // Prevent duplicate initialization
       if (this.blocks.has(blockId)) {
-        console.log(`Block ${blockId} already initialized`);
         return;
       }
-
-      console.log(`Initializing ${blockType} block: ${blockId}`);
 
       try {
         switch (blockType) {
@@ -90,22 +84,9 @@
      * Initialize Countdown Block
      */
     initCountdown(block) {
-      const startDate = block.dataset.startDate;
-      const endDate = block.dataset.endDate;
-      const mode = block.dataset.countdownMode || 'countdown_to_end';
-      
-      if (!startDate || !endDate) {
-        console.warn("Countdown block missing dates:", block);
-        return;
-      }
-
-      const countdown = new UrgifyCountdown(block, {
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        mode: mode
-      });
-      
-      countdown.start();
+      // The UrgifyCountdown constructor now handles everything automatically
+      // It reads settings from data-settings attribute and initializes itself
+      new UrgifyCountdown(block);
     }
 
     /**
@@ -203,82 +184,243 @@
   }
 
   /**
-   * Urgify Countdown Class
+   * Urgify Countdown Class - Enhanced with Countify functionality
    */
   class UrgifyCountdown {
     constructor(block, options) {
-      this.block = block;
-      this.options = options;
-      this.timer = null;
-      this.isActive = false;
-    }
-
-    start() {
-      if (this.isActive) return;
-      
-      this.isActive = true;
-      this.update();
-      this.timer = setInterval(() => this.update(), 1000);
-    }
-
-    stop() {
-      if (this.timer) {
-        clearInterval(this.timer);
-        this.timer = null;
-      }
-      this.isActive = false;
-    }
-
-    update() {
-      const now = new Date();
-      const { startDate, endDate, mode } = this.options;
-      
-      let targetDate, messageElement, showMessage;
-      
-      if (mode === 'countdown_to_start') {
-        targetDate = startDate;
-        messageElement = this.block.querySelector('.countdown-start-message');
-        showMessage = now < startDate;
-      } else {
-        targetDate = endDate;
-        messageElement = this.block.querySelector('.countdown-end-message');
-        showMessage = now < endDate;
-      }
-
-      if (now >= targetDate) {
-        this.showMessage(messageElement, showMessage);
-        this.stop();
+      if (!block || block.nodeType !== Node.ELEMENT_NODE) {
         return;
       }
 
-      const timeLeft = targetDate - now;
-      this.updateDisplay(timeLeft);
+      this.block = block;
+      this.settings = this.parseSettings();
+      this.countdownInterval = null;
+      this.isExpired = false;
+
+      this.init();
     }
 
-    updateDisplay(timeLeft) {
+    parseSettings() {
+      try {
+        const settingsStr = this.block.getAttribute('data-settings');
+        return settingsStr ? JSON.parse(settingsStr) : {};
+      } catch (e) {
+        console.error('Error parsing countdown settings:', e);
+        return {};
+      }
+    }
+
+    init() {
+      if (!this.settings.target_datetime) {
+        console.warn('No target datetime set for countdown');
+        return;
+      }
+      
+      this.setupCountdown();
+      this.updateCountdown();
+    }
+
+    setupCountdown() {
+      const countdownContainer = this.block.querySelector('.countdown-container');
+      if (!countdownContainer) {
+        console.warn('Countdown container not found');
+        return;
+      }
+
+      // Make countdown visible
+      countdownContainer.style.display = 'flex';
+      this.block.style.display = 'block';
+
+      this.countdownInterval = setInterval(() => {
+        this.updateCountdown();
+      }, 1000);
+    }
+
+    updateCountdown() {
+      const now = new Date();
+      const targetTime = this.settings.target_datetime ? new Date(this.settings.target_datetime) : null;
+
+      if (!targetTime || isNaN(targetTime.getTime())) {
+        this.stopCountdown();
+        return;
+      }
+
+      const timeLeft = targetTime - now;
+
+      if (timeLeft <= 0) {
+        this.handleExpired();
+        return;
+      }
+
+      this.isExpired = false;
+      this.calculateAndDisplayTime(timeLeft);
+    }
+
+    calculateAndDisplayTime(timeLeft) {
       const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
       const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
       const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
 
-      const elements = {
-        days: this.block.querySelector('.countdown-days'),
-        hours: this.block.querySelector('.countdown-hours'),
-        minutes: this.block.querySelector('.countdown-minutes'),
-        seconds: this.block.querySelector('.countdown-seconds')
-      };
-
-      Object.entries(elements).forEach(([unit, element]) => {
-        if (element) {
-          element.textContent = eval(unit).toString().padStart(2, '0');
-        }
-      });
+      // Update countdown display based on style
+      this.updateDisplay(days, hours, minutes, seconds);
     }
 
-    showMessage(messageElement, showMessage) {
-      if (messageElement && showMessage) {
-        messageElement.style.display = 'block';
+    updateDisplay(days, hours, minutes, seconds) {
+      const style = this.settings.countdown_style || 'digital';
+
+      switch (style) {
+        case 'digital':
+          this.updateDigitalDisplay(days, hours, minutes, seconds);
+          break;
+        case 'flip':
+          this.updateFlipDisplay(days, hours, minutes, seconds);
+          break;
+        case 'circular':
+          this.updateCircularDisplay(days, hours, minutes, seconds);
+          break;
+        case 'minimal':
+          this.updateMinimalDisplay(days, hours, minutes, seconds);
+          break;
+        default:
+          this.updateDigitalDisplay(days, hours, minutes, seconds);
       }
+    }
+
+    updateDigitalDisplay(days, hours, minutes, seconds) {
+      const blockId = this.block.id.replace('urgify-countdown-', '');
+      
+      const daysElement = this.block.querySelector('#days-' + blockId);
+      const hoursElement = this.block.querySelector('#hours-' + blockId);
+      const minutesElement = this.block.querySelector('#minutes-' + blockId);
+      const secondsElement = this.block.querySelector('#seconds-' + blockId);
+
+      if (daysElement && this.settings.show_days) daysElement.textContent = this.padZero(days);
+      if (hoursElement && this.settings.show_hours) hoursElement.textContent = this.padZero(hours);
+      if (minutesElement && this.settings.show_minutes) minutesElement.textContent = this.padZero(minutes);
+      if (secondsElement && this.settings.show_seconds) secondsElement.textContent = this.padZero(seconds);
+    }
+
+    updateFlipDisplay(days, hours, minutes, seconds) {
+      const blockId = this.block.id.replace('urgify-countdown-', '');
+      
+      // Update flip cards with animation
+      this.updateFlipCard('days', days, blockId);
+      this.updateFlipCard('hours', hours, blockId);
+      this.updateFlipCard('minutes', minutes, blockId);
+      this.updateFlipCard('seconds', seconds, blockId);
+    }
+
+    updateFlipCard(type, newValue, blockId) {
+      const flipCard = this.block.querySelector(`[data-${type}="${blockId}"]`)?.closest('.flip-card');
+      if (!flipCard) return;
+
+      const frontElement = flipCard.querySelector(`#${type}-${blockId}`);
+      const backElement = flipCard.querySelector(`#${type}-${blockId}-back`);
+      
+      if (!frontElement || !backElement) return;
+
+      const currentValue = frontElement.textContent;
+      const newValueStr = this.padZero(newValue);
+
+      // Only flip if value actually changed
+      if (currentValue !== newValueStr) {
+        // Check if card is currently flipped
+        const isFlipped = flipCard.classList.contains('flipped');
+        
+        if (isFlipped) {
+          // Card is on back side, update front and flip back
+          frontElement.textContent = newValueStr;
+          flipCard.classList.remove('flipped');
+        } else {
+          // Card is on front side, update back and flip forward
+          backElement.textContent = newValueStr;
+          flipCard.classList.add('flipped');
+        }
+      }
+    }
+
+    updateCircularDisplay(days, hours, minutes, seconds) {
+      const blockId = this.block.id.replace('urgify-countdown-', '');
+      
+      // Update text values
+      const daysElement = this.block.querySelector('#days-' + blockId);
+      const hoursElement = this.block.querySelector('#hours-' + blockId);
+      const minutesElement = this.block.querySelector('#minutes-' + blockId);
+      const secondsElement = this.block.querySelector('#seconds-' + blockId);
+
+      if (daysElement && this.settings.show_days) daysElement.textContent = this.padZero(days);
+      if (hoursElement && this.settings.show_hours) hoursElement.textContent = this.padZero(hours);
+      if (minutesElement && this.settings.show_minutes) minutesElement.textContent = this.padZero(minutes);
+      if (secondsElement && this.settings.show_seconds) secondsElement.textContent = this.padZero(seconds);
+
+      // Update circular progress bars
+      this.updateCircularProgress('days', days, 365, blockId);
+      this.updateCircularProgress('hours', hours, 24, blockId);
+      this.updateCircularProgress('minutes', minutes, 60, blockId);
+      this.updateCircularProgress('seconds', seconds, 60, blockId);
+    }
+
+    updateCircularProgress(type, current, total, blockId) {
+      const progressBar = this.block.querySelector(`[data-${type}="${blockId}"]`);
+      if (!progressBar) return;
+
+      const radius = 52;
+      const circumference = 2 * Math.PI * radius;
+      const progress = current / total;
+      const offset = circumference - (progress * circumference);
+
+      progressBar.style.strokeDasharray = circumference;
+      progressBar.style.strokeDashoffset = offset;
+    }
+
+    updateMinimalDisplay(days, hours, minutes, seconds) {
+      const blockId = this.block.id.replace('urgify-countdown-', '');
+      
+      const daysElement = this.block.querySelector('#days-' + blockId);
+      const hoursElement = this.block.querySelector('#hours-' + blockId);
+      const minutesElement = this.block.querySelector('#minutes-' + blockId);
+      const secondsElement = this.block.querySelector('#seconds-' + blockId);
+
+      if (daysElement && this.settings.show_days) daysElement.textContent = this.padZero(days);
+      if (hoursElement && this.settings.show_hours) hoursElement.textContent = this.padZero(hours);
+      if (minutesElement && this.settings.show_minutes) minutesElement.textContent = this.padZero(minutes);
+      if (secondsElement && this.settings.show_seconds) secondsElement.textContent = this.padZero(seconds);
+    }
+
+    padZero(num) {
+      return num.toString().padStart(2, '0');
+    }
+
+    handleExpired() {
+      if (this.isExpired) return;
+      
+      this.isExpired = true;
+      this.stopCountdown();
+
+      const countdownContainer = this.block.querySelector('.countdown-container');
+      if (countdownContainer) {
+        countdownContainer.innerHTML = this.settings.expired_message || 'Time\'s up!';
+        countdownContainer.classList.add('expired');
+      }
+
+      // Trigger custom event
+      const event = new CustomEvent('urgify:countdown:expired', {
+        detail: { block: this.block, settings: this.settings }
+      });
+      document.dispatchEvent(event);
+    }
+
+    stopCountdown() {
+      if (this.countdownInterval) {
+        clearInterval(this.countdownInterval);
+        this.countdownInterval = null;
+      }
+    }
+
+    // Public method to manually stop countdown
+    destroy() {
+      this.stopCountdown();
     }
   }
 
@@ -404,7 +546,6 @@
     }
 
     init() {
-      console.log("Limited Offer block initialized");
       // Implementation for limited offer functionality
     }
   }
@@ -437,6 +578,7 @@
     }
   }
 
+
   // Initialize Urgify
   window.Urgify = new Urgify();
   
@@ -448,5 +590,13 @@
   } else {
     window.Urgify.init();
   }
+
+  // Re-initialize when theme sections are loaded (for theme editor)
+  document.addEventListener('shopify:section:load', (event) => {
+    const countdownBlocks = event.target.querySelectorAll('[data-urgify="countdown"]');
+    countdownBlocks.forEach(block => {
+      new UrgifyCountdown(block);
+    });
+  });
 
 })();

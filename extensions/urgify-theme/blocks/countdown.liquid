@@ -1,49 +1,821 @@
-<div id="countdown-urgify-{{ block.id }}" 
-     class="urgify-countdown" 
+{% comment %}
+  Urgify Countdown Block - Enhanced with Countify functionality
+  Advanced countdown timer with multiple styles and customization options
+{% endcomment %}
+
+{% liquid
+  assign target_datetime = block.settings.end_datetime
+  
+  if target_datetime contains ' '
+    assign target_timestamp = target_datetime | append: ':00'
+  else
+    assign target_timestamp = target_datetime | append: 'T00:00:00'
+  endif
+  
+  assign now = 'now' | date: '%s'
+  assign target_seconds = target_timestamp | date: '%s'
+  
+  assign is_expired = false
+  if target_seconds != blank and now > target_seconds
+    assign is_expired = true
+  endif
+%}
+
+<style>
+.urgify-countdown {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.urgify-countdown.hidden {
+  display: none !important;
+}
+
+/* Countdown Container */
+.countdown-container {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+  padding: 20px;
+  background: {{ block.settings.background_color | default: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)' }};
+  border-radius: {{ block.settings.border_radius | default: '12' }}px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  text-align: {{ block.settings.content_alignment | default: 'center' }};
+  color: {{ block.settings.font_color | default: 'white' }};
+}
+
+/* Color Themes - Applied to countdown container */
+.countdown-container.countdown-theme-primary {
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%) !important;
+}
+
+.countdown-container.countdown-theme-primary .countdown-value,
+.countdown-container.countdown-theme-primary .flip-value,
+.countdown-container.countdown-theme-primary .circular-value,
+.countdown-container.countdown-theme-primary .minimal-value {
+  color: white !important;
+}
+
+.countdown-container.countdown-theme-primary .countdown-label,
+.countdown-container.countdown-theme-primary .flip-label,
+.countdown-container.countdown-theme-primary .circular-label,
+.countdown-container.countdown-theme-primary .minimal-label {
+  color: white !important;
+}
+
+.countdown-container.countdown-theme-primary .countdown-unit,
+.countdown-container.countdown-theme-primary .flip-card-front,
+.countdown-container.countdown-theme-primary .flip-card-back {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.countdown-container.countdown-theme-primary .circular-progress-bar {
+  stroke: white !important;
+}
+
+.countdown-container.countdown-theme-success {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+}
+
+.countdown-container.countdown-theme-success .countdown-value,
+.countdown-container.countdown-theme-success .flip-value,
+.countdown-container.countdown-theme-success .circular-value,
+.countdown-container.countdown-theme-success .minimal-value {
+  color: white !important;
+}
+
+.countdown-container.countdown-theme-success .countdown-label,
+.countdown-container.countdown-theme-success .flip-label,
+.countdown-container.countdown-theme-success .circular-label,
+.countdown-container.countdown-theme-success .minimal-label {
+  color: white !important;
+}
+
+.countdown-container.countdown-theme-success .countdown-unit,
+.countdown-container.countdown-theme-success .flip-card-front,
+.countdown-container.countdown-theme-success .flip-card-back {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.countdown-container.countdown-theme-success .circular-progress-bar {
+  stroke: white !important;
+}
+
+.countdown-container.countdown-theme-warning {
+  background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%) !important;
+}
+
+.countdown-container.countdown-theme-warning .countdown-value,
+.countdown-container.countdown-theme-warning .flip-value,
+.countdown-container.countdown-theme-warning .circular-value,
+.countdown-container.countdown-theme-warning .minimal-value {
+  color: white !important;
+}
+
+.countdown-container.countdown-theme-warning .countdown-label,
+.countdown-container.countdown-theme-warning .flip-label,
+.countdown-container.countdown-theme-warning .circular-label,
+.countdown-container.countdown-theme-warning .minimal-label {
+  color: white !important;
+}
+
+.countdown-container.countdown-theme-warning .countdown-unit,
+.countdown-container.countdown-theme-warning .flip-card-front,
+.countdown-container.countdown-theme-warning .flip-card-back {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.countdown-container.countdown-theme-warning .circular-progress-bar {
+  stroke: white !important;
+}
+
+.countdown-container.countdown-theme-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%) !important;
+}
+
+.countdown-container.countdown-theme-danger .countdown-value,
+.countdown-container.countdown-theme-danger .flip-value,
+.countdown-container.countdown-theme-danger .circular-value,
+.countdown-container.countdown-theme-danger .minimal-value {
+  color: white !important;
+}
+
+.countdown-container.countdown-theme-danger .countdown-label,
+.countdown-container.countdown-theme-danger .flip-label,
+.countdown-container.countdown-theme-danger .circular-label,
+.countdown-container.countdown-theme-danger .minimal-label {
+  color: white !important;
+}
+
+.countdown-container.countdown-theme-danger .countdown-unit,
+.countdown-container.countdown-theme-danger .flip-card-front,
+.countdown-container.countdown-theme-danger .flip-card-back {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.countdown-container.countdown-theme-danger .circular-progress-bar {
+  stroke: white !important;
+}
+
+.countdown-container.countdown-theme-custom {
+  {% if block.settings.background_color != blank %}
+    background-color: {{ block.settings.background_color | color_to_hex }} !important;
+  {% else %}
+    background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%) !important;
+  {% endif %}
+  {% if block.settings.font_color != blank %}
+    color: {{ block.settings.font_color | color_to_hex }} !important;
+  {% else %}
+    color: white !important;
+  {% endif %}
+}
+
+/* Custom theme colors for countdown elements */
+.countdown-theme-custom .countdown-value,
+.countdown-theme-custom .flip-value,
+.countdown-theme-custom .circular-value,
+.countdown-theme-custom .minimal-value {
+  {% if block.settings.value_color != blank %}
+    color: {{ block.settings.value_color | color_to_hex }} !important;
+  {% else %}
+    color: white !important;
+  {% endif %}
+}
+
+.countdown-theme-custom .countdown-label,
+.countdown-theme-custom .flip-label,
+.countdown-theme-custom .circular-label,
+.countdown-theme-custom .minimal-label {
+  {% if block.settings.label_color != blank %}
+    color: {{ block.settings.label_color | color_to_hex }} !important;
+  {% else %}
+    color: white !important;
+  {% endif %}
+}
+
+.countdown-theme-custom .countdown-unit,
+.countdown-theme-custom .flip-card-front,
+.countdown-theme-custom .flip-card-back {
+  {% if block.settings.unit_background_color != blank %}
+    background: {{ block.settings.unit_background_color | color_to_hex }} !important;
+  {% else %}
+    background: rgba(255, 255, 255, 0.2) !important;
+  {% endif %}
+  {% if block.settings.unit_border_color != blank %}
+    border-color: {{ block.settings.unit_border_color | color_to_hex }} !important;
+  {% else %}
+    border-color: rgba(255, 255, 255, 0.3) !important;
+  {% endif %}
+}
+
+.countdown-theme-custom .circular-progress-bar {
+  {% if block.settings.progress_color != blank %}
+    stroke: {{ block.settings.progress_color | color_to_hex }} !important;
+  {% else %}
+    stroke: white !important;
+  {% endif %}
+}
+
+/* Animations */
+.countdown-container.pulse {
+  animation: countdownPulse 2s infinite;
+}
+
+.countdown-container.fadeInUp {
+  animation: countdownFadeInUp 1s ease-out;
+}
+
+.countdown-container.slideIn {
+  animation: countdownSlideIn 0.8s ease-out;
+}
+
+@keyframes countdownPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes countdownFadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes countdownSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.countdown-container.expired {
+  background: {{ block.settings.expired_background_color | default: 'rgba(255, 0, 0, 0.1)' }};
+  color: {{ block.settings.expired_text_color | default: '#d32f2f' }};
+  font-weight: bold;
+}
+
+/* Digital Style */
+.countdown-digital {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 80px;
+  padding: 20px;
+  background: {{ block.settings.unit_background_color | default: 'rgba(255, 255, 255, 0.15)' }};
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 2px solid {{ block.settings.unit_border_color | default: 'rgba(255, 255, 255, 0.2)' }};
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.countdown-unit::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+}
+
+.countdown-value {
+  font-size: {{ block.settings.value_font_size | default: '2.8' }}rem;
+  font-weight: 900;
+  color: {{ block.settings.value_color | default: 'white' }};
+  line-height: 1;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 255, 255, 0.1);
+  letter-spacing: 2px;
+}
+
+.countdown-label {
+  font-size: {{ block.settings.label_font_size | default: '0.875' }}rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 8px;
+  opacity: 0.9;
+  font-weight: 500;
+  color: {{ block.settings.label_color | default: 'white' }};
+}
+
+/* Flip Card Style */
+.countdown-flip {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.flip-card {
+  position: relative;
+  width: 90px;
+  height: 120px;
+  perspective: 1200px;
+  cursor: pointer;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.flip-card:hover .flip-card-inner {
+  transform: rotateY(15deg);
+}
+
+.flip-card.flipped .flip-card-inner {
+  transform: rotateY(180deg);
+}
+
+.flip-card-front, .flip-card-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(145deg, {{ block.settings.unit_background_color | default: 'rgba(255, 255, 255, 0.25)' }}, {{ block.settings.unit_background_color | default: 'rgba(255, 255, 255, 0.1)' }});
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid {{ block.settings.unit_border_color | default: 'rgba(255, 255, 255, 0.3)' }};
+  overflow: hidden;
+}
+
+.flip-card-front::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.6s;
+}
+
+.flip-card:hover .flip-card-front::before {
+  transform: translateX(100%);
+}
+
+.flip-card-back {
+  transform: rotateY(180deg);
+  background: linear-gradient(145deg, {{ block.settings.unit_background_color | default: 'rgba(255, 255, 255, 0.25)' }}, {{ block.settings.unit_background_color | default: 'rgba(255, 255, 255, 0.1)' }});
+  box-shadow: 
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid {{ block.settings.unit_border_color | default: 'rgba(255, 255, 255, 0.3)' }};
+}
+
+.flip-value {
+  font-size: {{ block.settings.value_font_size | default: '2.2' }}rem;
+  font-weight: 800;
+  color: {{ block.settings.value_color | default: 'white' }};
+  line-height: 1;
+  font-family: 'Arial Black', sans-serif;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 255, 255, 0.2);
+  letter-spacing: 1px;
+  position: relative;
+  z-index: 2;
+}
+
+.flip-label {
+  font-size: {{ block.settings.label_font_size | default: '0.75' }}rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 5px;
+  opacity: 0.9;
+  color: {{ block.settings.label_color | default: 'white' }};
+}
+
+/* Circular Style */
+.countdown-circular {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.circular-progress {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.circular-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.circular-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 8;
+}
+
+.circular-progress-bar {
+  fill: none;
+  stroke: {{ block.settings.progress_color | default: 'white' }};
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 0;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 1s ease-in-out;
+}
+
+.circular-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.circular-value {
+  font-size: {{ block.settings.value_font_size | default: '1.5' }}rem;
+  font-weight: bold;
+  color: {{ block.settings.value_color | default: 'white' }};
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.circular-label {
+  font-size: {{ block.settings.label_font_size | default: '0.75' }}rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 5px;
+  opacity: 0.9;
+  color: {{ block.settings.label_color | default: 'white' }};
+}
+
+/* Minimal Style */
+.countdown-minimal {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.minimal-unit {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.minimal-value {
+  font-size: {{ block.settings.value_font_size | default: '1.5' }}rem;
+  font-weight: bold;
+  color: {{ block.settings.value_color | default: 'white' }};
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.minimal-label {
+  font-size: {{ block.settings.label_font_size | default: '0.875' }}rem;
+  opacity: 0.9;
+  color: {{ block.settings.label_color | default: 'white' }};
+}
+
+.minimal-separator {
+  font-size: 1.2rem;
+  opacity: 0.7;
+  margin: 0 5px;
+  color: {{ block.settings.value_color | default: 'white' }};
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .countdown-digital {
+    gap: 15px;
+  }
+  
+  .countdown-unit {
+    min-width: 60px;
+    padding: 12px;
+  }
+  
+  .countdown-value {
+    font-size: {{ block.settings.value_font_size | default: '2' }}rem;
+  }
+  
+  .flip-card {
+    width: 70px;
+    height: 90px;
+  }
+  
+  .flip-value {
+    font-size: {{ block.settings.value_font_size | default: '1.5' }}rem;
+  }
+  
+  .circular-progress {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .circular-value {
+    font-size: {{ block.settings.value_font_size | default: '1.25' }}rem;
+  }
+  
+  .minimal-value {
+    font-size: {{ block.settings.value_font_size | default: '1.25' }}rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .countdown-container {
+    padding: 15px;
+  }
+  
+  .countdown-digital {
+    gap: 10px;
+  }
+  
+  .countdown-unit {
+    min-width: 55px;
+    padding: 10px;
+  }
+  
+  .countdown-value {
+    font-size: {{ block.settings.value_font_size | default: '1.5' }}rem;
+  }
+  
+  .flip-card {
+    width: 60px;
+    height: 80px;
+  }
+  
+  .flip-value {
+    font-size: {{ block.settings.value_font_size | default: '1.25' }}rem;
+  }
+  
+  .circular-progress {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .circular-value {
+    font-size: {{ block.settings.value_font_size | default: '1' }}rem;
+  }
+  
+  .minimal-value {
+    font-size: {{ block.settings.value_font_size | default: '1' }}rem;
+  }
+}
+</style>
+
+<div id="urgify-countdown-{{ block.id }}"
+     class="urgify-countdown countdown-theme-{{ block.settings.color_theme | default: 'primary' }}"
      data-urgify="countdown"
      data-block-id="{{ block.id }}"
-     data-start-date="{{ block.settings.start_datetime }}"
-     data-end-date="{{ block.settings.end_datetime }}"
-     data-countdown-mode="{{ block.settings.countdown_mode | default: 'countdown_to_end' }}"
-     data-settings='{{ block.settings | json | escape }}'
-     style="background: {{ block.settings.background_color | default: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)' }}; color: {{ block.settings.font_color | default: 'white' }};">
+     data-settings='{
+       "target_datetime": "{{ target_timestamp }}",
+       "countdown_style": "{{ block.settings.countdown_style | default: 'digital' }}",
+       "show_days": {{ block.settings.show_days | default: true }},
+       "show_hours": {{ block.settings.show_hours | default: true }},
+       "show_minutes": {{ block.settings.show_minutes | default: true }},
+       "show_seconds": {{ block.settings.show_seconds | default: true }},
+       "expired_message": "{{ block.settings.expired_message | default: 'Time is up!' | escape }}",
+       "animation": "{{ block.settings.animation | default: 'none' }}"
+     }'
+     style="display:block;">
 
-  {% assign alignment = block.settings.content_alignment | default: 'center' %}
-
-  <div class="align-{{ alignment }}">
-    <div class="urgify-countdown-unit">
-      <div class="urgify-countdown-number countdown-days">00</div>
-      <div class="urgify-countdown-label">Days</div>
+{% if request.design_mode %}
+<div style="padding: 20px; border: 2px dashed #ff6b35; border-radius: 8px; background: rgba(255, 107, 53, 0.05); margin: 20px 0;">
+  <div style="color: #ff6b35; font-weight: bold; margin-bottom: 10px;">Urgify Countdown</div>
+  <div style="color: #666; font-size: 14px;">
+    {% if block.settings.end_datetime %}
+      Target: {{ block.settings.end_datetime }}
+    {% else %}
+      No target date set
+    {% endif %}
     </div>
-    
-    <div class="urgify-countdown-unit">
-      <div class="urgify-countdown-number countdown-hours">00</div>
-      <div class="urgify-countdown-label">Hours</div>
+  <div style="color: #666; font-size: 14px; margin-top: 5px;">
+    Style: {{ block.settings.countdown_style | default: 'digital' | capitalize }}
     </div>
-    
-    <div class="urgify-countdown-unit">
-      <div class="urgify-countdown-number countdown-minutes">00</div>
-      <div class="urgify-countdown-label">Minutes</div>
-    </div>
-    
-    <div class="urgify-countdown-unit">
-      <div class="urgify-countdown-number countdown-seconds">00</div>
-      <div class="urgify-countdown-label">Seconds</div>
-    </div>
+  {% if block.settings.color_theme == 'custom' %}
+  <div style="color: #666; font-size: 14px; margin-top: 5px;">
+    Background: {{ block.settings.background_color | default: 'Not set' }}
   </div>
-
-  {% if block.settings.show_start_message %}
-    <div class="urgify-countdown-message countdown-start-message" style="display: none;">
-      {{ block.settings.start_message_text | default: 'Starting soon!' }}
+  <div style="color: #666; font-size: 14px;">
+    Font: {{ block.settings.font_color | default: 'Not set' }}
+  </div>
+  {% endif %}
     </div>
   {% endif %}
 
-  {% if block.settings.show_end_message %}
-    <div class="urgify-countdown-message countdown-end-message" style="display: none;">
-      {{ block.settings.end_message_text | default: 'Time is up!' }}
+  <div class="countdown-container countdown-{{ block.settings.countdown_style | default: 'digital' }} countdown-theme-{{ block.settings.color_theme | default: 'primary' }} {{ block.settings.animation | default: 'none' }}">
+    {% if block.settings.countdown_style == 'digital' %}
+      <div class="countdown-digital">
+        {% if block.settings.show_days %}
+          <div class="countdown-unit">
+            <div id="days-{{ block.id }}" class="countdown-value">00</div>
+            <div class="countdown-label">Days</div>
+          </div>
+        {% endif %}
+        {% if block.settings.show_hours %}
+          <div class="countdown-unit">
+            <div id="hours-{{ block.id }}" class="countdown-value">00</div>
+            <div class="countdown-label">Hours</div>
+          </div>
+        {% endif %}
+        {% if block.settings.show_minutes %}
+          <div class="countdown-unit">
+            <div id="minutes-{{ block.id }}" class="countdown-value">00</div>
+            <div class="countdown-label">Min</div>
+          </div>
+        {% endif %}
+        {% if block.settings.show_seconds %}
+          <div class="countdown-unit">
+            <div id="seconds-{{ block.id }}" class="countdown-value">00</div>
+            <div class="countdown-label">Sec</div>
+          </div>
+        {% endif %}
+      </div>
+    {% elsif block.settings.countdown_style == 'flip' %}
+      <div class="countdown-flip">
+        {% if block.settings.show_days %}
+          <div class="flip-card" data-days="{{ block.id }}">
+            <div class="flip-card-inner">
+              <div class="flip-card-front">
+                <div id="days-{{ block.id }}" class="flip-value">00</div>
+                <div class="flip-label">Days</div>
+              </div>
+              <div class="flip-card-back">
+                <div id="days-{{ block.id }}-back" class="flip-value">00</div>
+                <div class="flip-label">Days</div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+        {% if block.settings.show_hours %}
+          <div class="flip-card" data-hours="{{ block.id }}">
+            <div class="flip-card-inner">
+              <div class="flip-card-front">
+                <div id="hours-{{ block.id }}" class="flip-value">00</div>
+                <div class="flip-label">Hours</div>
+              </div>
+              <div class="flip-card-back">
+                <div id="hours-{{ block.id }}-back" class="flip-value">00</div>
+                <div class="flip-label">Hours</div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+        {% if block.settings.show_minutes %}
+          <div class="flip-card" data-minutes="{{ block.id }}">
+            <div class="flip-card-inner">
+              <div class="flip-card-front">
+                <div id="minutes-{{ block.id }}" class="flip-value">00</div>
+                <div class="flip-label">Min</div>
+              </div>
+              <div class="flip-card-back">
+                <div id="minutes-{{ block.id }}-back" class="flip-value">00</div>
+                <div class="flip-label">Min</div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+        {% if block.settings.show_seconds %}
+          <div class="flip-card" data-seconds="{{ block.id }}">
+            <div class="flip-card-inner">
+              <div class="flip-card-front">
+                <div id="seconds-{{ block.id }}" class="flip-value">00</div>
+                <div class="flip-label">Sec</div>
+              </div>
+              <div class="flip-card-back">
+                <div id="seconds-{{ block.id }}-back" class="flip-value">00</div>
+                <div class="flip-label">Sec</div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    {% elsif block.settings.countdown_style == 'circular' %}
+      <div class="countdown-circular">
+        {% if block.settings.show_days %}
+          <div class="circular-progress">
+            <svg class="circular-svg">
+              <circle class="circular-bg" cx="60" cy="60" r="52"></circle>
+              <circle class="circular-progress-bar" cx="60" cy="60" r="52" data-days="{{ block.id }}"></circle>
+            </svg>
+            <div class="circular-content">
+              <div id="days-{{ block.id }}" class="circular-value">00</div>
+              <div class="circular-label">Days</div>
+            </div>
+          </div>
+        {% endif %}
+        {% if block.settings.show_hours %}
+          <div class="circular-progress">
+            <svg class="circular-svg">
+              <circle class="circular-bg" cx="60" cy="60" r="52"></circle>
+              <circle class="circular-progress-bar" cx="60" cy="60" r="52" data-hours="{{ block.id }}"></circle>
+            </svg>
+            <div class="circular-content">
+              <div id="hours-{{ block.id }}" class="circular-value">00</div>
+              <div class="circular-label">Hours</div>
+            </div>
+          </div>
+        {% endif %}
+        {% if block.settings.show_minutes %}
+          <div class="circular-progress">
+            <svg class="circular-svg">
+              <circle class="circular-bg" cx="60" cy="60" r="52"></circle>
+              <circle class="circular-progress-bar" cx="60" cy="60" r="52" data-minutes="{{ block.id }}"></circle>
+            </svg>
+            <div class="circular-content">
+              <div id="minutes-{{ block.id }}" class="circular-value">00</div>
+              <div class="circular-label">Min</div>
+            </div>
+          </div>
+        {% endif %}
+        {% if block.settings.show_seconds %}
+          <div class="circular-progress">
+            <svg class="circular-svg">
+              <circle class="circular-bg" cx="60" cy="60" r="52"></circle>
+              <circle class="circular-progress-bar" cx="60" cy="60" r="52" data-seconds="{{ block.id }}"></circle>
+            </svg>
+            <div class="circular-content">
+              <div id="seconds-{{ block.id }}" class="circular-value">00</div>
+              <div class="circular-label">Sec</div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    {% elsif block.settings.countdown_style == 'minimal' %}
+      <div class="countdown-minimal">
+        {% if block.settings.show_days %}
+          <div class="minimal-unit">
+            <div id="days-{{ block.id }}" class="minimal-value">00</div>
+            <div class="minimal-label">d</div>
+          </div>
+          {% if block.settings.show_hours or block.settings.show_minutes or block.settings.show_seconds %}
+            <div class="minimal-separator">:</div>
+          {% endif %}
+        {% endif %}
+        {% if block.settings.show_hours %}
+          <div class="minimal-unit">
+            <div id="hours-{{ block.id }}" class="minimal-value">00</div>
+            <div class="minimal-label">h</div>
+          </div>
+          {% if block.settings.show_minutes or block.settings.show_seconds %}
+            <div class="minimal-separator">:</div>
+          {% endif %}
+        {% endif %}
+        {% if block.settings.show_minutes %}
+          <div class="minimal-unit">
+            <div id="minutes-{{ block.id }}" class="minimal-value">00</div>
+            <div class="minimal-label">m</div>
+          </div>
+          {% if block.settings.show_seconds %}
+            <div class="minimal-separator">:</div>
+          {% endif %}
+        {% endif %}
+        {% if block.settings.show_seconds %}
+          <div class="minimal-unit">
+            <div id="seconds-{{ block.id }}" class="minimal-value">00</div>
+            <div class="minimal-label">s</div>
+          </div>
+        {% endif %}
     </div>
   {% endif %}
 </div>
+</div>
+
+<script src="{{ 'urgify.min.js' | asset_url }}" defer></script>
 
 {% schema %}
 {
@@ -52,96 +824,213 @@
   "settings": [
     {
       "type": "header",
-      "content": "Urgify – Countdown Configuration",
+      "content": "⏰ Countdown Settings",
       "info": "Create urgency with countdown timers for sales, launches, and limited offers."
-    },
-    {
-      "type": "header",
-      "content": "Date & Time Settings"
-    },
-    {
-      "type": "text",
-      "id": "start_datetime",
-      "label": "Start Date & Time",
-      "info": "Format: YYYY-MM-DD HH:MM (e.g., 2024-12-25 10:00)"
     },
     {
       "type": "text",
       "id": "end_datetime",
-      "label": "End Date & Time",
-      "info": "Format: YYYY-MM-DD HH:MM (e.g., 2024-12-31 23:59)"
+      "label": "Target Date & Time",
+      "placeholder": "2024-12-31 23:59",
+      "info": "The date and time when the countdown should end (Format: YYYY-MM-DD HH:MM)"
+    },
+    {
+      "type": "text",
+      "id": "expired_message",
+      "label": "Expired Message",
+      "default": "Time's up!",
+      "info": "Message shown when countdown expires"
+    },
+    {
+      "type": "header",
+      "content": "🎨 Style Settings"
     },
     {
       "type": "select",
-      "id": "countdown_mode",
-      "label": "Countdown Mode",
+      "id": "countdown_style",
+      "label": "Countdown Style",
       "options": [
-        {"value": "countdown_to_start", "label": "Countdown to Start"},
-        {"value": "countdown_to_end", "label": "Countdown to End"}
+        { "value": "digital", "label": "Digital Clock" },
+        { "value": "flip", "label": "Flip Cards" },
+        { "value": "circular", "label": "Circular Progress" },
+        { "value": "minimal", "label": "Minimal" }
       ],
-      "default": "countdown_to_end",
-      "info": "Whether to count down to the start or end time"
+      "default": "digital"
+    },
+    {
+      "type": "select",
+      "id": "color_theme",
+      "label": "Color Theme",
+      "options": [
+        { "value": "primary", "label": "Primary" },
+        { "value": "success", "label": "Success" },
+        { "value": "warning", "label": "Warning" },
+        { "value": "danger", "label": "Danger" },
+        { "value": "custom", "label": "Custom" }
+      ],
+      "default": "primary"
+    },
+    {
+      "type": "select",
+      "id": "content_alignment",
+      "label": "Text Alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "animation",
+      "label": "Animation",
+      "options": [
+        { "value": "none", "label": "None" },
+        { "value": "pulse", "label": "Pulse" },
+        { "value": "fadeInUp", "label": "Fade In Up" },
+        { "value": "slideIn", "label": "Slide In" }
+      ],
+      "default": "none"
     },
     {
       "type": "header",
-      "content": "Messages"
+      "content": "📊 Display Options"
     },
     {
       "type": "checkbox",
-      "id": "show_start_message",
-      "label": "Show Message When Countdown Starts",
-      "default": true,
-      "info": "Display a message when the countdown reaches the start time"
-    },
-    {
-      "type": "text",
-      "id": "start_message_text",
-      "label": "Start Message Text",
-      "default": "Starting soon!",
-      "info": "Message to show when countdown starts"
+      "id": "show_days",
+      "label": "Show Days",
+      "default": true
     },
     {
       "type": "checkbox",
-      "id": "show_end_message",
-      "label": "Show Message When Countdown Ends",
-      "default": true,
-      "info": "Display a message when the countdown reaches the end time"
+      "id": "show_hours",
+      "label": "Show Hours",
+      "default": true
     },
     {
-      "type": "text",
-      "id": "end_message_text",
-      "label": "End Message Text",
-      "default": "Time is up!",
-      "info": "Message to show when countdown ends"
+      "type": "checkbox",
+      "id": "show_minutes",
+      "label": "Show Minutes",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_seconds",
+      "label": "Show Seconds",
+      "default": true
     },
     {
       "type": "header",
-      "content": "Colors & Alignment"
-    },
-    {
-      "type": "color",
-      "id": "font_color",
-      "label": "Font Color",
-      "default": "#ffffff",
-      "info": "Sets color for text and numbers"
+      "content": "🎨 Custom Colors"
     },
     {
       "type": "color",
       "id": "background_color",
       "label": "Background Color",
       "default": "#ff6b35",
-      "info": "Sets background for the entire block"
+      "alpha": false,
+      "info": "Main background color for the countdown"
     },
     {
-      "type": "select",
-      "id": "content_alignment",
-      "label": "Content Alignment",
-      "options": [
-        {"value": "left", "label": "Left"},
-        {"value": "center", "label": "Center"},
-        {"value": "right", "label": "Right"}
-      ],
-      "default": "center"
+      "type": "color",
+      "id": "font_color",
+      "label": "Font Color",
+      "default": "#ffffff",
+      "alpha": false,
+      "info": "Sets color for text and numbers"
+    },
+    {
+      "type": "color",
+      "id": "value_color",
+      "label": "Value Color",
+      "default": "#ffffff",
+      "alpha": false,
+      "info": "Color for countdown numbers"
+    },
+    {
+      "type": "color",
+      "id": "label_color",
+      "label": "Label Color",
+      "default": "#ffffff",
+      "alpha": false,
+      "info": "Color for countdown labels (Days, Hours, etc.)"
+    },
+    {
+      "type": "color",
+      "id": "unit_background_color",
+      "label": "Unit Background Color",
+      "default": "#ffffff",
+      "alpha": false,
+      "info": "Background color for individual countdown units"
+    },
+    {
+      "type": "color",
+      "id": "unit_border_color",
+      "label": "Unit Border Color",
+      "default": "#ffffff",
+      "alpha": false,
+      "info": "Border color for individual countdown units"
+    },
+    {
+      "type": "color",
+      "id": "progress_color",
+      "label": "Progress Color (Circular)",
+      "default": "#ffffff",
+      "alpha": false,
+      "info": "Color for circular progress bars"
+    },
+    {
+      "type": "color",
+      "id": "expired_background_color",
+      "label": "Expired Background Color",
+      "default": "rgba(255, 0, 0, 0.1)",
+      "info": "Background color when countdown expires"
+    },
+    {
+      "type": "color",
+      "id": "expired_text_color",
+      "label": "Expired Text Color",
+      "default": "#d32f2f",
+      "info": "Text color when countdown expires"
+    },
+    {
+      "type": "header",
+      "content": "📏 Typography"
+    },
+    {
+      "type": "range",
+      "id": "value_font_size",
+      "label": "Value Font Size",
+      "min": 1,
+      "max": 4,
+      "step": 0.1,
+      "default": 2.5,
+      "unit": "rem",
+      "info": "Size of countdown numbers"
+    },
+    {
+      "type": "range",
+      "id": "label_font_size",
+      "label": "Label Font Size",
+      "min": 0.5,
+      "max": 1.5,
+      "step": 0.1,
+      "default": 0.9,
+      "unit": "rem",
+      "info": "Size of countdown labels"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Border Radius",
+      "min": 0,
+      "max": 30,
+      "step": 1,
+      "default": 12,
+      "unit": "px",
+      "info": "Roundness of countdown container corners"
     }
   ]
 }

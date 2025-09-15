@@ -1,124 +1,912 @@
-<div id="limited-offer-urgify-{{ block.id }}" 
-     class="urgify-limited-offer" 
-     data-urgify="limited-offer"
-     data-block-id="{{ block.id }}"
-     style="background: {{ block.settings.background_color | default: 'linear-gradient(135deg, #dc3545 0%, #e74c3c 100%)' }}; color: {{ block.settings.font_color | default: 'white' }};">
+{% comment %}
+  Urgify Limited Offer Block
+  Displays a spectacular limited-time offer with countdown timer
+{% endcomment %}
 
-  {% assign alignment = block.settings.content_alignment | default: 'center' %}
-  
-  <div class="align-{{ alignment }}">
-    {% if block.settings.show_badge %}
+<div class="urgify-limited-offer offer-style-{{ block.settings.offer_style | default: 'brutalist' }}" 
+     data-urgify="limited-offer" 
+     data-block-id="{{ block.id }}"
+     data-end-date="{{ block.settings.end_date }}"
+     style="
+       {% if block.settings.text_align != blank %}
+         text-align: {{ block.settings.text_align }};
+       {% endif %}
+     ">
+
+  <!-- Background Elements -->
+  <div class="offer-bg-elements">
+    <div class="sparkle"></div>
+    <div class="sparkle"></div>
+    <div class="sparkle"></div>
+    <div class="pulse-ring"></div>
+    <div class="pulse-ring"></div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="offer-content">
+    {% if block.settings.badge_text != blank %}
       <div class="offer-badge">
-        {{ block.settings.badge_text | default: 'Limited Time Offer' }}
+        <span class="badge-icon">⚡</span>
+        {{ block.settings.badge_text }}
       </div>
     {% endif %}
-    
+
     {% if block.settings.title != blank %}
-      <div class="offer-title">
-        {{ block.settings.title }}
-      </div>
+      <h2 class="offer-title">
+        <span class="title-highlight">{{ block.settings.title }}</span>
+        <div class="title-underline"></div>
+      </h2>
     {% endif %}
-    
+
     {% if block.settings.description != blank %}
-      <div class="offer-description">
-        {{ block.settings.description }}
-      </div>
+      <p class="offer-description">{{ block.settings.description }}</p>
     {% endif %}
-    
+
     {% if block.settings.show_timer %}
       <div class="offer-timer">
-        {{ block.settings.timer_text | default: 'Hurry! Limited time only!' }}
+        <span class="timer-icon">⏰</span>
+        <span class="timer-text">{{ block.settings.timer_text | default: 'Offer ends in:' }}</span>
+        <div class="timer-countdown" id="urgify-timer-{{ block.id }}"></div>
+      </div>
+    {% endif %}
+
+    {% if block.settings.button_text != blank %}
+      <div class="offer-button-container">
+        <a href="{{ block.settings.button_url | default: '#' }}" 
+           class="offer-button offer-button-{{ block.settings.offer_style | default: 'spectacular' }}"
+           {% if block.settings.button_target_blank %}target="_blank"{% endif %}>
+          <span class="button-text">{{ block.settings.button_text }}</span>
+          {% if block.settings.button_icon != blank %}
+            <span class="button-icon">{{ block.settings.button_icon }}</span>
+          {% endif %}
+        </a>
       </div>
     {% endif %}
   </div>
+
+  <!-- Border Animation -->
+  <div class="offer-border-animation"></div>
 </div>
+
+<style>
+/* Base Styles */
+.urgify-limited-offer {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  padding: 40px 30px;
+  margin: 20px 0;
+  text-align: center;
+}
+
+/* Background Elements */
+.offer-bg-elements {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: sparkleFloat 3s infinite ease-in-out;
+}
+
+.sparkle:nth-child(1) {
+  top: 20%;
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.sparkle:nth-child(2) {
+  top: 60%;
+  right: 20%;
+  animation-delay: 1s;
+}
+
+.sparkle:nth-child(3) {
+  bottom: 30%;
+  left: 60%;
+  animation-delay: 2s;
+}
+
+.pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px;
+  height: 100px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: pulseRing 2s infinite;
+}
+
+.pulse-ring:nth-child(4) {
+  animation-delay: 0s;
+}
+
+.pulse-ring:nth-child(5) {
+  animation-delay: 1s;
+  width: 150px;
+  height: 150px;
+}
+
+/* Content */
+.offer-content {
+  position: relative;
+  z-index: 2;
+}
+
+.offer-badge {
+  display: inline-block;
+  padding: 10px 20px;
+  margin-bottom: 20px;
+  border-radius: 25px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: badgeBounce 2s infinite;
+}
+
+.badge-icon {
+  margin-right: 8px;
+  font-size: 1.1rem;
+}
+
+.offer-title {
+  margin: 20px 0;
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.title-highlight {
+  position: relative;
+  display: inline-block;
+  animation: titleShimmer 3s infinite;
+}
+
+.title-underline {
+  height: 4px;
+  width: 100px;
+  margin: 10px auto;
+  border-radius: 2px;
+  animation: titleUnderline 2s infinite;
+}
+
+.offer-description {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin: 20px 0;
+  opacity: 0.9;
+}
+
+.offer-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 25px;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 1rem;
+  animation: timerPulse 2s infinite;
+}
+
+.timer-icon {
+  font-size: 1.2rem;
+  animation: timerTick 1s infinite;
+}
+
+.timer-text {
+  font-weight: 500;
+}
+
+.timer-countdown {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.offer-border-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff6b6b);
+  background-size: 400% 400%;
+  animation: borderRotate 3s linear infinite;
+  z-index: -1;
+}
+
+.offer-border-animation::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  background: inherit;
+  border-radius: inherit;
+}
+
+/* Spectacular Style (Default) */
+.offer-style-spectacular {
+  position: relative;
+  padding: 50px 40px;
+  text-align: center;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%);
+  animation: spectacularPulse 2s infinite, spectacularShimmer 3s infinite;
+}
+
+.offer-style-spectacular .offer-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 25px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  backdrop-filter: blur(10px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  animation: badgeBounce 2s infinite;
+}
+
+.offer-style-spectacular .offer-title {
+  color: white;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  font-weight: 800;
+  font-size: 3rem;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin: 20px 0;
+  animation: titleShimmer 3s infinite;
+}
+
+.offer-style-spectacular .offer-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.2rem;
+  line-height: 1.6;
+  margin: 20px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.offer-style-spectacular .offer-timer {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  backdrop-filter: blur(10px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  animation: timerPulse 2s infinite;
+}
+
+/* Brutalist Bold Style */
+.offer-style-brutalist {
+  background: #000000;
+  border: 8px solid #ff0000;
+  border-radius: 0;
+  box-shadow: 
+    8px 8px 0px #ff0000,
+    16px 16px 0px #ffff00,
+    24px 24px 0px #00ff00;
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  position: relative;
+  overflow: visible;
+}
+
+.offer-style-brutalist .offer-badge {
+  background: #ff0000;
+  color: #000000;
+  border: 4px solid #ffff00;
+  border-radius: 0;
+  font-family: 'Impact', sans-serif;
+  font-weight: 900;
+  font-size: 1.2rem;
+  letter-spacing: 4px;
+  padding: 15px 25px;
+  text-transform: uppercase;
+  box-shadow: 4px 4px 0px #ffff00;
+  position: relative;
+  z-index: 2;
+}
+
+.offer-style-brutalist .offer-title {
+  color: #ffff00;
+  text-shadow: 4px 4px 0px #ff0000;
+  font-family: 'Impact', sans-serif;
+  font-weight: 900;
+  font-size: 4rem;
+  text-transform: uppercase;
+  letter-spacing: 5px;
+  line-height: 0.9;
+  margin: 20px 0;
+}
+
+.offer-style-brutalist .offer-description {
+  font-family: 'Impact', sans-serif;
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 1.3rem;
+  line-height: 1.2;
+  text-shadow: 2px 2px 0px #ff0000;
+}
+
+.offer-style-brutalist .offer-timer {
+  background: #ffff00;
+  color: #000000;
+  border: 4px solid #ff0000;
+  border-radius: 0;
+  font-family: 'Impact', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 1.1rem;
+  padding: 15px 30px;
+  box-shadow: 4px 4px 0px #ff0000;
+  position: relative;
+  z-index: 2;
+}
+
+/* Glassmorphism Style */
+.offer-style-glassmorphism {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 20px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  font-family: 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  font-weight: 300;
+  position: relative;
+  overflow: hidden;
+}
+
+.offer-style-glassmorphism::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    rgba(255, 255, 255, 0.05) 50%, 
+    rgba(255, 255, 255, 0.1) 100%);
+  pointer-events: none;
+}
+
+.offer-style-glassmorphism .offer-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50px;
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  backdrop-filter: blur(10px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.offer-style-glassmorphism .offer-title {
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 300;
+  font-size: 3.5rem;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  margin: 20px 0;
+}
+
+.offer-style-glassmorphism .offer-description {
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.2rem;
+  line-height: 1.5;
+  letter-spacing: 0.3px;
+}
+
+.offer-style-glassmorphism .offer-timer {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50px;
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  backdrop-filter: blur(10px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Neumorphism Style */
+.offer-style-neumorphism {
+  background: #e0e5ec;
+  border: none;
+  border-radius: 30px;
+  box-shadow: 
+    20px 20px 60px #bebebe,
+    -20px -20px 60px #ffffff,
+    inset 0 0 0 rgba(255, 255, 255, 0.1);
+  font-family: 'Poppins', 'Arial', sans-serif;
+  font-weight: 500;
+  position: relative;
+}
+
+.offer-style-neumorphism .offer-badge {
+  background: #e0e5ec;
+  color: #4a5568;
+  border: none;
+  border-radius: 20px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  box-shadow: 
+    8px 8px 16px #bebebe,
+    -8px -8px 16px #ffffff;
+  text-transform: uppercase;
+}
+
+.offer-style-neumorphism .offer-title {
+  color: #2d3748;
+  text-shadow: none;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 3rem;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin: 20px 0;
+}
+
+.offer-style-neumorphism .offer-description {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  color: #4a5568;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  letter-spacing: 0.2px;
+}
+
+.offer-style-neumorphism .offer-timer {
+  background: #e0e5ec;
+  color: #2d3748;
+  border: none;
+  border-radius: 25px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  padding: 15px 30px;
+  box-shadow: 
+    inset 8px 8px 16px #bebebe,
+    inset -8px -8px 16px #ffffff;
+  text-transform: uppercase;
+}
+
+/* Button Styles */
+.offer-button-container {
+  margin-top: 30px;
+  position: relative;
+  z-index: 2;
+}
+
+.offer-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 30px;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.offer-button:hover {
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+
+.offer-button:active {
+  transform: translateY(0);
+}
+
+.button-text {
+  position: relative;
+  z-index: 2;
+}
+
+.button-icon {
+  font-size: 1.2rem;
+  position: relative;
+  z-index: 2;
+}
+
+/* Spectacular Button */
+.offer-button-spectacular {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.offer-button-spectacular:hover {
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+}
+
+/* Brutalist Button */
+.offer-button-brutalist {
+  background: #ffff00;
+  color: #000000;
+  border: 4px solid #ff0000;
+  border-radius: 0;
+  box-shadow: 4px 4px 0px #ff0000;
+  font-family: 'Impact', sans-serif;
+  font-weight: 900;
+  letter-spacing: 3px;
+}
+
+.offer-button-brutalist:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 0px #ff0000;
+}
+
+/* Glassmorphism Button */
+.offer-button-glassmorphism {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.offer-button-glassmorphism:hover {
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+}
+
+/* Neumorphism Button */
+.offer-button-neumorphism {
+  background: #e0e5ec;
+  color: #2d3748;
+  border: none;
+  box-shadow: 
+    8px 8px 16px #bebebe,
+    -8px -8px 16px #ffffff;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.offer-button-neumorphism:hover {
+  box-shadow: 
+    12px 12px 24px #bebebe,
+    -12px -12px 24px #ffffff;
+}
+
+.offer-button-neumorphism:active {
+  box-shadow: 
+    inset 8px 8px 16px #bebebe,
+    inset -8px -8px 16px #ffffff;
+}
+
+/* Spectacular Animations */
+@keyframes spectacularPulse {
+  0%, 100% { 
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% { 
+    box-shadow: 
+      0 30px 60px rgba(220, 53, 69, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes spectacularShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Animations */
+@keyframes sparkleFloat {
+  0%, 100% { 
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.7;
+  }
+  50% { 
+    transform: translateY(-20px) rotate(180deg);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseRing {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
+@keyframes badgeBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes titleShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes titleUnderline {
+  0%, 100% { width: 100px; }
+  50% { width: 200px; }
+}
+
+@keyframes timerPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes timerTick {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(10deg); }
+}
+
+@keyframes borderRotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .urgify-limited-offer {
+    padding: 30px 20px;
+  }
+  
+  .offer-title {
+    font-size: 2rem;
+  }
+  
+  .offer-style-brutalist .offer-title {
+    font-size: 2.5rem;
+  }
+  
+  .offer-style-glassmorphism .offer-title {
+    font-size: 2.5rem;
+  }
+  
+  .offer-style-neumorphism .offer-title {
+    font-size: 2.2rem;
+  }
+  
+  .offer-timer {
+    flex-direction: column;
+    gap: 5px;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const offerBlocks = document.querySelectorAll('[data-urgify="limited-offer"]');
+  
+  offerBlocks.forEach(block => {
+    const blockId = block.dataset.blockId;
+    const timerElement = block.querySelector('.timer-countdown');
+    const endDateString = block.dataset.endDate;
+    
+    if (timerElement && endDateString) {
+      // Parse the end date - handle different formats
+      let endDate;
+      if (endDateString.includes('T')) {
+        // Format: YYYY-MM-DDTHH:MM
+        endDate = new Date(endDateString).getTime();
+      } else {
+        // Format: YYYY-MM-DD HH:MM
+        endDate = new Date(endDateString.replace(' ', 'T')).getTime();
+      }
+      
+      // Check if date is valid
+      if (isNaN(endDate)) {
+        timerElement.innerHTML = 'Invalid Date';
+        return;
+      }
+      
+      function updateTimer() {
+        const now = new Date().getTime();
+        const timeLeft = endDate - now;
+        
+        if (timeLeft > 0) {
+          const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+          
+          timerElement.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+        } else {
+          timerElement.innerHTML = 'Offer Expired';
+        }
+      }
+      
+      updateTimer();
+      setInterval(updateTimer, 1000);
+    }
+  });
+});
+</script>
 
 {% schema %}
 {
-  "name": "Urgify – Limited Offer",
+  "name": "Urgify Limited Offer",
   "target": "section",
   "settings": [
-    {
-      "type": "header",
-      "content": "Urgify – Limited Offer Configuration",
-      "info": "Create urgency with limited time offers and special deals."
-    },
     {
       "type": "header",
       "content": "Content"
     },
     {
       "type": "text",
+      "id": "badge_text",
+      "label": "Badge Text",
+      "default": "LIMITED TIME OFFER"
+    },
+    {
+      "type": "text",
       "id": "title",
-      "label": "Offer Title",
-      "default": "Special Offer",
-      "info": "Main headline for the offer"
+      "label": "Title",
+      "default": "Special Discount"
     },
     {
       "type": "textarea",
       "id": "description",
-      "label": "Offer Description",
-      "default": "Don't miss out on this amazing deal!",
-      "info": "Description text for the offer"
-    },
-    {
-      "type": "header",
-      "content": "Badge"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_badge",
-      "label": "Show Badge",
-      "default": true,
-      "info": "Display a badge above the title"
-    },
-    {
-      "type": "text",
-      "id": "badge_text",
-      "label": "Badge Text",
-      "default": "Limited Time Offer",
-      "info": "Text to display in the badge"
-    },
-    {
-      "type": "header",
-      "content": "Timer"
+      "label": "Description",
+      "default": "Don't miss out on this amazing deal! Limited time only."
     },
     {
       "type": "checkbox",
       "id": "show_timer",
-      "label": "Show Timer Text",
-      "default": true,
-      "info": "Display urgency timer text"
+      "label": "Show Countdown Timer",
+      "default": true
     },
     {
       "type": "text",
       "id": "timer_text",
       "label": "Timer Text",
-      "default": "Hurry! Limited time only!",
-      "info": "Text to display for urgency"
+      "default": "Offer ends in:"
+    },
+    {
+      "type": "text",
+      "id": "end_date",
+      "label": "End Date & Time",
+      "info": "When the offer expires (YYYY-MM-DD HH:MM format, e.g. 2025-12-31 23:59)"
     },
     {
       "type": "header",
-      "content": "Colors & Alignment"
+      "content": "Call-to-Action Button"
     },
     {
-      "type": "color",
-      "id": "font_color",
-      "label": "Font Color",
-      "default": "#ffffff",
-      "info": "Sets color for text"
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "Shop Now"
     },
     {
-      "type": "color",
-      "id": "background_color",
-      "label": "Background Color",
-      "default": "#dc3545",
-      "info": "Sets background for the entire block"
+      "type": "url",
+      "id": "button_url",
+      "label": "Button Link",
+      "info": "Where the button should link to"
     },
     {
       "type": "select",
-      "id": "content_alignment",
-      "label": "Content Alignment",
+      "id": "button_icon",
+      "label": "Button Icon",
+      "options": [
+        {"value": "", "label": "No Icon"},
+        {"value": "→", "label": "Arrow Right (→)"},
+        {"value": "🛒", "label": "Shopping Cart (🛒)"},
+        {"value": "💎", "label": "Diamond (💎)"},
+        {"value": "⚡", "label": "Lightning (⚡)"},
+        {"value": "🔥", "label": "Fire (🔥)"},
+        {"value": "⭐", "label": "Star (⭐)"},
+        {"value": "🎯", "label": "Target (🎯)"},
+        {"value": "💫", "label": "Dizzy Star (💫)"},
+        {"value": "🚀", "label": "Rocket (🚀)"},
+        {"value": "✨", "label": "Sparkles (✨)"},
+        {"value": "💝", "label": "Gift (💝)"},
+        {"value": "🏆", "label": "Trophy (🏆)"},
+        {"value": "💰", "label": "Money Bag (💰)"},
+        {"value": "🎉", "label": "Party (🎉)"},
+        {"value": "❤️", "label": "Heart (❤️)"},
+        {"value": "👑", "label": "Crown (👑)"},
+        {"value": "🎁", "label": "Present (🎁)"},
+        {"value": "💯", "label": "Hundred (💯)"},
+        {"value": "🔔", "label": "Bell (🔔)"}
+      ],
+      "default": "→",
+      "info": "Choose an icon for the button"
+    },
+    {
+      "type": "checkbox",
+      "id": "button_target_blank",
+      "label": "Open in New Tab",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Style"
+    },
+    {
+      "type": "select",
+      "id": "offer_style",
+      "label": "Offer Style",
+      "options": [
+        {"value": "spectacular", "label": "Spectacular (Animated)"},
+        {"value": "brutalist", "label": "Brutalist Bold"},
+        {"value": "glassmorphism", "label": "Glassmorphism"},
+        {"value": "neumorphism", "label": "Neumorphism"}
+      ],
+      "default": "spectacular",
+      "info": "Choose the visual style for your offer block"
+    },
+    {
+      "type": "header",
+      "content": "Alignment"
+    },
+    {
+      "type": "select",
+      "id": "text_align",
+      "label": "Text Alignment",
       "options": [
         {"value": "left", "label": "Left"},
         {"value": "center", "label": "Center"},

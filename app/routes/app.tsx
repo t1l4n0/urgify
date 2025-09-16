@@ -15,6 +15,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
 
   let hasActiveSub = false;
+  let isAppEmbeddingEnabled = false;
+  
   try {
     const response = await admin.graphql(`#graphql
       query {
@@ -32,7 +34,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     hasActiveSub = false;
   }
 
-  return { apiKey: process.env.SHOPIFY_API_KEY || "", shop: session.shop, hasActiveSub };
+  // App embedding is managed through Theme Editor, always show as enabled
+  isAppEmbeddingEnabled = true;
+
+  return { 
+    apiKey: process.env.SHOPIFY_API_KEY || "", 
+    shop: session.shop, 
+    hasActiveSub,
+    isAppEmbeddingEnabled
+  };
 };
 
 export default function App() {

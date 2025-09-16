@@ -17,6 +17,16 @@ export default async function handleRequest(
   remixContext: EntryContext
 ) {
   addDocumentResponseHeaders(request, responseHeaders);
+  
+  // Override CSP to allow embedding in Shopify Admin
+  responseHeaders.set(
+    "Content-Security-Policy",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com; style-src 'self' 'unsafe-inline' https://cdn.shopify.com; img-src 'self' data: https:; font-src 'self' https://cdn.shopify.com; connect-src 'self' https://*.shopify.com; frame-ancestors https://admin.shopify.com https://*.myshopify.com https://*.shopify.com;"
+  );
+  
+  // Remove X-Frame-Options to allow embedding
+  responseHeaders.delete("X-Frame-Options");
+  
   const userAgent = request.headers.get("user-agent");
   const callbackName = isbot(userAgent ?? '')
     ? "onAllReady"

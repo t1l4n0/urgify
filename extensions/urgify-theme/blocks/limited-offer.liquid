@@ -50,7 +50,7 @@
       </div>
     {% endif %}
 
-    {% if block.settings.button_text != blank %}
+    {% if block.settings.show_button and block.settings.button_text != blank %}
       <div class="offer-button-container">
         <a href="{{ block.settings.button_url | default: '#' }}" 
            class="offer-button offer-button-{{ block.settings.offer_style | default: 'spectacular' }}"
@@ -788,7 +788,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 {% schema %}
 {
-  "name": "Urgify Limited Offer",
+  "name": "Urgify – Limited Offer",
   "target": "section",
   "settings": [
     {
@@ -834,6 +834,13 @@ document.addEventListener('DOMContentLoaded', function() {
     {
       "type": "header",
       "content": "Call-to-Action Button"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_button",
+      "label": "Show Button",
+      "default": true,
+      "info": "Enable or disable the call-to-action button"
     },
     {
       "type": "text",

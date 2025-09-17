@@ -6,6 +6,10 @@
 
 {% render 'core' %}
 
+<!-- Self-reporting: Ping the app when embed is loaded (no CORS issues) -->
+<img src="https://urgify.fly.dev/api/embed-activated?shop={{ shop.permanent_domain | url_encode }}&theme_id={{ theme.id }}&t={{ 'now' | date: '%s' }}"
+     alt="" width="1" height="1" style="position:absolute;left:-9999px;top:-9999px" loading="eager">
+
 {% schema %}
 {
   "name": "Urgify",

@@ -11,45 +11,56 @@ function asMyshopifyHost(input: string) {
   return `${handle.toLowerCase()}.myshopify.com`;
 }
 
-async function getOfflineToken(shop: string) {
-  const id = `offline_${shop}`;
-  const sess = await shopify.sessionStorage.loadSession(id);
-  return sess?.accessToken ?? null;
-}
-
-async function getMainThemeId(shop: string, token: string): Promise<number> {
-  const r = await fetch(`https://${shop}/admin/api/2025-01/themes.json`, {
-    headers: { "X-Shopify-Access-Token": token },
-  });
-  if (!r.ok) throw new Error(`themes.json ${r.status}`);
-  const { themes } = await r.json();
-  const main = themes.find((t: any) => t.role === "main");
-  if (!main) throw new Error("No main theme");
-  return main.id as number;
-}
-
 export async function loader({ request }: LoaderFunctionArgs) {
   const u = new URL(request.url);
   const shopParam = u.searchParams.get("shop");
-  if (!shopParam) return redirect("/auth?reason=missing_shop");
+  // optional: erlaubtes manuelles Übersteuern – gut fürs Debuggen:
+  const forceThemeId = u.searchParams.get("theme_id");
 
-  const shop = asMyshopifyHost(shopParam);
-
-  // 1) OFFLINE-Token laden (ohne Auth-Redirects)
-  const token = await getOfflineToken(shop);
-  if (!token) {
-    // Shop hat (noch) keinen Offline-Token gespeichert -> sauber re-autorisieren
-    return redirect(`/auth?shop=${shop}&reason=no_offline_token`);
+  if (!shopParam) {
+    return redirect("/auth?reason=missing_shop");
   }
 
-  // 2) Aktive Theme-ID ermitteln und **darauf** verlinken
-  const mainId = await getMainThemeId(shop, token);
-  const url =
-    `https://${shop}/admin/themes/${mainId}/editor` +
-    `?context=apps` +
-    `&activateAppId=${APP_API_KEY}/${EMBED_HANDLE}` +
-    `&appEmbed=${APP_API_KEY}/${EMBED_HANDLE}`;
+  const shop = asMyshopifyHost(shopParam);
+  const deepLinkValue = `${APP_API_KEY}/${EMBED_HANDLE}`;
+  const q = encodeURIComponent(deepLinkValue);
+
+  // 1) wenn theme_id mitgegeben wurde → direkt benutzen (kein API-Call)
+  if (forceThemeId) {
+    const url = `https://${shop}/admin/themes/${forceThemeId}/editor?context=apps&activateAppId=${q}&appEmbed=${q}`;
+    return redirect(url, { headers: { "Cache-Control": "no-store" } });
+  }
+
+  // 2) versuche die aktive Theme-ID via Admin API zu ermitteln
+  let mainId: string | null = null;
+  try {
+    const offlineId = `offline_${shop}`;
+    const offline = await shopify.sessionStorage.loadSession(offlineId);
+
+    if (offline?.accessToken) {
+      const res = await fetch(`https://${shop}/admin/api/2024-10/themes.json?role=main`, {
+        headers: {
+          "X-Shopify-Access-Token": offline.accessToken,
+          "Content-Type": "application/json",
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const id = data?.themes?.[0]?.id;
+        if (id) mainId = String(id);
+      }
+    }
+  } catch {
+    // absichtlich schlucken → wir fallen kontrolliert auf "current" zurück
+  }
+
+  // 3) baue die Editor-URL – bevorzugt mit expliziter ID, sonst "current"
+  const base =
+    mainId
+      ? `https://${shop}/admin/themes/${mainId}/editor`
+      : `https://${shop}/admin/themes/current/editor`;
+
+  const url = `${base}?context=apps&activateAppId=${q}&appEmbed=${q}`;
 
   return redirect(url, { headers: { "Cache-Control": "no-store" } });
 }
-

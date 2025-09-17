@@ -6,13 +6,44 @@ import {
   Text,
   Button,
   Banner,
+  Toast,
 } from "@shopify/polaris";
-import { json, type ActionFunctionArgs } from "@remix-run/node";
+import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import QuickstartChecklist from "../components/QuickstartChecklist";
+import { useState, useEffect } from "react";
 
 // App embedding is managed through the Theme Editor, not programmatically
 export const action = async ({ request }: ActionFunctionArgs) => {
   return json({ success: false, error: "App embedding must be enabled manually through the Theme Editor" });
 };
+
+// Safe loader that never throws
+export async function loader({ request }: LoaderFunctionArgs) {
+  try {
+    const url = new URL(request.url);
+    const shop = url.searchParams.get("shop") ?? undefined;
+    // ⚠️ hier KEINE externen Calls, KEIN Throw
+    return json({ shop }, { headers: { "Cache-Control": "no-store" } });
+  } catch (err) {
+    console.error("app._index loader failed", err);
+    return json({ shop: undefined }, { headers: { "Cache-Control": "no-store" } });
+  }
+}
+
+// Zeig Fehler im UI statt "Unexpected Server Error"
+export function ErrorBoundary({ error }: { error: Error }) {
+  return (
+    <Page title="Error">
+      <Layout>
+        <Layout.Section>
+          <Banner status="critical">
+            <p>An error occurred: {error.message}</p>
+          </Banner>
+        </Layout.Section>
+      </Layout>
+    </Page>
+  );
+}
 
 
 export default function Index() {
@@ -21,6 +52,7 @@ export default function Index() {
   const hasActiveSub = Boolean(data?.hasActiveSub);
   const isAppEmbeddingEnabled = Boolean(data?.isAppEmbeddingEnabled);
   const actionData = useActionData<typeof action>();
+  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   const goToAdmin = (adminPath: string) => {
     const adminUrl = `https://${shop}/admin${adminPath}`;
@@ -57,53 +89,9 @@ export default function Index() {
           </Banner>
         </Layout.Section>
 
-        {/* Quickstart Card */}
+        {/* Quickstart Checklist */}
         <Layout.Section>
-          <Card>
-            <div style={{ padding: "1.5rem" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
-                <Text as="h2" variant="headingMd">Quickstart</Text>
-                <div style={{ minWidth: "200px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                    <Text as="span" variant="bodySm" tone="subdued">0 of 1 completed</Text>
-                    <div style={{ flex: 1, height: "8px", backgroundColor: "#e1e3e5", borderRadius: "4px" }}>
-                      <div style={{ width: "0%", height: "100%", backgroundColor: "#008060", borderRadius: "4px" }}></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <Card sectioned>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <Text as="p" variant="bodyMd" fontWeight="semibold">Activate App</Text>
-                    <Text as="p" variant="bodySm" tone="subdued">
-                      Activate Urgify in your theme to enable all countdown timer functions.
-                    </Text>
-                  </div>
-                  <a 
-                    href={`/activate-embed?shop=${shop}`}
-                    target="_top"
-                    rel="noopener"
-                    style={{ 
-                      display: "inline-block",
-                      padding: "8px 16px",
-                      backgroundColor: "#008060",
-                      color: "white",
-                      textDecoration: "none",
-                      borderRadius: "4px",
-                      fontSize: "14px",
-                      fontWeight: "500",
-                      textAlign: "center",
-                      minWidth: "80px"
-                    }}
-                  >
-                    Activate
-                  </a>
-                </div>
-              </Card>
-            </div>
-          </Card>
+          <QuickstartChecklist shop={shop} />
         </Layout.Section>
 
         {/* Success/Error Messages */}
@@ -209,6 +197,14 @@ export default function Index() {
           </Card>
         </Layout.Section>
       </Layout>
+      
+      {/* Success Toast */}
+      {showSuccessToast && (
+        <Toast
+          content="✅ Urgify is now active! Your app embedding is enabled and working."
+          onDismiss={() => setShowSuccessToast(false)}
+        />
+      )}
     </Page>
   );
 }

@@ -1,11 +1,11 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, Outlet, useLoaderData, useRouteError } from "@remix-run/react";
+import { Outlet, useLoaderData, useRouteError, useLocation, Link } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
-import { NavMenu } from "@shopify/app-bridge-react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
-import { AppProvider as PolarisAppProvider } from "@shopify/polaris";
-import enTranslations from "@shopify/polaris/locales/en.json";
+import { AppProvider as PolarisAppProvider, Frame } from "@shopify/polaris";
+import enTranslations from "@shopify/polaris/locales/en.json" with { type: "json" };
+import { TitleBar } from "@shopify/app-bridge-react";
 
 import { authenticate } from "../shopify.server";
 
@@ -13,6 +13,7 @@ export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
+  // host wird von der Library aus der URL gelesen; hier nicht benötigt
 
   let hasActiveSub = false;
   let isAppEmbeddingEnabled = false;
@@ -47,19 +48,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function App() {
   const { apiKey } = useLoaderData<typeof loader>();
+  const location = useLocation();
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
+      {/* App Bridge Navigation Menu */}
+      <ui-nav-menu>
+        <Link to="/app" rel="home">Home</Link>
+        <Link to="/app/stock-alerts">Stock Alerts</Link>
+      </ui-nav-menu>
       <PolarisAppProvider i18n={enTranslations}>
-        <NavMenu>
-          <Link to="/app" rel="home">
-            Home
-          </Link>
-          <Link to="/app/stock-alerts">
-            Stock Alerts
-          </Link>
-        </NavMenu>
-        <Outlet />
+        <Frame>
+          <TitleBar
+            title={location.pathname === "/app/stock-alerts" ? "Stock Alerts" : "Urgify"}
+          />
+          <Outlet />
+        </Frame>
       </PolarisAppProvider>
     </AppProvider>
   );

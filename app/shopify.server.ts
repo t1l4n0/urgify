@@ -25,7 +25,7 @@ console.log(
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
   apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
-  apiVersion: ApiVersion.July25,
+  apiVersion: ApiVersion.April25,
   scopes: process.env.SCOPES?.split(","),
   appUrl: normalizedAppUrl,
   authPathPrefix: "/auth",
@@ -41,7 +41,7 @@ const shopify = shopifyApp({
 });
 
 export default shopify;
-export const apiVersion = ApiVersion.July25;
+export const apiVersion = ApiVersion.April25;
 export const addDocumentResponseHeaders = shopify.addDocumentResponseHeaders;
 export const authenticate = shopify.authenticate;
 export const unauthenticated = shopify.unauthenticated;

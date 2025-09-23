@@ -1,5 +1,4 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "@remix-run/react";
-import { AppProvider, Frame } from "@shopify/polaris";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
 import stockAlertPreviewStyles from "./styles/stock-alert-preview.css?url";
 
@@ -17,13 +16,9 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <AppProvider>
-          <Frame>
-            <div style={{ minHeight: '100vh' }}>
-              <Outlet />
-            </div>
-          </Frame>
-        </AppProvider>
+        <div style={{ minHeight: '100vh' }}>
+          <Outlet />
+        </div>
         <ScrollRestoration />
         <Scripts />
       </body>

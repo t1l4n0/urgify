@@ -5,6 +5,9 @@
 {% liquid
   assign config = shop.metafields.urgify.stock_alert_config.value
 %}
+
+{{ 'urgify.min.css' | asset_url | stylesheet_tag }}
+{{ 'urgify.min.js'  | asset_url | script_tag: defer: true }}
 {% render 'urgify-stock-alert-auto' %}
 
 

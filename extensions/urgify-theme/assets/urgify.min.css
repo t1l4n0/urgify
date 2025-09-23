@@ -252,45 +252,76 @@
 
 .urgify-urgency-notification {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  background: var(--urgify-danger);
-  color: white;
-  padding: 15px 20px;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, var(--urgify-danger) 0%, #e74c3c 100%);
+  color: #fff;
+  padding: 20px 28px;
   border-radius: var(--urgify-border-radius);
-  box-shadow: 0 4px 20px rgba(220, 53, 69, 0.4);
-  z-index: 9999;
-  max-width: 300px;
-  animation: urgencyNotificationSlide 0.5s ease-out;
+  text-align: center;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+  z-index: 99999;
+  max-width: 760px;
+  animation: urgencyNotificationSlide 0.45s ease-out, limitedOfferPulse 3s infinite;
+}
+
+/* Ribbon (volle Breite) */
+.urgify-urgency-notification.ribbon {
+  left: 0;
+  transform: none;
+  width: 100%;
+  border-radius: 0;
+}
+
+/* Sticky Verhalten */
+.urgify-urgency-notification.sticky {
+  position: sticky;
+  top: 0;
 }
 
 .urgify-urgency-notification .notification-icon {
-  font-size: 1.3rem;
-  margin-right: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  font-size: 1.1rem;
+  margin-right: 12px;
   animation: urgencyIconPulse 1s infinite;
 }
 
 .urgify-urgency-notification .notification-message {
-  font-size: 0.9rem;
-  font-weight: 500;
-  line-height: 1.4;
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.3px;
 }
 
 .urgify-urgency-notification .notification-close {
   position: absolute;
-  top: 5px;
-  right: 10px;
-  background: none;
-  border: none;
-  color: white;
-  font-size: 1.2rem;
+  top: 6px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #fff;
+  width: 24px;
+  height: 24px;
+  line-height: 22px;
+  text-align: center;
+  border-radius: 50%;
+  font-size: 14px;
   cursor: pointer;
-  opacity: 0.7;
-  transition: opacity 0.2s;
+  opacity: 0.9;
+  transition: opacity 0.2s, transform 0.15s ease-in-out;
 }
 
 .urgify-urgency-notification .notification-close:hover {
   opacity: 1;
+  transform: scale(1.05);
 }
 
 /* ========================================

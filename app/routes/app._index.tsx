@@ -1,4 +1,4 @@
-import { useRouteLoaderData, useActionData } from "@remix-run/react";
+import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -6,11 +6,10 @@ import {
   Text,
   Button,
   Banner,
-  Toast,
 } from "@shopify/polaris";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import QuickstartChecklist from "../components/QuickstartChecklist";
-import { useState, useEffect } from "react";
+// QuickstartChecklist intentionally hidden for now
+// import QuickstartChecklist from "../components/QuickstartChecklist";
 
 // App embedding is managed through the Theme Editor, not programmatically
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -31,13 +30,31 @@ export async function loader({ request }: LoaderFunctionArgs) {
 }
 
 // Zeig Fehler im UI statt "Unexpected Server Error"
-export function ErrorBoundary({ error }: { error: Error }) {
+export function ErrorBoundary() {
+  const error = useRouteError();
+  console.error("Route error in app._index:", error);
+
+  let title = "Error";
+  let message = "Unknown error";
+  if (isRouteErrorResponse(error)) {
+    title = `${error.status} ${error.statusText}`;
+    try {
+      message = typeof error.data === "string" ? error.data : JSON.stringify(error.data);
+    } catch {
+      message = error.statusText || message;
+    }
+  } else if (error instanceof Error) {
+    message = error.message || message;
+  } else if (typeof error === "string") {
+    message = error;
+  }
+
   return (
-    <Page title="Error">
+    <Page title={title}>
       <Layout>
         <Layout.Section>
-          <Banner status="critical">
-            <p>An error occurred: {error.message}</p>
+          <Banner tone="critical">
+            <p>An error occurred: {message}</p>
           </Banner>
         </Layout.Section>
       </Layout>
@@ -45,14 +62,11 @@ export function ErrorBoundary({ error }: { error: Error }) {
   );
 }
 
-
 export default function Index() {
   const data = useRouteLoaderData("routes/app") as any;
   const shop = data?.shop as string;
   const hasActiveSub = Boolean(data?.hasActiveSub);
-  const isAppEmbeddingEnabled = Boolean(data?.isAppEmbeddingEnabled);
   const actionData = useActionData<typeof action>();
-  const [showSuccessToast, setShowSuccessToast] = useState(false);
 
   const goToAdmin = (adminPath: string) => {
     const adminUrl = `https://${shop}/admin${adminPath}`;
@@ -65,10 +79,11 @@ export default function Index() {
     window.location.href = adminUrl;
   };
 
-
   return (
-    <Page title="Urgify – Countdown Timer">
+    <Page title="Urgify – Urgency Marketing Suite">
       <Layout>
+        {/* Quickstart Checklist hidden */}
+
         <Layout.Section>
           <Banner
             title={hasActiveSub ? 'Subscription active' : 'No active subscription'}
@@ -89,15 +104,10 @@ export default function Index() {
           </Banner>
         </Layout.Section>
 
-        {/* Quickstart Checklist */}
-        <Layout.Section>
-          <QuickstartChecklist shop={shop} />
-        </Layout.Section>
-
         {/* Success/Error Messages */}
         {actionData?.error && (
           <Layout.Section>
-            <Banner status="critical">
+            <Banner tone="critical">
               <p>{actionData.error}</p>
             </Banner>
           </Layout.Section>
@@ -105,8 +115,8 @@ export default function Index() {
         
         {actionData?.success && (
           <Layout.Section>
-            <Banner status="success">
-              <p>{actionData.message}</p>
+            <Banner tone="success">
+              <p>Operation completed successfully</p>
             </Banner>
           </Layout.Section>
         )}
@@ -116,10 +126,10 @@ export default function Index() {
             <div style={{ padding: "1rem" }}>
               <Text as="h3" variant="headingMd">Welcome to Urgify</Text>
               <div style={{ marginTop: "1rem" }}>
-                <Text as="p" variant="bodyMd">
-                  Urgify is an advanced countdown timer app for Shopify stores. 
-                  Create beautiful, customizable countdown timers with multiple display formats and animations.
-                </Text>
+              <Text as="p" variant="bodyMd">
+                Urgify is a comprehensive urgency marketing suite for Shopify stores. 
+                Create countdown timers, limited-time offers, stock alerts, scarcity banners, and urgency notifications to create urgency and engage customers.
+              </Text>
               </div>
               <div style={{ marginTop: '1rem' }}>
                 <Button variant="primary" onClick={() => goToAdmin('/themes/current/editor')}>
@@ -136,16 +146,28 @@ export default function Index() {
               <Text as="h3" variant="headingMd">Key Features</Text>
               <div style={{ marginTop: "1rem" }}>
                 <div style={{ marginBottom: "1rem" }}>
-                  <Text as="h4" variant="headingSm">⏰ Advanced Countdown</Text>
-                  <Text as="p" variant="bodyMd">Beautiful, customizable countdown timers with multiple display formats and animations.</Text>
+                  <Text as="h4" variant="headingSm">⏰ Advanced Countdown Timers</Text>
+                  <Text as="p" variant="bodyMd">Create stunning countdown timers with 4 different styles: digital clocks, flip cards, circular progress, and minimal designs. Fully customizable colors, animations, and responsive layouts.</Text>
                 </div>
                 <div style={{ marginBottom: "1rem" }}>
-                  <Text as="h4" variant="headingSm">🎨 Multiple Styles</Text>
-                  <Text as="p" variant="bodyMd">Choose from various countdown styles: digital clocks, flip cards, circular progress, and more.</Text>
+                  <Text as="h4" variant="headingSm">🎯 Limited Time Offers</Text>
+                  <Text as="p" variant="bodyMd">Design spectacular limited-time offers with 4 unique styles: Spectacular (animated), Brutalist Bold, Glassmorphism, and Neumorphism. Perfect for flash sales and special promotions.</Text>
                 </div>
                 <div style={{ marginBottom: "1rem" }}>
-                  <Text as="h4" variant="headingSm">📅 Event Management</Text>
-                  <Text as="p" variant="bodyMd">Create countdowns for sales, product launches, events, and special promotions.</Text>
+                  <Text as="h4" variant="headingSm">📦 Smart Stock Alerts</Text>
+                  <Text as="p" variant="bodyMd">Automatically display low stock warnings when inventory falls below your threshold. Customizable messages, colors, and animations to create urgency and inform customers.</Text>
+                </div>
+                <div style={{ marginBottom: "1rem" }}>
+                  <Text as="h4" variant="headingSm">⚠️ Scarcity Banners</Text>
+                  <Text as="p" variant="bodyMd">Add scarcity messaging with customizable banners that inform customers about limited availability. Perfect for creating urgency and highlighting product scarcity.</Text>
+                </div>
+                <div style={{ marginBottom: "1rem" }}>
+                  <Text as="h4" variant="headingSm">🚨 Urgency Notifications</Text>
+                  <Text as="p" variant="bodyMd">Display popup notifications for urgent messages. Auto-close timers, close buttons, and customizable styling to display important information effectively.</Text>
+                </div>
+                <div style={{ marginBottom: "1rem" }}>
+                  <Text as="h4" variant="headingSm">🎨 Complete Customization</Text>
+                  <Text as="p" variant="bodyMd">Every element is fully customizable: colors, fonts, animations, positioning, and responsive behavior. Match your brand perfectly with our extensive styling options.</Text>
                 </div>
               </div>
             </div>
@@ -197,14 +219,6 @@ export default function Index() {
           </Card>
         </Layout.Section>
       </Layout>
-      
-      {/* Success Toast */}
-      {showSuccessToast && (
-        <Toast
-          content="✅ Urgify is now active! Your app embedding is enabled and working."
-          onDismiss={() => setShowSuccessToast(false)}
-        />
-      )}
     </Page>
   );
 }

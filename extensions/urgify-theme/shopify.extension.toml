@@ -1,6 +1,7 @@
 # Extension configuration
 name = "urgify-theme"
-type = "theme"
+uid = "2dbfabeb-4098-6bca-cd1c-346f07018b9e643e0b97"
+type = "theme_app_extension"
 
 # Assets to be bundled and served
 [[assets]]

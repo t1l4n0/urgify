@@ -21,7 +21,7 @@ export default async function handleRequest(
   // Override CSP to allow embedding in Shopify Admin
   responseHeaders.set(
     "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com; style-src 'self' 'unsafe-inline' https://cdn.shopify.com; img-src 'self' data: https:; font-src 'self' https://cdn.shopify.com; connect-src 'self' https://*.shopify.com; frame-ancestors https://admin.shopify.com https://*.myshopify.com https://*.shopify.com;"
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://admin.shopify.com; style-src 'self' 'unsafe-inline' https://cdn.shopify.com; img-src 'self' data: https: blob:; font-src 'self' https://cdn.shopify.com; connect-src 'self' https://*.shopify.com https://admin.shopify.com; frame-ancestors https://admin.shopify.com https://*.myshopify.com https://*.shopify.com; object-src 'none'; base-uri 'self';"
   );
   
   // Remove X-Frame-Options to allow embedding

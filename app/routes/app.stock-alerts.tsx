@@ -95,9 +95,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const data = await response.json();
     
     // Check for GraphQL errors
-    if (data.errors) {
-      console.error("GraphQL errors:", data.errors);
-      throw new Error(`GraphQL errors: ${data.errors.map((e: any) => e.message).join(', ')}`);
+    if ((data as any).errors) {
+      console.error("GraphQL errors:", (data as any).errors);
+      throw new Error(`GraphQL errors: ${(data as any).errors.map((e: any) => e.message).join(', ')}`);
     }
     
     const products = data.data?.products?.edges?.map((edge: any) => edge.node) || [];
@@ -365,7 +365,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function StockAlertsSimple() {
-  const { settings, products, error } = useLoaderData<typeof loader>();
+  const { settings, products } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const revalidator = useRevalidator();
   
@@ -448,36 +448,28 @@ export default function StockAlertsSimple() {
       return;
     }
 
-    if (fetcher.state === "idle" && fetcher.data?.success && !shownRef.current) {
+    if (fetcher.state === "idle" && (fetcher.data as any)?.success && !shownRef.current) {
       shownRef.current = true;          // einmalig pro Erfolg
       setToastActive(true);
       setIsDirty(false);
       revalidator.revalidate();
     }
-  }, [fetcher.state, fetcher.data?.success, revalidator]);
+  }, [fetcher.state, (fetcher.data as any)?.success, revalidator]);
 
   const getStockBadge = (inventory: number) => {
     const safeInventory = Number(inventory) || 0;
     const globalThresh = parseInt(globalThreshold) || 5;
     if (safeInventory <= globalThresh) {
-      return <Badge status="warning">Below threshold ({safeInventory})</Badge>;
+      return <Badge tone="warning">{`Below threshold (${safeInventory})`}</Badge>;
     }
-    return <Badge status="success">OK ({safeInventory})</Badge>;
+    return <Badge tone="success">{`OK (${safeInventory})`}</Badge>;
   };
 
-  if (error) {
-    return (
-      <Page>
-        <Banner status="critical">
-          <p>Error loading data: {error}</p>
-        </Banner>
-      </Page>
-    );
-  }
+  // Remove error handling since error is not in loader data anymore
 
   const toastMarkup = toastActive ? (
     <Toast
-      content={fetcher.data?.message ?? "Settings saved successfully!"}
+      content="Settings saved successfully!"
       duration={3000}
       onDismiss={() => setToastActive(false)}
     />
@@ -506,6 +498,7 @@ export default function StockAlertsSimple() {
                   value={globalThreshold}
                   onChange={handleGlobalThresholdChange}
                   type="number"
+                  autoComplete="off"
                   helpText="Show alert when inventory is below this number"
                 />
                 
@@ -516,6 +509,7 @@ export default function StockAlertsSimple() {
                     setLowStockMessage(value);
                     setIsDirty(true);
                   }}
+                  autoComplete="off"
                   helpText="Use {{qty}} as placeholder for quantity"
                 />
                 
@@ -526,6 +520,7 @@ export default function StockAlertsSimple() {
                     setFontSize(value);
                     setIsDirty(true);
                   }}
+                  autoComplete="off"
                   helpText="e.g., 18px, 1.2rem"
                 />
                 
@@ -536,6 +531,7 @@ export default function StockAlertsSimple() {
                     setTextColor(value);
                     setIsDirty(true);
                   }}
+                  autoComplete="off"
                   helpText="e.g., #ffffff, red"
                 />
                 
@@ -546,6 +542,7 @@ export default function StockAlertsSimple() {
                     setBackgroundColor(value);
                     setIsDirty(true);
                   }}
+                  autoComplete="off"
                   helpText="e.g., #e74c3c, red"
                 />
                 
@@ -589,13 +586,13 @@ export default function StockAlertsSimple() {
               </Text>
               
               {lowStockProducts.length === 0 ? (
-                <Text>No products below the threshold of {globalThreshold}</Text>
+                <Text as="p">No products below the threshold of {globalThreshold}</Text>
               ) : (
                 <List>
                   {lowStockProducts.map((product: any) => (
                     <List.Item key={product.id}>
                       <InlineStack gap="200" align="space-between">
-                        <Text>{product.title}</Text>
+                        <Text as="span">{product.title}</Text>
                         {getStockBadge(product.totalInventory)}
                       </InlineStack>
                     </List.Item>

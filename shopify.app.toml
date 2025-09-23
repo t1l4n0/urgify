@@ -7,10 +7,9 @@ application_url = "https://urgify.fly.dev/app"
 embedded = true
 
 [build]
-include_config_on_deploy = true
 
 [webhooks]
-api_version = "2025-07"
+api_version = "2025-04"
 
   [[webhooks.subscriptions]]
   uri = "https://urgify.fly.dev/webhooks/customers/data_request"

@@ -1,15 +1,15 @@
 <div id="urgency-notification-urgify-{{ block.id }}" 
-     class="urgify-urgency-notification" 
+     class="urgify-urgency-notification notify-style-{{ block.settings.notify_style | default: 'spectacular' }} badge" 
      data-urgify="urgency-notification"
      data-block-id="{{ block.id }}"
-     style="background: {{ block.settings.background_color | default: '#dc3545' }}; color: {{ block.settings.font_color | default: 'white' }}; display: none;">
+     style="background: {{ block.settings.background_color | default: '#dc3545' }}; color: {{ block.settings.font_color | default: 'white' }};">
 
   {% if block.settings.show_close_button %}
     <button class="notification-close" onclick="this.parentElement.style.display='none'">×</button>
   {% endif %}
   
-  {% if block.settings.show_icon %}
-    <span class="notification-icon">{{ block.settings.icon | default: '🚨' }}</span>
+  {% if block.settings.icon != '' %}
+    <span class="notification-icon">{{ block.settings.icon }}</span>
   {% endif %}
   
   <span class="notification-message">
@@ -17,81 +17,182 @@
   </span>
 </div>
 
+<style>
+/* Notification – Visual Styles borrowed from Limited Offer */
+.notify-style-spectacular.urgify-urgency-notification {
+  position: relative;
+  border-radius: 20px;
+  padding: 16px 22px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%);
+  background-size: 200% 200%;
+  animation: spectacularPulse 2s infinite, spectacularShimmer 3s infinite;
+}
+
+.notify-style-spectacular .notification-message { 
+  color: #fff; 
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3); 
+  font-weight: 700; 
+  animation: titleShimmer 3s infinite;
+}
+
+.notify-style-spectacular .notification-icon { 
+  margin-right: 12px; 
+  animation: badgeBounce 2s infinite;
+}
+
+.notify-style-brutalist.urgify-urgency-notification {
+  background: #000;
+  border: 6px solid #ff0000;
+  border-radius: 0;
+  box-shadow: 8px 8px 0 #ff0000, 16px 16px 0 #ffff00, 24px 24px 0 #00ff00;
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.notify-style-brutalist .notification-message { color: #fff; font-weight: 900; text-shadow: 2px 2px 0 #ff0000; }
+.notify-style-brutalist .notification-icon { color: #ffff00; margin-right: 12px; }
+
+
+/* Base notification styles */
+.urgify-urgency-notification {
+  position: relative !important;
+  display: flex !important;
+  align-items: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  z-index: 1 !important;
+  margin: 0 auto !important;
+}
+
+/* Badge layout - normal size in container */
+.urgify-urgency-notification.badge { 
+  width: auto !important;
+  max-width: 400px !important;
+  margin: 0 auto !important;
+}
+
+/* Close button styles */
+.notification-close {
+  position: absolute !important;
+  top: 50% !important;
+  right: 16px !important;
+  transform: translateY(-50%) !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  border: none !important;
+  color: white !important;
+  font-size: 18px !important;
+  font-weight: bold !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 50% !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 2 !important;
+  flex-shrink: 0 !important;
+}
+
+.notification-close:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Message spacing to prevent overlap with close button */
+.notification-message {
+  margin-right: 50px !important;
+  flex-grow: 1 !important;
+}
+
+/* Ensure visibility over all elements */
+.urgify-urgency-notification * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Additional CSS to ensure visibility */
+body .urgify-urgency-notification {
+  z-index: 1 !important;
+}
+
+@keyframes spectacularPulse {
+  0%, 100% { 
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% { 
+    box-shadow: 
+      0 30px 60px rgba(220, 53, 69, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes spectacularShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes titleShimmer {
+  0%, 100% { 
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  50% { 
+    text-shadow: 0 4px 8px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.3);
+  }
+}
+
+@keyframes badgeBounce {
+  0%, 100% { 
+    transform: translateY(0px);
+  }
+  50% { 
+    transform: translateY(-3px);
+  }
+}
+</style>
+
 {% schema %}
 {
   "name": "Urgify – Notification",
   "target": "section",
   "settings": [
-    {
-      "type": "header",
-      "content": "Urgify – Urgency Notification Configuration",
-      "info": "Display urgent notifications as popup messages to create immediate urgency."
-    },
-    {
-      "type": "header",
-      "content": "Content"
-    },
-    {
-      "type": "text",
-      "id": "message",
-      "label": "Notification Message",
-      "default": "Urgent: Limited time offer ending soon!",
-      "info": "Message to display in the notification"
-    },
-    {
-      "type": "header",
-      "content": "Icon"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_icon",
-      "label": "Show Icon",
-      "default": true,
-      "info": "Display an icon next to the message"
-    },
-    {
-      "type": "text",
-      "id": "icon",
-      "label": "Icon",
-      "default": "🚨",
-      "info": "Emoji or icon to display (e.g., 🚨, ⚠️, 🔥)"
-    },
-    {
-      "type": "header",
-      "content": "Behavior"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_close_button",
-      "label": "Show Close Button",
-      "default": true,
-      "info": "Allow users to close the notification"
-    },
-    {
-      "type": "number",
-      "id": "auto_close_delay",
-      "label": "Auto Close Delay (seconds)",
-      "default": 0,
-      "info": "Automatically close after this many seconds (0 = no auto close)"
-    },
-    {
-      "type": "header",
-      "content": "Colors"
-    },
-    {
-      "type": "color",
-      "id": "font_color",
-      "label": "Font Color",
-      "default": "#ffffff",
-      "info": "Sets color for text and icons"
-    },
-    {
-      "type": "color",
-      "id": "background_color",
-      "label": "Background Color",
-      "default": "#dc3545",
-      "info": "Sets background for the notification"
-    }
+    { "type": "select", "id": "notify_style", "label": "Notification Style", "options": [
+      {"value": "spectacular", "label": "Spectacular (Animated)"},
+      {"value": "brutalist", "label": "Brutalist Bold"}
+    ], "default": "spectacular" },
+    { "type": "text", "id": "message", "label": "Message", "default": "Urgent: Limited time offer ending soon!" },
+    { "type": "select", "id": "icon", "label": "Icon", "options": [
+      {"value": "", "label": "No Icon"},
+      {"value": "→", "label": "Arrow Right (→)"},
+      {"value": "🛒", "label": "Shopping Cart (🛒)"},
+      {"value": "💎", "label": "Diamond (💎)"},
+      {"value": "⚡", "label": "Lightning (⚡)"},
+      {"value": "🔥", "label": "Fire (🔥)"},
+      {"value": "⭐", "label": "Star (⭐)"},
+      {"value": "🎯", "label": "Target (🎯)"},
+      {"value": "💫", "label": "Dizzy Star (💫)"},
+      {"value": "🚀", "label": "Rocket (🚀)"},
+      {"value": "✨", "label": "Sparkles (✨)"},
+      {"value": "💝", "label": "Gift (💝)"},
+      {"value": "🏆", "label": "Trophy (🏆)"},
+      {"value": "💰", "label": "Money Bag (💰)"},
+      {"value": "🎉", "label": "Party (🎉)"},
+      {"value": "❤️", "label": "Heart (❤️)"},
+      {"value": "👑", "label": "Crown (👑)"},
+      {"value": "🎁", "label": "Present (🎁)"},
+      {"value": "💯", "label": "Hundred (💯)"},
+      {"value": "🔔", "label": "Bell (🔔)"}
+    ], "default": "→" },
+    { "type": "checkbox", "id": "show_close_button", "label": "Show Close Button", "default": true }
   ]
 }
 {% endschema %}

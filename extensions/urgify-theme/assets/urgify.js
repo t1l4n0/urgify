@@ -573,8 +573,33 @@
     }
 
     init() {
-      console.log("Urgency Notification block initialized");
-      // Implementation for urgency notification functionality
+      try {
+        // Ensure visible
+        this.block.style.display = 'block';
+
+        // Auto close if configured
+        const delayStr = this.block.getAttribute('data-auto-close-delay');
+        const delay = delayStr ? parseInt(delayStr, 10) : 0;
+        if (!isNaN(delay) && delay > 0) {
+          setTimeout(() => {
+            this.block.style.display = 'none';
+          }, delay * 1000);
+        }
+
+        // Close button handler (if present)
+        const closeBtn = this.block.querySelector('.notification-close');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', () => {
+            this.block.style.display = 'none';
+          });
+        }
+
+        // Announce for accessibility
+        this.block.setAttribute('role', 'status');
+        this.block.setAttribute('aria-live', 'polite');
+      } catch (e) {
+        console.error('UrgifyUrgencyNotification init error:', e);
+      }
     }
   }
 

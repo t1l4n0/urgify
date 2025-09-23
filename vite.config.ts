@@ -38,6 +38,9 @@ if (host === "localhost") {
 }
 
 export default defineConfig({
+  resolve: {
+    dedupe: ["react", "react-dom"],
+  },
   server: {
     allowedHosts: [host],
     cors: {
@@ -69,5 +72,6 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ["@shopify/app-bridge-react", "@shopify/polaris"],
+    exclude: ["react", "react-dom"],
   },
 }) satisfies UserConfig;

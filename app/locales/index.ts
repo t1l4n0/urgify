@@ -1,5 +1,5 @@
-import enPolaris from "@shopify/polaris/locales/en.json";
-import dePolaris from "@shopify/polaris/locales/de.json";
+import enPolaris from "@shopify/polaris/locales/en.json" with { type: "json" };
+import dePolaris from "@shopify/polaris/locales/de.json" with { type: "json" };
 import en from "./en.json";
 import de from "./de.json";
 

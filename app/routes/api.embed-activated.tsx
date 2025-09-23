@@ -8,16 +8,20 @@ export async function loader({ request }: LoaderFunctionArgs) {
   const shop = normalizeShop(url.searchParams.get("shop") || "");
   const themeId = url.searchParams.get("theme_id") || null;
 
+  console.log("🔔 Embed activated pixel called:", { shop, themeId, url: request.url });
+
   // Sofortiges Pixel zurückgeben – nie blockieren:
   queueMicrotask(async () => {
     try {
-      await prisma.quickstartProgress.upsert({
+      console.log("📝 Updating quickstart progress for shop:", shop);
+      const result = await prisma.quickstartProgress.upsert({
         where: { shop },
         update: { activateEmbed: "done" },
         create: { shop, activateEmbed: "done" },
       });
+      console.log("✅ Quickstart progress updated:", result);
     } catch (e) {
-      console.error("embed-activated upsert failed", e);
+      console.error("❌ embed-activated upsert failed", e);
     }
   });
 

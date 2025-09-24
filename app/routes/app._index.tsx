@@ -147,7 +147,7 @@ export default function Index() {
               <div style={{ marginTop: "1rem" }}>
                 <div style={{ marginBottom: "1rem" }}>
                   <Text as="h4" variant="headingSm">⏰ Advanced Countdown Timers</Text>
-                  <Text as="p" variant="bodyMd">Create stunning countdown timers with 4 different styles: digital clocks, flip cards, circular progress, and minimal designs. Fully customizable colors, animations, and responsive layouts.</Text>
+                  <Text as="p" variant="bodyMd">Create stunning countdown timers with 4 different styles: Digital Clock, Flip Cards, Circular Progress, and Minimal. Fully customizable colors, animations, and responsive layouts.</Text>
                 </div>
                 <div style={{ marginBottom: "1rem" }}>
                   <Text as="h4" variant="headingSm">🎯 Limited Time Offers</Text>
@@ -159,11 +159,7 @@ export default function Index() {
                 </div>
                 <div style={{ marginBottom: "1rem" }}>
                   <Text as="h4" variant="headingSm">⚠️ Scarcity Banners</Text>
-                  <Text as="p" variant="bodyMd">Add scarcity messaging with customizable banners that inform customers about limited availability. Perfect for creating urgency and highlighting product scarcity.</Text>
-                </div>
-                <div style={{ marginBottom: "1rem" }}>
-                  <Text as="h4" variant="headingSm">🚨 Urgency Notifications</Text>
-                  <Text as="p" variant="bodyMd">Display popup notifications for urgent messages. Auto-close timers, close buttons, and customizable styling to display important information effectively.</Text>
+                  <Text as="p" variant="bodyMd">Add scarcity messaging with customizable banners featuring 3 unique styles: Spectacular (animated), Brutalist Bold, and Glassmorphism. Perfect for creating urgency and highlighting product scarcity.</Text>
                 </div>
                 <div style={{ marginBottom: "1rem" }}>
                   <Text as="h4" variant="headingSm">🎨 Complete Customization</Text>
@@ -180,9 +176,9 @@ export default function Index() {
               <Text as="h3" variant="headingMd">Setup guide</Text>
               <ol style={{ marginLeft: '1.5rem' }}>
                 <li><Text as="span" variant="bodyMd"><strong>Open the Theme Editor:</strong> Online Store → Themes → Customize.</Text></li>
-                <li><Text as="span" variant="bodyMd"><strong>Add Countdown block:</strong> Add "Urgify Countdown" to your section.</Text></li>
-                <li><Text as="span" variant="bodyMd"><strong>Configure target date:</strong> Set the target date and time for your countdown.</Text></li>
-                <li><Text as="span" variant="bodyMd"><strong>Choose style:</strong> Select from various countdown styles and animations.</Text></li>
+                <li><Text as="span" variant="bodyMd"><strong>Add Urgify blocks:</strong> Add "Urgify Countdown", "Urgify Limited Offer", "Urgify Scarcity Banner", or "Urgify Stock Alert" to your sections.</Text></li>
+                <li><Text as="span" variant="bodyMd"><strong>Configure settings:</strong> Set target dates, messages, and thresholds for your urgency elements.</Text></li>
+                <li><Text as="span" variant="bodyMd"><strong>Choose styles:</strong> Select from various styles: Spectacular, Brutalist, Glassmorphism, and more.</Text></li>
                 <li><Text as="span" variant="bodyMd"><strong>Customize appearance:</strong> Adjust colors, fonts, and layout to match your theme.</Text></li>
                 <li><Text as="span" variant="bodyMd"><strong>Save & test:</strong> Save and test on your storefront.</Text></li>
               </ol>
@@ -195,7 +191,7 @@ export default function Index() {
               <Text as="h3" variant="headingMd">Enjoying Urgify?</Text>
               <div style={{ marginBottom: "1rem" }}>
                 <Text as="p" variant="bodyMd">
-                  If Urgify is helping you create beautiful countdown timers, please consider leaving a review!
+                  If Urgify is helping you create urgency and boost sales, please consider leaving a review!
                 </Text>
               </div>
               <Button 

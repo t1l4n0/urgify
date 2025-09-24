@@ -1,90 +1,375 @@
 <div id="scarcity-banner-urgify-{{ block.id }}" 
-     class="urgify-scarcity-banner" 
+     class="urgify-scarcity-banner notify-style-{{ block.settings.notify_style | default: 'spectacular' }} badge" 
      data-urgify="scarcity-banner"
      data-block-id="{{ block.id }}"
-     style="background: {{ block.settings.background_color | default: 'linear-gradient(135deg, #ffc107 0%, #ff8c00 100%)' }}; color: {{ block.settings.font_color | default: 'white' }};">
+     style="--custom-bg: {{ block.settings.background_color | default: '#dc3545' }}; --custom-color: {{ block.settings.font_color | default: 'white' }};">
 
-  {% assign alignment = block.settings.content_alignment | default: 'center' %}
   
-  <div class="align-{{ alignment }}">
-    {% if block.settings.show_icon %}
-      <span class="scarcity-icon">{{ block.settings.icon | default: '⚠️' }}</span>
-    {% endif %}
-    
-    <span class="scarcity-message">
-      {{ block.settings.message | default: 'Limited quantity available - Order now!' }}
-    </span>
-  </div>
+  {% if block.settings.icon != '' %}
+    <span class="notification-icon">{{ block.settings.icon }}</span>
+  {% endif %}
+  
+  <span class="notification-message">
+    {{ block.settings.message | default: 'Urgent: Limited time offer ending soon!' }}
+  </span>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const banner = document.getElementById('scarcity-banner-urgify-{{ block.id }}');
+  if (banner && banner.classList.contains('notify-style-glassmorphism')) {
+    // Function to get background color of parent container
+    function getParentBackgroundColor(element) {
+      let parent = element.parentElement;
+      while (parent && parent !== document.body) {
+        const computedStyle = window.getComputedStyle(parent);
+        const bgColor = computedStyle.backgroundColor;
+        
+        // If background color is not transparent, return it
+        if (bgColor && bgColor !== 'rgba(0, 0, 0, 0)' && bgColor !== 'transparent') {
+          return bgColor;
+        }
+        parent = parent.parentElement;
+      }
+      return 'rgba(255, 255, 255, 1)'; // Default to white
+    }
+    
+    // Function to convert RGB to brightness value
+    function getBrightness(rgb) {
+      const match = rgb.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (match) {
+        const r = parseInt(match[1]);
+        const g = parseInt(match[2]);
+        const b = parseInt(match[3]);
+        // Calculate relative luminance
+        return (r * 299 + g * 587 + b * 114) / 1000;
+      }
+      return 255; // Default to light
+    }
+    
+    // Function to adjust text color based on background
+    function adjustTextColor() {
+      const bgColor = getParentBackgroundColor(banner);
+      const brightness = getBrightness(bgColor);
+      
+      const message = banner.querySelector('.notification-message');
+      const icon = banner.querySelector('.notification-icon');
+      
+      if (brightness < 128) {
+        // Dark container background - use white text with stronger contrast
+        banner.style.color = 'rgba(255, 255, 255, 0.98)';
+        banner.style.background = 'rgba(255, 255, 255, 0.15)'; // Lighter glass background
+        if (message) {
+          message.style.color = 'rgba(255, 255, 255, 0.98)';
+          message.style.textShadow = '0 2px 4px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3)';
+        }
+        if (icon) {
+          icon.style.color = 'rgba(255, 255, 255, 0.95)';
+          icon.style.filter = 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5))';
+        }
+      } else {
+        // Light container background - use dark text
+        banner.style.color = '#1a1a1a';
+        banner.style.background = 'rgba(255, 255, 255, 0.12)'; // Original glass background
+        if (message) {
+          message.style.color = '#1a1a1a';
+          message.style.textShadow = '0 1px 2px rgba(255, 255, 255, 0.8)';
+        }
+        if (icon) {
+          icon.style.color = '#2d2d2d';
+          icon.style.filter = 'drop-shadow(0 1px 2px rgba(255, 255, 255, 0.6))';
+        }
+      }
+    }
+    
+    // Adjust on load
+    adjustTextColor();
+    
+    // Adjust on window resize (in case layout changes)
+    window.addEventListener('resize', adjustTextColor);
+    
+    // Adjust when DOM changes (in case background changes)
+    const observer = new MutationObserver(adjustTextColor);
+    observer.observe(document.body, { 
+      attributes: true, 
+      attributeFilter: ['style', 'class'],
+      subtree: true 
+    });
+  }
+});
+</script>
+
+<style>
+/* Notification – Visual Styles borrowed from Limited Offer */
+.notify-style-spectacular.urgify-scarcity-banner {
+  position: relative;
+  border-radius: 20px;
+  padding: 16px 22px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: var(--custom-bg, linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%));
+  background-size: 200% 200%;
+  animation: spectacularPulse 2s infinite, spectacularShimmer 3s infinite;
+}
+
+.notify-style-spectacular .notification-message { 
+  color: var(--custom-color, #fff); 
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3); 
+  font-weight: 700; 
+  animation: titleShimmer 3s infinite;
+}
+
+.notify-style-spectacular .notification-icon { 
+  color: #ffffff;
+  margin-right: 12px; 
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 0, 0, 0.4);
+  animation: badgeBounce 2s infinite;
+}
+
+.notify-style-brutalist.urgify-scarcity-banner {
+  background: var(--custom-bg, #000);
+  border: 6px solid #ff0000;
+  border-radius: 0;
+  box-shadow: 8px 8px 0 #ff0000, 16px 16px 0 #ffff00, 24px 24px 0 #00ff00;
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.notify-style-brutalist .notification-message { color: var(--custom-color, #fff); font-weight: 900; text-shadow: 2px 2px 0 #ff0000; }
+.notify-style-brutalist .notification-icon { color: #ffff00; margin-right: 12px; text-shadow: 2px 2px 0 #ff0000; }
+
+/* Glassmorphism Design - True Glassmorphism Effect */
+.notify-style-glassmorphism.urgify-scarcity-banner {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #1a1a1a;
+  font-weight: 600;
+  padding: 16px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Adaptive text color - will be controlled by JavaScript */
+.notify-style-glassmorphism.urgify-scarcity-banner {
+  color: #1a1a1a;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Dark mode system preference */
+@media (prefers-color-scheme: dark) {
+  .notify-style-glassmorphism.urgify-scarcity-banner {
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.notify-style-glassmorphism.urgify-scarcity-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.3) 30%, 
+    rgba(255, 255, 255, 0.5) 50%, 
+    rgba(255, 255, 255, 0.3) 70%, 
+    transparent 100%);
+}
+
+/* Theme Editor Preview - always dark text with white shadow */
+.notify-style-glassmorphism .notification-message { 
+  color: #1a1a1a !important; 
+  font-weight: 600; 
+  text-shadow: 
+    0 1px 2px rgba(255, 255, 255, 0.9),
+    0 0 4px rgba(255, 255, 255, 0.7),
+    0 0 8px rgba(255, 255, 255, 0.5) !important;
+}
+
+.notify-style-glassmorphism .notification-icon { 
+  color: #2d2d2d !important; 
+  margin-right: 12px; 
+  filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.8)) !important;
+}
+
+/* Live View - Override Theme Editor styles */
+body:not(.shopify-theme-inspector) .notify-style-glassmorphism .notification-message,
+html:not([data-shopify-theme-inspector]) .notify-style-glassmorphism .notification-message {
+  color: #ffffff !important; 
+  text-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.8),
+    0 0 6px rgba(0, 0, 0, 0.6),
+    0 0 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+body:not(.shopify-theme-inspector) .notify-style-glassmorphism .notification-icon,
+html:not([data-shopify-theme-inspector]) .notify-style-glassmorphism .notification-icon {
+  color: #ffffff !important; 
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8)) !important;
+}
+
+/* Dark mode adaptations */
+@media (prefers-color-scheme: dark) {
+  .notify-style-glassmorphism .notification-message { 
+    color: rgba(255, 255, 255, 0.95) !important; 
+    text-shadow: 
+      0 1px 3px rgba(0, 0, 0, 0.8),
+      0 0 6px rgba(0, 0, 0, 0.6),
+      0 0 12px rgba(0, 0, 0, 0.4) !important;
+  }
+  
+  .notify-style-glassmorphism .notification-icon { 
+    color: rgba(255, 255, 255, 0.95) !important; 
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8)) !important;
+  }
+}
+
+/* Additional fallback for very dark backgrounds */
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #000"],
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #111"],
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #222"],
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #333"] {
+  color: #ffffff !important;
+}
+
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #000"] .notification-message,
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #111"] .notification-message,
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #222"] .notification-message,
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #333"] .notification-message {
+  color: #ffffff !important;
+  text-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.8),
+    0 0 6px rgba(0, 0, 0, 0.6),
+    0 0 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #000"] .notification-icon,
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #111"] .notification-icon,
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #222"] .notification-icon,
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #333"] .notification-icon {
+  color: #ffffff !important;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8)) !important;
+}
+
+
+
+/* Base scarcity banner styles */
+.urgify-scarcity-banner {
+  position: relative !important;
+  display: flex !important;
+  align-items: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  z-index: 1 !important;
+  margin: 0 auto !important;
+}
+
+/* Badge layout - normal size in container */
+.urgify-scarcity-banner.badge { 
+  width: auto !important;
+  max-width: 400px !important;
+  margin: 0 auto !important;
+}
+
+/* Message styling */
+.notification-message {
+  flex-grow: 1 !important;
+}
+
+/* Ensure visibility over all elements */
+.urgify-scarcity-banner * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Additional CSS to ensure visibility */
+body .urgify-scarcity-banner {
+  z-index: 1 !important;
+}
+
+@keyframes spectacularPulse {
+  0%, 100% { 
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% { 
+    box-shadow: 
+      0 30px 60px rgba(220, 53, 69, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes spectacularShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes titleShimmer {
+  0%, 100% { 
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  50% { 
+    text-shadow: 0 4px 8px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.3);
+  }
+}
+
+@keyframes badgeBounce {
+  0%, 100% { 
+    transform: translateY(0px);
+  }
+  50% { 
+    transform: translateY(-3px);
+  }
+}
+</style>
 
 {% schema %}
 {
   "name": "Urgify – Scarcity Banner",
   "target": "section",
   "settings": [
-    {
-      "type": "header",
-      "content": "Urgify – Scarcity Banner Configuration",
-      "info": "Create urgency with scarcity messaging and limited availability warnings."
-    },
-    {
-      "type": "header",
-      "content": "Content"
-    },
-    {
-      "type": "text",
-      "id": "message",
-      "label": "Scarcity Message",
-      "default": "Limited quantity available - Order now!",
-      "info": "Message to display about limited availability"
-    },
-    {
-      "type": "header",
-      "content": "Icon"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_icon",
-      "label": "Show Icon",
-      "default": true,
-      "info": "Display an icon next to the message"
-    },
-    {
-      "type": "text",
-      "id": "icon",
-      "label": "Icon",
-      "default": "⚠️",
-      "info": "Emoji or icon to display (e.g., ⚠️, 🔥, ⏰)"
-    },
-    {
-      "type": "header",
-      "content": "Colors & Alignment"
-    },
-    {
-      "type": "color",
-      "id": "font_color",
-      "label": "Font Color",
-      "default": "#ffffff",
-      "info": "Sets color for text and icons"
-    },
-    {
-      "type": "color",
-      "id": "background_color",
-      "label": "Background Color",
-      "default": "#ffc107",
-      "info": "Sets background for the entire block"
-    },
-    {
-      "type": "select",
-      "id": "content_alignment",
-      "label": "Content Alignment",
-      "options": [
-        {"value": "left", "label": "Left"},
-        {"value": "center", "label": "Center"},
-        {"value": "right", "label": "Right"}
-      ],
-      "default": "center"
-    }
+    { "type": "select", "id": "notify_style", "label": "Notification Style", "options": [
+      {"value": "spectacular", "label": "Spectacular (Animated)"},
+      {"value": "brutalist", "label": "Brutalist Bold"},
+      {"value": "glassmorphism", "label": "Glassmorphism"}
+    ], "default": "spectacular" },
+    { "type": "text", "id": "message", "label": "Message", "default": "Urgent: Limited time offer ending soon!" },
+    { "type": "select", "id": "icon", "label": "Icon", "options": [
+      {"value": "", "label": "No Icon"},
+      {"value": "→", "label": "Arrow Right (→)"},
+      {"value": "🛒", "label": "Shopping Cart (🛒)"},
+      {"value": "💎", "label": "Diamond (💎)"},
+      {"value": "⚡", "label": "Lightning (⚡)"},
+      {"value": "🔥", "label": "Fire (🔥)"},
+      {"value": "⭐", "label": "Star (⭐)"},
+      {"value": "🎯", "label": "Target (🎯)"},
+      {"value": "💫", "label": "Dizzy Star (💫)"},
+      {"value": "🚀", "label": "Rocket (🚀)"},
+      {"value": "✨", "label": "Sparkles (✨)"},
+      {"value": "💝", "label": "Gift (💝)"},
+      {"value": "🏆", "label": "Trophy (🏆)"},
+      {"value": "💰", "label": "Money Bag (💰)"},
+      {"value": "🎉", "label": "Party (🎉)"},
+      {"value": "❤️", "label": "Heart (❤️)"},
+      {"value": "👑", "label": "Crown (👑)"},
+      {"value": "🎁", "label": "Present (🎁)"},
+      {"value": "💯", "label": "Hundred (💯)"},
+      {"value": "🔔", "label": "Bell (🔔)"}
+    ], "default": "→" },
   ]
 }
 {% endschema %}

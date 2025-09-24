@@ -191,7 +191,7 @@ export default function Index() {
               <Text as="h3" variant="headingMd">Enjoying Urgify?</Text>
               <div style={{ marginBottom: "1rem" }}>
                 <Text as="p" variant="bodyMd">
-                  If Urgify is helping you create urgency and boost sales, please consider leaving a review!
+                  If Urgify helps you create effective urgency experiences, please consider leaving a review.
                 </Text>
               </div>
               <Button 

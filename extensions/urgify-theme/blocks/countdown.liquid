@@ -923,7 +923,9 @@
     },
     {
       "type": "header",
-      "content": "🎨 Custom Colors"
+      "content": "🎨 Custom Colors",
+      "info": "These options are only available when Color Theme is set to 'Custom'",
+      "visible_if": "{{ block.settings.color_theme == 'custom' }}"
     },
     {
       "type": "color",
@@ -931,7 +933,8 @@
       "label": "Background Color",
       "default": "#ff6b35",
       "alpha": false,
-      "info": "Main background color for the countdown"
+      "info": "Main background color for the countdown",
+      "visible_if": "{{ block.settings.color_theme == 'custom' }}"
     },
     {
       "type": "color",
@@ -939,7 +942,8 @@
       "label": "Font Color",
       "default": "#ffffff",
       "alpha": false,
-      "info": "Sets color for text and numbers"
+      "info": "Sets color for text and numbers",
+      "visible_if": "{{ block.settings.color_theme == 'custom' }}"
     },
     {
       "type": "color",
@@ -947,7 +951,8 @@
       "label": "Value Color",
       "default": "#ffffff",
       "alpha": false,
-      "info": "Color for countdown numbers"
+      "info": "Color for countdown numbers",
+      "visible_if": "{{ block.settings.color_theme == 'custom' }}"
     },
     {
       "type": "color",
@@ -955,7 +960,8 @@
       "label": "Label Color",
       "default": "#ffffff",
       "alpha": false,
-      "info": "Color for countdown labels (Days, Hours, etc.)"
+      "info": "Color for countdown labels (Days, Hours, etc.)",
+      "visible_if": "{{ block.settings.color_theme == 'custom' }}"
     },
     {
       "type": "color",
@@ -963,7 +969,8 @@
       "label": "Unit Background Color",
       "default": "#ffffff",
       "alpha": false,
-      "info": "Background color for individual countdown units"
+      "info": "Background color for individual countdown units",
+      "visible_if": "{{ block.settings.color_theme == 'custom' }}"
     },
     {
       "type": "color",
@@ -971,7 +978,8 @@
       "label": "Unit Border Color",
       "default": "#ffffff",
       "alpha": false,
-      "info": "Border color for individual countdown units"
+      "info": "Border color for individual countdown units",
+      "visible_if": "{{ block.settings.color_theme == 'custom' }}"
     },
     {
       "type": "color",
@@ -979,21 +987,24 @@
       "label": "Progress Color (Circular)",
       "default": "#ffffff",
       "alpha": false,
-      "info": "Color for circular progress bars"
+      "info": "Color for circular progress bars",
+      "visible_if": "{{ block.settings.color_theme == 'custom' }}"
     },
     {
       "type": "color",
       "id": "expired_background_color",
       "label": "Expired Background Color",
       "default": "rgba(255, 0, 0, 0.1)",
-      "info": "Background color when countdown expires"
+      "info": "Background color when countdown expires",
+      "visible_if": "{{ block.settings.color_theme == 'custom' }}"
     },
     {
       "type": "color",
       "id": "expired_text_color",
       "label": "Expired Text Color",
       "default": "#d32f2f",
-      "info": "Text color when countdown expires"
+      "info": "Text color when countdown expires",
+      "visible_if": "{{ block.settings.color_theme == 'custom' }}"
     },
     {
       "type": "header",

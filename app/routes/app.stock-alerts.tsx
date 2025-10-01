@@ -1,13 +1,15 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
+import { z } from "zod";
+import { shouldRateLimit, checkShopifyRateLimit } from "../utils/rateLimiting";
+import { performanceMonitor, trackApiPerformance } from "../utils/performance";
 import {
   Frame,
   Card,
   Page,
   Layout,
   Text,
-  Banner,
   List,
   Badge,
   BlockStack,
@@ -20,6 +22,23 @@ import {
   ContextualSaveBar,
 } from "@shopify/polaris";
 import { useState, useCallback, useEffect, useRef } from "react";
+
+// Validation schema for stock alert settings
+const stockAlertSettingsSchema = z.object({
+  globalThreshold: z.string().regex(/^\d+$/, 'Must be a number').transform(Number).refine(n => n >= 1 && n <= 1000, 'Must be between 1 and 1000'),
+  lowStockMessage: z.string().min(1, 'Message is required').max(500, 'Message too long'),
+  isEnabled: z.string().regex(/^(true|false)$/, 'Must be true or false'),
+  fontSize: z.string().regex(/^\d+px$/, 'Must be in px format'),
+  textColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color'),
+  backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color'),
+  showForAllProducts: z.string().regex(/^(true|false)$/, 'Must be true or false'),
+  showBasedOnInventory: z.string().regex(/^(true|false)$/, 'Must be true or false'),
+  showOnlyBelowThreshold: z.string().regex(/^(true|false)$/, 'Must be true or false'),
+  customThreshold: z.string().regex(/^\d+$/, 'Must be a number').transform(Number).refine(n => n >= 1 && n <= 10000, 'Must be between 1 and 10000'),
+  stockCounterAnimation: z.enum(['pulse', 'bounce', 'fade', 'slide']),
+  stockCounterPosition: z.enum(['above', 'below', 'left', 'right']),
+  stockAlertStyle: z.enum(['spectacular', 'minimal', 'classic']),
+});
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -149,13 +168,40 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
 
   if (request.method !== "POST") {
     return json({ error: "Method not allowed" }, { status: 405 });
   }
 
   try {
+    // Check rate limiting for admin actions
+    const rateLimitCheck = await shouldRateLimit(request, 'admin');
+    if (rateLimitCheck.limited) {
+      return json(
+        { error: rateLimitCheck.error },
+        { 
+          status: 429, 
+          headers: { 
+            'Retry-After': rateLimitCheck.retryAfter?.toString() || '60' 
+          } 
+        }
+      );
+    }
+
+    // Check Shopify GraphQL rate limits
+    const shopifyRateLimit = await checkShopifyRateLimit('graphql', session.shop);
+    if (!shopifyRateLimit.success) {
+      return json(
+        { error: shopifyRateLimit.error },
+        { 
+          status: 429, 
+          headers: { 
+            'Retry-After': shopifyRateLimit.retryAfter?.toString() || '60' 
+          } 
+        }
+      );
+    }
     // Check available scopes for debugging
     const scopeResponse = await admin.graphql(`
       query getCurrentAppInstallation {
@@ -176,19 +222,41 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       return String(v);
     };
 
-    const globalThreshold = getStr("globalThreshold", "5");
-    const lowStockMessage = getStr("lowStockMessage", "Only {{qty}} left in stock!");
-    const isEnabled = getStr("isEnabled", "false");
-    const fontSize = getStr("fontSize", "18px");
-    const textColor = getStr("textColor", "#ffffff");
-    const backgroundColor = getStr("backgroundColor", "#e74c3c");
-    const showForAllProducts = getStr("showForAllProducts", "false");
-    const showBasedOnInventory = getStr("showBasedOnInventory", "true");
-    const showOnlyBelowThreshold = getStr("showOnlyBelowThreshold", "false");
-    const customThreshold = getStr("customThreshold", "100");
-    const stockCounterAnimation = getStr("stockCounterAnimation", "pulse");
-    const stockCounterPosition = getStr("stockCounterPosition", "above");
-    const stockAlertStyle = getStr("stockAlertStyle", "spectacular");
+    // Extract form data
+    const formValues = {
+      globalThreshold: getStr("globalThreshold", "5"),
+      lowStockMessage: getStr("lowStockMessage", "Only {{qty}} left in stock!"),
+      isEnabled: getStr("isEnabled", "false"),
+      fontSize: getStr("fontSize", "18px"),
+      textColor: getStr("textColor", "#ffffff"),
+      backgroundColor: getStr("backgroundColor", "#e74c3c"),
+      showForAllProducts: getStr("showForAllProducts", "false"),
+      showBasedOnInventory: getStr("showBasedOnInventory", "true"),
+      showOnlyBelowThreshold: getStr("showOnlyBelowThreshold", "false"),
+      customThreshold: getStr("customThreshold", "100"),
+      stockCounterAnimation: getStr("stockCounterAnimation", "pulse"),
+      stockCounterPosition: getStr("stockCounterPosition", "above"),
+      stockAlertStyle: getStr("stockAlertStyle", "spectacular"),
+    };
+
+    // Validate input
+    const validatedData = stockAlertSettingsSchema.parse(formValues);
+    
+    const {
+      globalThreshold,
+      lowStockMessage,
+      isEnabled,
+      fontSize,
+      textColor,
+      backgroundColor,
+      showForAllProducts,
+      showBasedOnInventory,
+      showOnlyBelowThreshold,
+      customThreshold,
+      stockCounterAnimation,
+      stockCounterPosition,
+      stockAlertStyle,
+    } = validatedData;
 
     console.log("Saving Stock Alert Settings to Shop Metafields:", {
       globalThreshold,
@@ -370,6 +438,14 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     return json({ success: true });
   } catch (error) {
     console.error("Error saving stock alert settings:", error);
+    
+    if (error instanceof z.ZodError) {
+      const errorMessage = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+      return json({
+        error: `Validation failed: ${errorMessage}`
+      }, { status: 400 });
+    }
+    
     return json({
       error: "Failed to save settings: " + (error as Error).message
     }, { status: 500 });
@@ -469,7 +545,7 @@ export default function StockAlertsSimple() {
       setIsDirty(false);
       revalidator.revalidate();
     }
-  }, [fetcher.state, (fetcher.data as any)?.success, revalidator]);
+  }, [fetcher.state, fetcher.data, revalidator]);
 
   const getStockBadge = (inventory: number) => {
     const safeInventory = Number(inventory) || 0;

@@ -2,13 +2,11 @@ import * as React from "react";
 import {
   Box,
   Button,
-  ButtonGroup,
   Card,
   Divider,
   Icon,
   InlineGrid,
   InlineStack,
-  Link,
   ProgressBar,
   Text,
   BlockStack,
@@ -46,18 +44,22 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
   // Initial status load
   React.useEffect(() => {
     statusFetcher.load(`/api/quickstart-status?shop=${encodeURIComponent(shop)}`);
-  }, [shop]);
+  }, [shop, statusFetcher]);
   
   React.useEffect(() => {
-    console.log("Status fetcher data:", statusFetcher.data);
-    console.log("Status fetcher state:", statusFetcher.state);
+    if (process.env.NODE_ENV === 'development') {
+      console.log("Status fetcher data:", statusFetcher.data);
+      console.log("Status fetcher state:", statusFetcher.state);
+    }
     
     // Defensive check: ensure data exists and embedActive is a boolean
     if (
       statusFetcher.data &&
       typeof statusFetcher.data.embedActive === "boolean"
     ) {
-      console.log("Setting isDone to:", statusFetcher.data.embedActive);
+      if (process.env.NODE_ENV === 'development') {
+        console.log("Setting isDone to:", statusFetcher.data.embedActive);
+      }
       setIsDone(statusFetcher.data.embedActive);
       setHasError(false);
       // Reset activation state when status updates
@@ -65,10 +67,12 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
         setIsActivating(false);
         setShowActivationToast(false);
         setPolling(false); // Stoppe Polling wenn aktiviert
-        console.log("✅ Activation detected - stopping polling");
+        if (process.env.NODE_ENV === 'development') {
+          console.log("✅ Activation detected - stopping polling");
+        }
       }
     }
-  }, [statusFetcher.data]);
+  }, [statusFetcher.data, statusFetcher.state]);
 
   // Error handling - reset errors when data is received, but don't stop polling
   React.useEffect(() => {
@@ -105,7 +109,7 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [shop]);
+  }, [shop, statusFetcher]);
 
   // Polling after activation - check status every 3 seconds until activated
   React.useEffect(() => {
@@ -152,7 +156,7 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
         clearTimeout(timeout);
       }
     };
-  }, [polling, isDone, shop]); // hasError entfernt - Polling läuft auch bei Fehlern weiter
+  }, [polling, isDone, shop, statusFetcher]); // hasError entfernt - Polling läuft auch bei Fehlern weiter
 
   // Callback hook
   const handleActivate = React.useCallback(() => {

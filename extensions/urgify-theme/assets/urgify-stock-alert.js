@@ -17,6 +17,7 @@
     const textColor = cfg.text_color || host.dataset.textColor || null;
     const backgroundColor = cfg.background_color || host.dataset.backgroundColor || null;
     const animation = cfg.stock_counter_animation || host.dataset.animation || 'pulse';
+    const style = cfg.stock_alert_style || host.dataset.style || 'spectacular';
     const shake = host.dataset.shake || 'disabled';
     const tracksInventory = host.dataset.tracksInventory === 'true';
     if (cfg.stock_counter_position && host.id === 'urgify-stock-alert-auto') {
@@ -99,18 +100,20 @@
         textEl.innerHTML = template.replace(/\{\{qty\}\}/g, qty);
         host.classList.remove('urgify-stock-alert--critical');
         // Apply advanced styles if provided
-        // Apply via CSS custom properties so admin and frontend render identically
-        if (fontSize) host.style.setProperty('--urgify-font-size', fontSize);
-        if (textColor) {
-          host.style.setProperty('--urgify-text-color', textColor);
-          host.style.setProperty('--urgify-border', textColor);
-        }
-        if (backgroundColor) {
-          host.style.setProperty('--urgify-bg', backgroundColor);
-          host.style.background = backgroundColor; // ensure immediate application even if CSS var not picked up
-          host.style.backgroundImage = 'none'; // override gradient fallback explicitly
-          // Force background color to override any CSS animations
-          host.style.setProperty('background-color', backgroundColor, 'important');
+        // Apply via CSS custom properties only for custom style
+        if (style === 'custom') {
+          if (fontSize) host.style.setProperty('--urgify-font-size', fontSize);
+          if (textColor) {
+            host.style.setProperty('--urgify-text-color', textColor);
+            host.style.setProperty('--urgify-border', textColor);
+          }
+          if (backgroundColor) {
+            host.style.setProperty('--urgify-bg', backgroundColor);
+            host.style.background = backgroundColor; // ensure immediate application even if CSS var not picked up
+            host.style.backgroundImage = 'none'; // override gradient fallback explicitly
+            // Force background color to override any CSS animations
+            host.style.setProperty('background-color', backgroundColor, 'important');
+          }
         }
         if (animation === 'none') host.style.setProperty('--urgify-animation', 'none');
         if (animation === 'pulse') host.style.setProperty('--urgify-animation', 'scarcityPulse 2s infinite');

@@ -50,6 +50,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       background_color: "#e74c3c",
       stock_counter_animation: "pulse",
       stock_counter_position: "above",
+      stock_alert_style: "spectacular",
       show_for_all_products: false,
       show_based_on_inventory: false,
       show_only_below_threshold: false,
@@ -131,6 +132,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         background_color: "#e74c3c",
         stock_counter_animation: "pulse",
         stock_counter_position: "above",
+        stock_alert_style: "spectacular",
         show_for_all_products: false,
         show_based_on_inventory: false,
         show_only_below_threshold: true,
@@ -186,6 +188,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const customThreshold = getStr("customThreshold", "100");
     const stockCounterAnimation = getStr("stockCounterAnimation", "pulse");
     const stockCounterPosition = getStr("stockCounterPosition", "above");
+    const stockAlertStyle = getStr("stockAlertStyle", "spectacular");
 
     console.log("Saving Stock Alert Settings to Shop Metafields:", {
       globalThreshold,
@@ -196,6 +199,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       backgroundColor,
       stockCounterAnimation,
       stockCounterPosition,
+      stockAlertStyle,
       showForAllProducts,
       showBasedOnInventory,
       showOnlyBelowThreshold,
@@ -228,6 +232,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       background_color: backgroundColor,
       stock_counter_animation: stockCounterAnimation,
       stock_counter_position: stockCounterPosition,
+      stock_alert_style: stockAlertStyle,
       show_for_all_products: showForAllProducts === "true",
       show_based_on_inventory: showBasedOnInventory === "true",
       show_only_below_threshold: showOnlyBelowThreshold === "true",
@@ -297,6 +302,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         namespace: "urgify",
         key: "stock_counter_position",
         value: settings.stock_counter_position,
+        type: "single_line_text_field"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "stock_alert_style",
+        value: settings.stock_alert_style,
         type: "single_line_text_field"
       },
       {
@@ -378,6 +390,7 @@ export default function StockAlertsSimple() {
   const [backgroundColor, setBackgroundColor] = useState(String(settings.background_color || "#e74c3c"));
   const [stockCounterAnimation, setStockCounterAnimation] = useState(String(settings.stock_counter_animation || "pulse"));
   const [stockCounterPosition, setStockCounterPosition] = useState(String(settings.stock_counter_position || "above"));
+  const [stockAlertStyle, setStockAlertStyle] = useState(String(settings.stock_alert_style || "spectacular"));
   const [showForAllProducts, setShowForAllProducts] = useState(Boolean(settings.show_for_all_products));
   const [showBasedOnInventory, setShowBasedOnInventory] = useState(Boolean(settings.show_based_on_inventory));
   const [showOnlyBelowThreshold, setShowOnlyBelowThreshold] = useState(Boolean(settings.show_only_below_threshold));
@@ -397,6 +410,7 @@ export default function StockAlertsSimple() {
     setBackgroundColor(String(settings.background_color || "#e74c3c"));
     setStockCounterAnimation(String(settings.stock_counter_animation || "pulse"));
     setStockCounterPosition(String(settings.stock_counter_position || "above"));
+    setStockAlertStyle(String(settings.stock_alert_style || "spectacular"));
     setShowForAllProducts(Boolean(settings.show_for_all_products));
     setShowBasedOnInventory(Boolean(settings.show_based_on_inventory));
     setShowOnlyBelowThreshold(Boolean(settings.show_only_below_threshold));
@@ -431,6 +445,7 @@ export default function StockAlertsSimple() {
         backgroundColor,
         stockCounterAnimation,
         stockCounterPosition,
+        stockAlertStyle,
         showForAllProducts: showForAllProducts.toString(),
         showBasedOnInventory: showBasedOnInventory.toString(),
         showOnlyBelowThreshold: showOnlyBelowThreshold.toString(),
@@ -438,7 +453,7 @@ export default function StockAlertsSimple() {
       },
       { method: "POST", action: "/app/stock-alerts", encType: "application/x-www-form-urlencoded" }
     );
-  }, [globalThreshold, lowStockMessage, isEnabled, fontSize, textColor, backgroundColor, stockCounterAnimation, stockCounterPosition, showForAllProducts, showBasedOnInventory, showOnlyBelowThreshold, customThreshold, fetcher]);
+  }, [globalThreshold, lowStockMessage, isEnabled, fontSize, textColor, backgroundColor, stockCounterAnimation, stockCounterPosition, stockAlertStyle, showForAllProducts, showBasedOnInventory, showOnlyBelowThreshold, customThreshold, fetcher]);
 
   // Show success toast when save is successful (nur Rising-Edge)
   useEffect(() => {
@@ -463,6 +478,114 @@ export default function StockAlertsSimple() {
       return <Badge tone="warning">{`Below threshold (${safeInventory})`}</Badge>;
     }
     return <Badge tone="success">{`OK (${safeInventory})`}</Badge>;
+  };
+
+  // Preview component for stock alert
+  const StockAlertPreview = () => {
+    const previewMessage = lowStockMessage.replace('{{qty}}', '3');
+    
+    const getPreviewStyle = () => {
+      const baseStyle = {
+        padding: '1.5rem 2rem',
+        borderRadius: '12px',
+        fontWeight: '800',
+        textAlign: 'center' as const,
+        textTransform: 'uppercase' as const,
+        letterSpacing: '1px',
+        margin: '1.5rem 0',
+        position: 'relative' as const,
+        overflow: 'hidden' as const,
+        fontFamily: "'Arial Black', Arial, sans-serif",
+        transition: 'all 0.3s ease',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      };
+
+      if (stockAlertStyle === "custom") {
+        return {
+          ...baseStyle,
+          background: backgroundColor,
+          color: textColor,
+          fontSize: fontSize,
+        };
+      }
+
+      if (stockAlertStyle === "spectacular") {
+        return {
+          ...baseStyle,
+          padding: '50px 40px',
+          borderRadius: '20px',
+          background: 'linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%)',
+          color: 'white',
+          fontSize: '1.2rem',
+          letterSpacing: '2px',
+          textShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+        };
+      }
+
+      if (stockAlertStyle === "brutalist") {
+        return {
+          ...baseStyle,
+          background: '#000000',
+          border: '8px solid #ff0000',
+          borderRadius: '0',
+          color: '#ffff00',
+          fontSize: '1.3rem',
+          letterSpacing: '3px',
+          textShadow: '4px 4px 0px #ff0000',
+          boxShadow: '8px 8px 0px #ff0000, 16px 16px 0px #ffff00, 24px 24px 0px #00ff00',
+        };
+      }
+
+      if (stockAlertStyle === "glassmorphism") {
+        return {
+          ...baseStyle,
+          background: 'rgba(255, 255, 255, 0.1)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '20px',
+          color: '#000000',
+          fontSize: '1.1rem',
+          letterSpacing: '1px',
+          textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
+        };
+      }
+
+      if (stockAlertStyle === "neumorphism") {
+        return {
+          ...baseStyle,
+          background: '#e0e5ec',
+          border: 'none',
+          borderRadius: '30px',
+          color: '#2d3748',
+          fontSize: '1.1rem',
+          letterSpacing: '1px',
+          boxShadow: '20px 20px 60px #bebebe, -20px -20px 60px #ffffff, inset 0 0 0 rgba(255, 255, 255, 0.1)',
+        };
+      }
+
+      return baseStyle;
+    };
+
+    return (
+      <div style={{ 
+        padding: '20px', 
+        border: '1px solid #e1e3e5', 
+        borderRadius: '8px',
+        backgroundColor: '#f6f6f7',
+        marginTop: '10px'
+      }}>
+        <Text variant="headingSm" as="h3" style={{ marginBottom: '10px' }}>
+          Preview:
+        </Text>
+        <div style={getPreviewStyle()}>
+          <span>{previewMessage}</span>
+        </div>
+      </div>
+    );
   };
 
   // Remove error handling since error is not in loader data anymore
@@ -513,39 +636,6 @@ export default function StockAlertsSimple() {
                   helpText="Use {{qty}} as placeholder for quantity"
                 />
                 
-                <TextField
-                  label="Font Size"
-                  value={fontSize}
-                  onChange={(value) => {
-                    setFontSize(value);
-                    setIsDirty(true);
-                  }}
-                  autoComplete="off"
-                  helpText="e.g., 18px, 1.2rem"
-                />
-                
-                <TextField
-                  label="Text Color"
-                  value={textColor}
-                  onChange={(value) => {
-                    setTextColor(value);
-                    setIsDirty(true);
-                  }}
-                  autoComplete="off"
-                  helpText="e.g., #ffffff, red"
-                />
-                
-                <TextField
-                  label="Background Color"
-                  value={backgroundColor}
-                  onChange={(value) => {
-                    setBackgroundColor(value);
-                    setIsDirty(true);
-                  }}
-                  autoComplete="off"
-                  helpText="e.g., #e74c3c, red"
-                />
-                
                 <Select
                   label="Animation"
                   options={[
@@ -573,6 +663,61 @@ export default function StockAlertsSimple() {
                     setIsDirty(true);
                   }}
                 />
+                
+                <Select
+                  label="Stock Alert Style"
+                  options={[
+                    { label: "Spectacular (Animated)", value: "spectacular" },
+                    { label: "Brutalist Bold", value: "brutalist" },
+                    { label: "Glassmorphism", value: "glassmorphism" },
+                    { label: "Neumorphism", value: "neumorphism" },
+                    { label: "Custom", value: "custom" },
+                  ]}
+                  value={stockAlertStyle}
+                  onChange={(value) => {
+                    setStockAlertStyle(value);
+                    setIsDirty(true);
+                  }}
+                />
+                
+                {stockAlertStyle === "custom" && (
+                  <>
+                    <TextField
+                      label="Font Size"
+                      value={fontSize}
+                      onChange={(value) => {
+                        setFontSize(value);
+                        setIsDirty(true);
+                      }}
+                      autoComplete="off"
+                      helpText="e.g., 18px, 1.2rem"
+                    />
+                    
+                    <TextField
+                      label="Text Color"
+                      value={textColor}
+                      onChange={(value) => {
+                        setTextColor(value);
+                        setIsDirty(true);
+                      }}
+                      autoComplete="off"
+                      helpText="e.g., #ffffff, red"
+                    />
+                    
+                    <TextField
+                      label="Background Color"
+                      value={backgroundColor}
+                      onChange={(value) => {
+                        setBackgroundColor(value);
+                        setIsDirty(true);
+                      }}
+                      autoComplete="off"
+                      helpText="e.g., #e74c3c, red"
+                    />
+                  </>
+                )}
+                
+                <StockAlertPreview />
               </FormLayout>
             </BlockStack>
           </Card>
@@ -623,6 +768,7 @@ export default function StockAlertsSimple() {
               setBackgroundColor(String(settings.background_color || "#e74c3c"));
               setStockCounterAnimation(String(settings.stock_counter_animation || "pulse"));
               setStockCounterPosition(String(settings.stock_counter_position || "above"));
+              setStockAlertStyle(String(settings.stock_alert_style || "spectacular"));
               setShowForAllProducts(Boolean(settings.show_for_all_products));
               setShowBasedOnInventory(Boolean(settings.show_based_on_inventory));
               setShowOnlyBelowThreshold(Boolean(settings.show_only_below_threshold));

@@ -16,6 +16,7 @@
   assign background_color = shop.metafields.urgify.background_color.value | default: '#e74c3c'
   assign animation = shop.metafields.urgify.stock_counter_animation.value | default: 'pulse'
   assign position = shop.metafields.urgify.stock_counter_position.value | default: 'above'
+  assign style = shop.metafields.urgify.stock_alert_style.value | default: 'spectacular'
 
   assign tracks_inventory = false
   for v in product.variants
@@ -36,7 +37,7 @@
 
 {% if enabled == true or enabled == 'true' %}
   {{ 'urgify-stock-alert.css' | asset_url | stylesheet_tag }}
-  <div id="urgify-stock-alert-auto" class="urgify-stock-alert" hidden
+  <div id="urgify-stock-alert-auto" class="urgify-stock-alert urgify-stock-alert--{{ style }}" hidden
        data-threshold="{{ threshold | escape }}"
        data-low-message="{{ low_msg | escape }}"
        data-message="{{ low_msg | escape }}"
@@ -45,14 +46,16 @@
        data-background-color="{{ background_color | escape }}"
        data-animation="{{ animation | escape }}"
        data-position="{{ position | escape }}"
+       data-style="{{ style | escape }}"
        data-tracks-inventory="{{ tracks_inventory }}">
     <style>
       #urgify-stock-alert-auto {
-        --urgify-font-size: {{ font_size | escape }};
-        --urgify-text-color: {{ text_color | escape }};
-        --urgify-bg: {{ background_color | escape }};
-        --urgify-border: {{ text_color | escape }};
-        background: {{ background_color | escape }} !important;
+        {% if style == 'custom' %}
+          --urgify-font-size: {{ font_size | escape }};
+          --urgify-text-color: {{ text_color | escape }};
+          --urgify-bg: {{ background_color | escape }};
+          --urgify-border: {{ text_color | escape }};
+        {% endif %}
       }
     </style>
     <span class="urgify-stock-alert__text"></span>

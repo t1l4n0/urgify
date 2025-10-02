@@ -100,11 +100,15 @@ export default function BillingConfirmation() {
                     </Text>
                     
                     <InlineStack gap="300">
-                      <Link to="/app/billing">
-                        <Button variant="primary">
-                          Go to Billing Dashboard
-                        </Button>
-                      </Link>
+                      <Button 
+                        variant="primary"
+                        onClick={() => {
+                          const adminUrl = `https://${shop}/admin/apps/urgify/pricing_plans`;
+                          window.open(adminUrl, '_blank');
+                        }}
+                      >
+                        View Pricing Plans
+                      </Button>
                       
                       <Link to="/app">
                         <Button variant="secondary">
@@ -132,11 +136,15 @@ export default function BillingConfirmation() {
                     </Text>
                     
                     <InlineStack gap="300">
-                      <Link to="/app/billing">
-                        <Button variant="primary">
-                          Try Again
-                        </Button>
-                      </Link>
+                      <Button 
+                        variant="primary"
+                        onClick={() => {
+                          const adminUrl = `https://${shop}/admin/apps/urgify/pricing_plans`;
+                          window.open(adminUrl, '_blank');
+                        }}
+                      >
+                        View Pricing Plans
+                      </Button>
                       
                       <Link to="/app">
                         <Button variant="secondary">

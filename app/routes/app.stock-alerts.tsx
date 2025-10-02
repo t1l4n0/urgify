@@ -23,21 +23,21 @@ import {
 } from "@shopify/polaris";
 import { useState, useCallback, useEffect, useRef } from "react";
 
-// Validation schema for stock alert settings
+// Validation schema for stock alert settings - simplified
 const stockAlertSettingsSchema = z.object({
-  globalThreshold: z.string().regex(/^\d+$/, 'Must be a number').transform(Number).refine(n => n >= 1 && n <= 1000, 'Must be between 1 and 1000'),
-  lowStockMessage: z.string().min(1, 'Message is required').max(500, 'Message too long'),
-  isEnabled: z.string().regex(/^(true|false)$/, 'Must be true or false'),
-  fontSize: z.string().regex(/^\d+px$/, 'Must be in px format'),
-  textColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color'),
-  backgroundColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Must be a valid hex color'),
-  showForAllProducts: z.string().regex(/^(true|false)$/, 'Must be true or false'),
-  showBasedOnInventory: z.string().regex(/^(true|false)$/, 'Must be true or false'),
-  showOnlyBelowThreshold: z.string().regex(/^(true|false)$/, 'Must be true or false'),
-  customThreshold: z.string().regex(/^\d+$/, 'Must be a number').transform(Number).refine(n => n >= 1 && n <= 10000, 'Must be between 1 and 10000'),
-  stockCounterAnimation: z.enum(['pulse', 'bounce', 'fade', 'slide']),
-  stockCounterPosition: z.enum(['above', 'below', 'left', 'right']),
-  stockAlertStyle: z.enum(['spectacular', 'minimal', 'classic']),
+  globalThreshold: z.string().default('5'),
+  lowStockMessage: z.string().default('Only {{qty}} left in stock!'),
+  isEnabled: z.string().default('false'),
+  fontSize: z.string().default('18px'),
+  textColor: z.string().default('#ffffff'),
+  backgroundColor: z.string().default('#e74c3c'),
+  showForAllProducts: z.string().default('false'),
+  showBasedOnInventory: z.string().default('false'),
+  showOnlyBelowThreshold: z.string().default('false'),
+  customThreshold: z.string().default('100'),
+  stockCounterAnimation: z.string().default('pulse'),
+  stockCounterPosition: z.string().default('above'),
+  stockAlertStyle: z.string().default('spectacular'),
 });
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -440,7 +440,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     console.error("Error saving stock alert settings:", error);
     
     if (error instanceof z.ZodError) {
-      const errorMessage = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+      const errorMessage = error.issues?.map((err: any) => `${err.path?.join('.')}: ${err.message}`).join(', ') || 'Validation failed';
       return json({
         error: `Validation failed: ${errorMessage}`
       }, { status: 400 });
@@ -654,7 +654,7 @@ export default function StockAlertsSimple() {
         backgroundColor: '#f6f6f7',
         marginTop: '10px'
       }}>
-        <Text variant="headingSm" as="h3" style={{ marginBottom: '10px' }}>
+        <Text variant="headingSm" as="h3">
           Preview:
         </Text>
         <div style={getPreviewStyle()}>

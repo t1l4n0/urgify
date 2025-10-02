@@ -93,7 +93,7 @@ export default function Index() {
               onAction: () => goToAdmin('/themes/current/editor'),
             } : {
               content: '💰 View Plans',
-              onAction: () => window.location.href = '/app/billing',
+              onAction: () => goToAdmin('/apps/urgify/pricing_plans'),
             }}
           >
             <p>

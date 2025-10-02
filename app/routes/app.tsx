@@ -56,16 +56,12 @@ export default function App() {
       <ui-nav-menu>
         <Link to="/app" rel="home">Home</Link>
         <Link to="/app/stock-alerts">Stock Alerts</Link>
-        <Link to="/app/webhooks">Webhooks</Link>
-        <Link to="/app/performance">Performance</Link>
       </ui-nav-menu>
       <PolarisAppProvider i18n={enTranslations}>
         <Frame>
           <TitleBar
             title={
               location.pathname === "/app/stock-alerts" ? "Stock Alerts" :
-              location.pathname === "/app/webhooks" ? "Webhook Dashboard" :
-              location.pathname === "/app/performance" ? "Performance Dashboard" :
               "Urgify"
             }
           />

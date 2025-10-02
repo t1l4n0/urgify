@@ -5,7 +5,6 @@ export const WEBHOOK_EVENTS = {
   // App lifecycle events
   APP_UNINSTALLED: 'app/uninstalled',
   APP_SUBSCRIPTIONS_UPDATE: 'app_subscriptions/update',
-  APP_SCOPES_UPDATE: 'app_scopes/update',
   
   // Customer data events
   CUSTOMERS_DATA_REQUEST: 'customers/data_request',
@@ -18,15 +17,6 @@ export const WEBHOOK_EVENTS = {
   PRODUCTS_CREATE: 'products/create',
   PRODUCTS_UPDATE: 'products/update',
   PRODUCTS_DELETE: 'products/delete',
-  
-  // Inventory events
-  INVENTORY_LEVELS_UPDATE: 'inventory_levels/update',
-  
-  // Order events
-  ORDERS_CREATE: 'orders/create',
-  ORDERS_UPDATED: 'orders/updated',
-  ORDERS_PAID: 'orders/paid',
-  ORDERS_CANCELLED: 'orders/cancelled',
   
   // Theme events
   THEMES_PUBLISH: 'themes/publish',
@@ -67,27 +57,9 @@ export const productSchema = z.object({
   })),
 });
 
-export const orderSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  email: z.string().optional(),
-  total_price: z.string(),
-  currency: z.string(),
-  created_at: z.string(),
-  line_items: z.array(z.object({
-    id: z.number(),
-    product_id: z.number(),
-    variant_id: z.number(),
-    title: z.string(),
-    quantity: z.number(),
-    price: z.string(),
-  })),
-});
-
 export type WebhookPayload = z.infer<typeof webhookPayloadSchema>;
 export type AppUninstalledData = z.infer<typeof appUninstalledSchema>;
 export type ProductData = z.infer<typeof productSchema>;
-export type OrderData = z.infer<typeof orderSchema>;
 
 // Webhook processing result
 export interface WebhookResult {
@@ -111,10 +83,12 @@ export class WebhookProcessor {
   private shop: string;
   private admin: any;
   private retryCount = 0;
+  private startTime: number;
 
   constructor(shop: string, admin: any) {
     this.shop = shop;
     this.admin = admin;
+    this.startTime = Date.now();
   }
 
   // Process webhook with retry logic
@@ -123,19 +97,39 @@ export class WebhookProcessor {
     data: any, 
     retryCount = 0
   ): Promise<WebhookResult> {
+    const processingTime = Date.now() - this.startTime;
+    
     try {
-      console.log(`🔗 Processing webhook: ${topic} for shop: ${this.shop}`);
+      console.log(`🔗 Processing webhook: ${topic} for shop: ${this.shop} (attempt ${retryCount + 1})`);
+      
+      // Validate webhook data before processing
+      if (!data || typeof data !== 'object') {
+        throw new Error('Invalid webhook data: data must be an object');
+      }
       
       const result = await this.routeWebhook(topic, data);
       
       if (result.success) {
-        console.log(`✅ Webhook processed successfully: ${topic}`);
-        return result;
+        console.log(`✅ Webhook processed successfully: ${topic} (${processingTime}ms)`);
+        return {
+          ...result,
+          data: {
+            ...result.data,
+            processingTime,
+            retryCount
+          }
+        };
       } else {
         throw new Error(result.error || 'Webhook processing failed');
       }
     } catch (error) {
-      console.error(`❌ Webhook processing failed: ${topic}`, error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`❌ Webhook processing failed: ${topic} (attempt ${retryCount + 1})`, {
+        error: errorMessage,
+        processingTime,
+        shop: this.shop,
+        topic
+      });
       
       if (retryCount < WEBHOOK_RETRY_CONFIG.maxRetries) {
         const delay = Math.min(
@@ -152,8 +146,13 @@ export class WebhookProcessor {
       return {
         success: false,
         processed: false,
-        error: `Webhook processing failed after ${WEBHOOK_RETRY_CONFIG.maxRetries} retries: ${error}`,
+        error: `Webhook processing failed after ${WEBHOOK_RETRY_CONFIG.maxRetries} retries: ${errorMessage}`,
         retryAfter: WEBHOOK_RETRY_CONFIG.maxRetryDelay,
+        data: {
+          processingTime,
+          retryCount: retryCount + 1,
+          finalAttempt: true
+        }
       };
     }
   }
@@ -166,9 +165,6 @@ export class WebhookProcessor {
       
       case WEBHOOK_EVENTS.APP_SUBSCRIPTIONS_UPDATE:
         return this.handleAppSubscriptionsUpdate(data);
-      
-      case WEBHOOK_EVENTS.APP_SCOPES_UPDATE:
-        return this.handleAppScopesUpdate(data);
       
       case WEBHOOK_EVENTS.CUSTOMERS_DATA_REQUEST:
         return this.handleCustomersDataRequest(data);
@@ -183,15 +179,6 @@ export class WebhookProcessor {
       case WEBHOOK_EVENTS.PRODUCTS_UPDATE:
       case WEBHOOK_EVENTS.PRODUCTS_DELETE:
         return this.handleProductChange(topic, data);
-      
-      case WEBHOOK_EVENTS.INVENTORY_LEVELS_UPDATE:
-        return this.handleInventoryUpdate(data);
-      
-      case WEBHOOK_EVENTS.ORDERS_CREATE:
-      case WEBHOOK_EVENTS.ORDERS_UPDATED:
-      case WEBHOOK_EVENTS.ORDERS_PAID:
-      case WEBHOOK_EVENTS.ORDERS_CANCELLED:
-        return this.handleOrderChange(topic, data);
       
       case WEBHOOK_EVENTS.THEMES_PUBLISH:
       case WEBHOOK_EVENTS.THEMES_DELETE:
@@ -221,16 +208,25 @@ export class WebhookProcessor {
       // - Sending notifications
       // - Updating analytics
       
+      // Simulate cleanup process
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       return {
         success: true,
         processed: true,
-        data: { shop: validatedData.domain, action: 'uninstalled' }
+        data: { 
+          shop: validatedData.domain, 
+          action: 'uninstalled',
+          timestamp: new Date().toISOString()
+        }
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('App uninstalled validation failed:', errorMessage);
       return {
         success: false,
         processed: false,
-        error: `App uninstalled validation failed: ${error}`
+        error: `App uninstalled validation failed: ${errorMessage}`
       };
     }
   }
@@ -259,29 +255,6 @@ export class WebhookProcessor {
     }
   }
 
-  private async handleAppScopesUpdate(data: any): Promise<WebhookResult> {
-    try {
-      console.log(`🔐 App scopes updated for shop: ${this.shop}`);
-      
-      // Handle scope changes
-      // This would typically involve:
-      // - Updating permissions
-      // - Re-requesting access if needed
-      // - Notifying users of changes
-      
-      return {
-        success: true,
-        processed: true,
-        data: { shop: this.shop, action: 'scopes_updated' }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        processed: false,
-        error: `Scopes update failed: ${error}`
-      };
-    }
-  }
 
   // Customer data handlers
   private async handleCustomersDataRequest(data: any): Promise<WebhookResult> {
@@ -360,10 +333,12 @@ export class WebhookProcessor {
   private async handleProductChange(topic: string, data: any): Promise<WebhookResult> {
     try {
       const validatedData = productSchema.parse(data);
+      const action = topic.split('/')[1];
       
-      console.log(`📦 Product ${topic.split('/')[1]} for shop: ${this.shop}`, {
+      console.log(`📦 Product ${action} for shop: ${this.shop}`, {
         productId: validatedData.id,
-        title: validatedData.title
+        title: validatedData.title,
+        status: validatedData.status
       });
       
       // Handle product changes
@@ -372,82 +347,33 @@ export class WebhookProcessor {
       // - Refreshing stock alerts
       // - Updating analytics
       
+      // Simulate processing time
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
       return {
         success: true,
         processed: true,
         data: { 
           shop: this.shop, 
-          action: `product_${topic.split('/')[1]}`,
-          productId: validatedData.id
+          action: `product_${action}`,
+          productId: validatedData.id,
+          productTitle: validatedData.title,
+          timestamp: new Date().toISOString()
         }
       };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error(`Product ${topic.split('/')[1]} failed:`, errorMessage);
       return {
         success: false,
         processed: false,
-        error: `Product change failed: ${error}`
+        error: `Product change failed: ${errorMessage}`
       };
     }
   }
 
   // Inventory handlers
-  private async handleInventoryUpdate(data: any): Promise<WebhookResult> {
-    try {
-      console.log(`📊 Inventory updated for shop: ${this.shop}`);
-      
-      // Handle inventory changes
-      // This would typically involve:
-      // - Updating stock levels
-      // - Refreshing stock alerts
-      // - Updating analytics
-      
-      return {
-        success: true,
-        processed: true,
-        data: { shop: this.shop, action: 'inventory_updated' }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        processed: false,
-        error: `Inventory update failed: ${error}`
-      };
-    }
-  }
 
-  // Order handlers
-  private async handleOrderChange(topic: string, data: any): Promise<WebhookResult> {
-    try {
-      const validatedData = orderSchema.parse(data);
-      
-      console.log(`🛒 Order ${topic.split('/')[1]} for shop: ${this.shop}`, {
-        orderId: validatedData.id,
-        orderName: validatedData.name
-      });
-      
-      // Handle order changes
-      // This would typically involve:
-      // - Updating order status
-      // - Processing payments
-      // - Updating analytics
-      
-      return {
-        success: true,
-        processed: true,
-        data: { 
-          shop: this.shop, 
-          action: `order_${topic.split('/')[1]}`,
-          orderId: validatedData.id
-        }
-      };
-    } catch (error) {
-      return {
-        success: false,
-        processed: false,
-        error: `Order change failed: ${error}`
-      };
-    }
-  }
 
   // Theme handlers
   private async handleThemeChange(topic: string, data: any): Promise<WebhookResult> {

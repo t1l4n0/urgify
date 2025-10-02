@@ -8,7 +8,7 @@
   assign cfg_json = shop.metafields.urgify.stock_alert_config.value | default: '{}'
   
   # Einzel-Metafields → dann JSON → dann Default
-  assign enabled = shop.metafields.urgify.stock_alert_enabled.value | default: true
+  assign enabled = shop.metafields.urgify.stock_alert_enabled.value | default: false
   assign threshold = shop.metafields.urgify.global_threshold.value | default: 5
   assign low_msg = shop.metafields.urgify.low_stock_message.value | default: 'Only {{qty}} left in stock!'
   assign font_size = shop.metafields.urgify.font_size.value | default: '18px'

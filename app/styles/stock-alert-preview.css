@@ -21,6 +21,7 @@
   font-size: 18px;
   margin: 1.5rem 0;
   background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  background-size: 200% 200%;
   color: #ffffff;
   text-align: center;
   text-transform: uppercase;
@@ -101,30 +102,8 @@
   justify-content: center;
 }
 
-/* Override background when inline style is set */
-.urgify-stock-alert[style*="background"] {
-  background: unset !important;
-  background-color: unset !important;
-}
 
-/* ensure gradient border like frontend */
-.urgify-stock-alert::after {
-  content: "";
-  position: absolute;
-  top: -2px;
-  left: -2px;
-  right: -2px;
-  bottom: -2px;
-  background: var(--urgify-bg, linear-gradient(45deg, #ff6b35, #e74c3c, #c0392b, #ff6b35));
-  border-radius: 12px;
-  z-index: -1;
-  animation: borderGlow 3s linear infinite;
-}
 
-/* keep border color in sync when user sets only text color */
-.urgify-stock-alert {
-  --urgify-border: var(--urgify-text-color, #ffffff);
-}
 
 .urgify-stock-alert::before {
   content: var(--urgify-icon, "");
@@ -207,4 +186,190 @@
   100% { background-position: 0% 50%; }
 }
 
+/* Spectacular Animations */
+@keyframes spectacularPulse {
+  0%, 100% { 
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% { 
+    box-shadow: 
+      0 30px 60px rgba(220, 53, 69, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes spectacularShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+/* Additional Keyframes for Backend Preview */
+@keyframes scarcityPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.8;
+  }
+}
+
+@keyframes urgifyBounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-10px);
+  }
+  60% {
+    transform: translateY(-5px);
+  }
+}
+
+@keyframes criticalShake {
+  0%, 100% { 
+    transform: scale(1.05) translateX(0); 
+  }
+  25% { 
+    transform: scale(1.05) translateX(-2px); 
+  }
+  75% { 
+    transform: scale(1.05) translateX(2px); 
+  }
+}
+
 /* Style Rotation Animations removed - they were overriding custom background colors */
+
+/* Stock Alert Style Classes */
+.urgify-stock-alert {
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 18px;
+  margin: 1.5rem 0;
+  color: #ffffff;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Arial Black', Arial, sans-serif;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.urgify-stock-alert__text {
+  z-index: 2;
+  position: relative;
+}
+
+/* Spectacular Style - Exact Frontend Match */
+.urgify-stock-alert--spectacular {
+  position: relative !important;
+  padding: 20px !important;
+  text-align: center !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  background: linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%) !important;
+  background-size: 200% 200% !important;
+  border: none !important;
+  font-family: 'Arial Black', Arial, sans-serif !important;
+  font-weight: 800 !important;
+  font-size: 1.2rem !important;
+  letter-spacing: 2px !important;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+  color: white !important;
+  margin: 1.5rem 0 !important;
+  transition: all 0.3s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Brutalist Style - Exact Frontend Match */
+.urgify-stock-alert--brutalist {
+  background: #000000 !important;
+  border: 8px solid #ff0000 !important;
+  border-radius: 0 !important;
+  color: #ffff00 !important;
+  font-size: 1.3rem !important;
+  letter-spacing: 3px !important;
+  text-shadow: 4px 4px 0px #ff0000 !important;
+  box-shadow: 8px 8px 0px #ff0000, 16px 16px 0px #ffff00, 24px 24px 0px #00ff00 !important;
+  font-family: 'Arial Black', Arial, sans-serif !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  text-align: center !important;
+  padding: 1.5rem 2rem !important;
+  margin: 1.5rem 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Glassmorphism Style - Exact Frontend Match */
+.urgify-stock-alert--glassmorphism {
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 20px !important;
+  color: #000000 !important;
+  font-size: 1.1rem !important;
+  letter-spacing: 1px !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  font-family: 'Arial Black', Arial, sans-serif !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  text-align: center !important;
+  padding: 1.5rem 2rem !important;
+  margin: 1.5rem 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Neumorphism Style - Exact Frontend Match */
+.urgify-stock-alert--neumorphism {
+  background: #e0e5ec !important;
+  border: none !important;
+  border-radius: 30px !important;
+  color: #2d3748 !important;
+  font-size: 1.1rem !important;
+  letter-spacing: 1px !important;
+  box-shadow: 20px 20px 60px #bebebe, -20px -20px 60px #ffffff, inset 0 0 0 rgba(255, 255, 255, 0.1) !important;
+  font-family: 'Arial Black', Arial, sans-serif !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  text-align: center !important;
+  padding: 1.5rem 2rem !important;
+  margin: 1.5rem 0 !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Custom Style - uses CSS variables */
+.urgify-stock-alert--custom {
+  background: var(--urgify-bg, #e74c3c);
+  color: var(--urgify-text-color, #ffffff);
+  border: 2px solid var(--urgify-border, #e74c3c);
+  font-size: var(--urgify-font-size, 18px);
+}

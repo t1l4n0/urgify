@@ -20,23 +20,23 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if (!admin) {
     // The admin context isn't returned if the webhook fired after a shop was uninstalled.
-    console.warn(`❌ Shop redact webhook failed: No admin context for shop ${shop}`);
+    console.warn(`❌ Theme publish webhook failed: No admin context for shop ${shop}`);
     throw new Response();
   }
 
-  console.log(`🏪 Shop Redact Webhook empfangen für Shop: ${shop}`);
+  console.log(`🎨 Theme Publish Webhook empfangen für Shop: ${shop}`);
   console.log("Payload:", JSON.stringify(payload, null, 2));
 
   try {
     // Use WebhookProcessor for robust handling
     const webhookProcessor = new WebhookProcessor(shop, admin);
-    const result = await webhookProcessor.processWebhook(WEBHOOK_EVENTS.SHOP_REDACT, payload);
+    const result = await webhookProcessor.processWebhook(WEBHOOK_EVENTS.THEMES_PUBLISH, payload);
     
     if (result.success) {
-      console.log("✅ Shop redact processed successfully");
+      console.log("✅ Theme publish processed successfully");
       return new Response("OK", { status: 200 });
     } else {
-      console.error("❌ Shop redact processing failed:", result.error);
+      console.error("❌ Theme publish processing failed:", result.error);
       return new Response("Error processing webhook", { 
         status: 500,
         headers: {
@@ -45,7 +45,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       });
     }
   } catch (error) {
-    console.error("❌ Shop redact webhook error:", error);
+    console.error("❌ Theme publish webhook error:", error);
     return new Response("Internal server error", { 
       status: 500,
       headers: {

@@ -16,7 +16,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     });
   }
 
-  const { topic } = await authenticate.webhook(request);
+  const { topic, shop, admin, payload } = await authenticate.webhook(request);
 
   if (!topic) {
     return new Response("Missing topic", { status: 400 });
@@ -24,7 +24,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
   if (topic === "APP_UNINSTALLED") {
     try {
-      const payload = await request.json();
       console.log("App uninstalled:", payload);
       
       // Use WebhookProcessor for robust handling

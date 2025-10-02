@@ -11,6 +11,16 @@ embedded = true
 [webhooks]
 api_version = "2025-04"
 
+  # App lifecycle webhooks
+  [[webhooks.subscriptions]]
+  uri = "https://urgify.fly.dev/webhooks/app/uninstalled"
+  topics = [ "app/uninstalled" ]
+
+  [[webhooks.subscriptions]]
+  uri = "https://urgify.fly.dev/webhooks/app/subscriptions/update"
+  topics = [ "app_subscriptions/update" ]
+
+  # Compliance webhooks (required for GDPR)
   [[webhooks.subscriptions]]
   uri = "https://urgify.fly.dev/webhooks/customers/data_request"
   compliance_topics = [ "customers/data_request" ]
@@ -22,6 +32,29 @@ api_version = "2025-04"
   [[webhooks.subscriptions]]
   uri = "https://urgify.fly.dev/webhooks/shop/redact"
   compliance_topics = [ "shop/redact" ]
+
+  # Product webhooks
+  [[webhooks.subscriptions]]
+  uri = "https://urgify.fly.dev/webhooks/products/create"
+  topics = [ "products/create" ]
+
+  [[webhooks.subscriptions]]
+  uri = "https://urgify.fly.dev/webhooks/products/update"
+  topics = [ "products/update" ]
+
+  [[webhooks.subscriptions]]
+  uri = "https://urgify.fly.dev/webhooks/products/delete"
+  topics = [ "products/delete" ]
+
+
+  # Theme webhooks
+  [[webhooks.subscriptions]]
+  uri = "https://urgify.fly.dev/webhooks/themes/publish"
+  topics = [ "themes/publish" ]
+
+  [[webhooks.subscriptions]]
+  uri = "https://urgify.fly.dev/webhooks/themes/delete"
+  topics = [ "themes/delete" ]
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes

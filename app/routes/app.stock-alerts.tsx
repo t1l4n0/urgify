@@ -22,6 +22,11 @@ import {
   ContextualSaveBar,
 } from "@shopify/polaris";
 import { useState, useCallback, useEffect, useRef } from "react";
+import stockAlertStyles from "../styles/stock-alert-preview.css?url";
+
+export const links = () => [
+  { rel: "stylesheet", href: stockAlertStyles }
+];
 
 // Validation schema for stock alert settings - simplified
 const stockAlertSettingsSchema = z.object({
@@ -561,89 +566,26 @@ export default function StockAlertsSimple() {
     const previewMessage = lowStockMessage.replace('{{qty}}', '3');
     
     const getPreviewStyle = () => {
-      const baseStyle = {
-        padding: '1.5rem 2rem',
-        borderRadius: '12px',
-        fontWeight: '800',
-        textAlign: 'center' as const,
-        textTransform: 'uppercase' as const,
-        letterSpacing: '1px',
-        margin: '1.5rem 0',
-        position: 'relative' as const,
-        overflow: 'hidden' as const,
-        fontFamily: "'Arial Black', Arial, sans-serif",
-        transition: 'all 0.3s ease',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      };
+      // Animation für alle Styles
+      const animationStyle = stockCounterAnimation === 'none' ? 'none' : 
+                            stockCounterAnimation === 'pulse' ? 'scarcityPulse 2s infinite' :
+                            stockCounterAnimation === 'bounce' ? 'urgifyBounce 1.2s infinite' :
+                            stockCounterAnimation === 'shake' ? 'criticalShake 0.5s infinite' : 'scarcityPulse 2s infinite';
 
+      // Nur für Custom Style alle Eigenschaften setzen
       if (stockAlertStyle === "custom") {
         return {
-          ...baseStyle,
           background: backgroundColor,
           color: textColor,
           fontSize: fontSize,
+          animation: animationStyle,
         };
       }
 
-      if (stockAlertStyle === "spectacular") {
-        return {
-          ...baseStyle,
-          padding: '50px 40px',
-          borderRadius: '20px',
-          background: 'linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%)',
-          color: 'white',
-          fontSize: '1.2rem',
-          letterSpacing: '2px',
-          textShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
-          boxShadow: '0 25px 50px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-        };
-      }
-
-      if (stockAlertStyle === "brutalist") {
-        return {
-          ...baseStyle,
-          background: '#000000',
-          border: '8px solid #ff0000',
-          borderRadius: '0',
-          color: '#ffff00',
-          fontSize: '1.3rem',
-          letterSpacing: '3px',
-          textShadow: '4px 4px 0px #ff0000',
-          boxShadow: '8px 8px 0px #ff0000, 16px 16px 0px #ffff00, 24px 24px 0px #00ff00',
-        };
-      }
-
-      if (stockAlertStyle === "glassmorphism") {
-        return {
-          ...baseStyle,
-          background: 'rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          borderRadius: '20px',
-          color: '#000000',
-          fontSize: '1.1rem',
-          letterSpacing: '1px',
-          textShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2)',
-        };
-      }
-
-      if (stockAlertStyle === "neumorphism") {
-        return {
-          ...baseStyle,
-          background: '#e0e5ec',
-          border: 'none',
-          borderRadius: '30px',
-          color: '#2d3748',
-          fontSize: '1.1rem',
-          letterSpacing: '1px',
-          boxShadow: '20px 20px 60px #bebebe, -20px -20px 60px #ffffff, inset 0 0 0 rgba(255, 255, 255, 0.1)',
-        };
-      }
-
-      return baseStyle;
+      // Für vordefinierte Styles nur Animation setzen, Rest macht CSS
+      return {
+        animation: animationStyle,
+      };
     };
 
     return (
@@ -657,8 +599,13 @@ export default function StockAlertsSimple() {
         <Text variant="headingSm" as="h3">
           Preview:
         </Text>
-        <div style={getPreviewStyle()}>
-          <span>{previewMessage}</span>
+        <div 
+          className={`urgify-stock-alert urgify-stock-alert--${stockAlertStyle}`}
+          style={getPreviewStyle()}
+        >
+          <span className="urgify-stock-alert__text">
+            {previewMessage}
+          </span>
         </div>
       </div>
     );
@@ -678,12 +625,14 @@ export default function StockAlertsSimple() {
     <Frame>
       <Page>
         <Layout>
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="400">
-                <Text variant="headingMd" as="h2">
-                  Stock Alert Settings
-                </Text>
+        <Layout.Section>
+          <Card>
+            <BlockStack gap="400">
+              <Text variant="headingMd" as="h2">
+                Stock Alert Settings
+              </Text>
+              
+              <StockAlertPreview />
               
               <FormLayout>
                 <Checkbox
@@ -743,7 +692,7 @@ export default function StockAlertsSimple() {
                 <Select
                   label="Stock Alert Style"
                   options={[
-                    { label: "Spectacular (Animated)", value: "spectacular" },
+                    { label: "Spectacular", value: "spectacular" },
                     { label: "Brutalist Bold", value: "brutalist" },
                     { label: "Glassmorphism", value: "glassmorphism" },
                     { label: "Neumorphism", value: "neumorphism" },
@@ -792,8 +741,6 @@ export default function StockAlertsSimple() {
                     />
                   </>
                 )}
-                
-                <StockAlertPreview />
               </FormLayout>
             </BlockStack>
           </Card>

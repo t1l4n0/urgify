@@ -56,7 +56,7 @@
 #urgify-stock-alert-auto.urgify-stock-alert--spectacular,
 .urgify-stock-alert--spectacular {
   position: relative;
-  padding: 50px 40px !important;
+  padding: 20px !important;
   text-align: center !important;
   border-radius: 20px !important;
   overflow: hidden !important;
@@ -65,7 +65,7 @@
     0 0 0 1px rgba(255, 255, 255, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
   background: linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%) !important;
-  animation: spectacularPulse 2s infinite, spectacularShimmer 3s infinite !important;
+  background-size: 200% 200% !important;
   border: none !important;
   font-family: 'Arial Black', Arial, sans-serif !important;
   font-weight: 800 !important;
@@ -83,7 +83,7 @@
 /* Ultra-spezifische Selektoren für Spectacular */
 div#urgify-stock-alert-auto.urgify-stock-alert.urgify-stock-alert--spectacular {
   position: relative !important;
-  padding: 50px 40px !important;
+  padding: 20px !important;
   text-align: center !important;
   border-radius: 20px !important;
   overflow: hidden !important;
@@ -92,7 +92,7 @@ div#urgify-stock-alert-auto.urgify-stock-alert.urgify-stock-alert--spectacular {
     0 0 0 1px rgba(255, 255, 255, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
   background: linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%) !important;
-  animation: spectacularPulse 2s infinite, spectacularShimmer 3s infinite !important;
+  background-size: 200% 200% !important;
   border: none !important;
   font-family: 'Arial Black', Arial, sans-serif !important;
   font-weight: 800 !important;

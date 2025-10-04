@@ -14,7 +14,6 @@ import {
   Spinner,
 } from "@shopify/polaris";
 import { useEffect, useState } from "react";
-import { adminPlansHref } from "../lib/adminPaths";
 import { toMessage } from "../lib/errors";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -56,11 +55,6 @@ export default function BillingConfirmation() {
   const error = 'error' in data ? data.error : null;
   const shop = 'shop' in data ? data.shop : '';
   const [isLoading, setIsLoading] = useState(true);
-
-  const goToPricingPlans = () => {
-    // Navigate to pricing plans by setting top window location
-    window.top?.location.assign(adminPlansHref('urgify'));
-  };
 
   useEffect(() => {
     // Simulate loading time for better UX
@@ -113,7 +107,7 @@ export default function BillingConfirmation() {
                     <InlineStack gap="300">
                       <Button 
                         variant="primary"
-                        onClick={goToPricingPlans}
+                        url="/app/pricing"
                       >
                         View Pricing Plans
                       </Button>
@@ -146,7 +140,7 @@ export default function BillingConfirmation() {
                     <InlineStack gap="300">
                       <Button 
                         variant="primary"
-                        onClick={goToPricingPlans}
+                        url="/app/pricing"
                       >
                         View Pricing Plans
                       </Button>

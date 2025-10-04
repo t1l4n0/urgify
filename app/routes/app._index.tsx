@@ -1,4 +1,4 @@
-import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse } from "@remix-run/react";
+import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse, Link } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -8,7 +8,6 @@ import {
   Banner,
 } from "@shopify/polaris";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { adminPlansHref } from "../lib/adminPaths";
 import { toMessage } from "../lib/errors";
 // QuickstartChecklist intentionally hidden for now
 // import QuickstartChecklist from "../components/QuickstartChecklist";
@@ -70,16 +69,6 @@ export default function Index() {
   const hasActiveSub = Boolean(data?.hasActiveSub);
   const actionData = useActionData<typeof action>();
 
-  const goToAdmin = (adminPath: string) => {
-    // Navigate to admin paths by setting top window location
-    window.top?.location.assign(`https://admin.shopify.com${adminPath}`);
-  };
-
-  const goToPricingPlans = () => {
-    // Navigate to pricing plans by setting top window location
-    window.top?.location.assign(adminPlansHref('urgify'));
-  };
-
   return (
     <Page title="Urgify – Urgency Marketing Suite">
       <Layout>
@@ -91,10 +80,11 @@ export default function Index() {
             tone={hasActiveSub ? 'success' : 'warning'}
             action={hasActiveSub ? {
               content: '🎨 Go to Theme Editor',
-              onAction: () => goToAdmin('/themes/current/editor'),
+              url: 'https://admin.shopify.com/themes/current/editor',
+              external: true,
             } : {
               content: '💰 View Plans',
-              onAction: goToPricingPlans,
+              url: '/app/pricing',
             }}
           >
             <p>

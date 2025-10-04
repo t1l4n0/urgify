@@ -8,6 +8,7 @@ import {
   Banner,
 } from "@shopify/polaris";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
+import { useAppBridge } from "@shopify/app-bridge-react";
 // QuickstartChecklist intentionally hidden for now
 // import QuickstartChecklist from "../components/QuickstartChecklist";
 
@@ -62,15 +63,42 @@ export function ErrorBoundary() {
   );
 }
 
+// Helper function to get admin plans path
+function getAdminPlansPath(appHandle: string = 'urgify') {
+  const url = new URL(window.location.href);
+  const shop = url.searchParams.get('shop')!;            // z. B. t1l4n0d3v.myshopify.com
+  const host = url.searchParams.get('host')!;            // Base64 aus Admin-URL
+  const storeSlug = shop.replace('.myshopify.com', '');  // z. B. t1l4n0d3v
+  return `/store/${storeSlug}/apps/${appHandle}/pricing_plans?shop=${shop}&host=${host}`;
+}
+
 export default function Index() {
   const data = useRouteLoaderData("routes/app") as any;
   const shop = data?.shop as string;
   const hasActiveSub = Boolean(data?.hasActiveSub);
   const actionData = useActionData<typeof action>();
+  const app = useAppBridge();
 
   const goToAdmin = (adminPath: string) => {
-    // Use relative path to stay on admin.shopify.com and preserve session
-    window.location.href = adminPath;
+    // Use App Bridge to navigate to admin paths while preserving session
+    app.dispatch({
+      type: 'APP::NAVIGATION::REDIRECT',
+      payload: {
+        path: adminPath,
+        target: 'ADMIN_PATH'
+      }
+    });
+  };
+
+  const goToPricingPlans = () => {
+    // Use App Bridge to navigate to pricing plans
+    app.dispatch({
+      type: 'APP::NAVIGATION::REDIRECT',
+      payload: {
+        path: getAdminPlansPath('urgify'),
+        target: 'ADMIN_PATH'
+      }
+    });
   };
 
   return (
@@ -87,11 +115,7 @@ export default function Index() {
               onAction: () => goToAdmin('/themes/current/editor'),
             } : {
               content: '💰 View Plans',
-              onAction: () => {
-                // Navigate to pricing plans using relative path to preserve session
-                const storeSlug = shop?.replace('.myshopify.com', '');
-                window.location.href = `/store/${storeSlug}/apps/urgify/pricing_plans?shop=${shop}`;
-              },
+              onAction: goToPricingPlans,
             }}
           >
             <p>

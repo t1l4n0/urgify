@@ -14,6 +14,7 @@ import {
   Spinner,
 } from "@shopify/polaris";
 import { useEffect, useState } from "react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -47,6 +48,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
+// Helper function to get admin plans path
+function getAdminPlansPath(appHandle: string = 'urgify') {
+  const url = new URL(window.location.href);
+  const shop = url.searchParams.get('shop')!;            // z. B. t1l4n0d3v.myshopify.com
+  const host = url.searchParams.get('host')!;            // Base64 aus Admin-URL
+  const storeSlug = shop.replace('.myshopify.com', '');  // z. B. t1l4n0d3v
+  return `/store/${storeSlug}/apps/${appHandle}/pricing_plans?shop=${shop}&host=${host}`;
+}
+
 export default function BillingConfirmation() {
   const data = useLoaderData<typeof loader>();
   const success = 'success' in data ? data.success : false;
@@ -54,6 +64,18 @@ export default function BillingConfirmation() {
   const error = 'error' in data ? data.error : null;
   const shop = 'shop' in data ? data.shop : '';
   const [isLoading, setIsLoading] = useState(true);
+  const app = useAppBridge();
+
+  const goToPricingPlans = () => {
+    // Use App Bridge to navigate to pricing plans
+    app.dispatch({
+      type: 'APP::NAVIGATION::REDIRECT',
+      payload: {
+        path: getAdminPlansPath('urgify'),
+        target: 'ADMIN_PATH'
+      }
+    });
+  };
 
   useEffect(() => {
     // Simulate loading time for better UX
@@ -106,11 +128,7 @@ export default function BillingConfirmation() {
                     <InlineStack gap="300">
                       <Button 
                         variant="primary"
-                        onClick={() => {
-                          // Navigate to pricing plans using relative path to preserve session
-                          const storeSlug = shop?.replace('.myshopify.com', '');
-                          window.location.href = `/store/${storeSlug}/apps/urgify/pricing_plans?shop=${shop}`;
-                        }}
+                        onClick={goToPricingPlans}
                       >
                         View Pricing Plans
                       </Button>
@@ -143,11 +161,7 @@ export default function BillingConfirmation() {
                     <InlineStack gap="300">
                       <Button 
                         variant="primary"
-                        onClick={() => {
-                          // Navigate to pricing plans using relative path to preserve session
-                          const storeSlug = shop?.replace('.myshopify.com', '');
-                          window.location.href = `/store/${storeSlug}/apps/urgify/pricing_plans?shop=${shop}`;
-                        }}
+                        onClick={goToPricingPlans}
                       >
                         View Pricing Plans
                       </Button>

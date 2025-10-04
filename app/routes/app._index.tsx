@@ -1,4 +1,4 @@
-import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse } from "@remix-run/react";
+import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse, useNavigate } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -8,7 +8,7 @@ import {
   Banner,
 } from "@shopify/polaris";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { adminPlansPath } from "../lib/adminPaths";
 // QuickstartChecklist intentionally hidden for now
 // import QuickstartChecklist from "../components/QuickstartChecklist";
 
@@ -63,42 +63,21 @@ export function ErrorBoundary() {
   );
 }
 
-// Helper function to get admin plans path
-function getAdminPlansPath(appHandle: string = 'urgify') {
-  const url = new URL(window.location.href);
-  const shop = url.searchParams.get('shop')!;            // z. B. t1l4n0d3v.myshopify.com
-  const host = url.searchParams.get('host')!;            // Base64 aus Admin-URL
-  const storeSlug = shop.replace('.myshopify.com', '');  // z. B. t1l4n0d3v
-  return `/store/${storeSlug}/apps/${appHandle}/pricing_plans?shop=${shop}&host=${host}`;
-}
-
 export default function Index() {
   const data = useRouteLoaderData("routes/app") as any;
   const shop = data?.shop as string;
   const hasActiveSub = Boolean(data?.hasActiveSub);
   const actionData = useActionData<typeof action>();
-  const app = useAppBridge();
+  const navigate = useNavigate();
 
   const goToAdmin = (adminPath: string) => {
-    // Use App Bridge to navigate to admin paths while preserving session
-    app.dispatch({
-      type: 'APP::NAVIGATION::REDIRECT',
-      payload: {
-        path: adminPath,
-        target: 'ADMIN_PATH'
-      }
-    });
+    // Use App Bridge v4 to navigate to admin paths while preserving session
+    navigate(adminPath);
   };
 
   const goToPricingPlans = () => {
-    // Use App Bridge to navigate to pricing plans
-    app.dispatch({
-      type: 'APP::NAVIGATION::REDIRECT',
-      payload: {
-        path: getAdminPlansPath('urgify'),
-        target: 'ADMIN_PATH'
-      }
-    });
+    // Use App Bridge v4 to navigate to pricing plans
+    navigate(adminPlansPath('urgify'));
   };
 
   return (

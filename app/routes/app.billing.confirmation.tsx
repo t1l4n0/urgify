@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, Link } from "@remix-run/react";
+import { useLoaderData, Link, useNavigate } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
 import { BillingManager } from "../utils/billing";
 import {
@@ -14,7 +14,7 @@ import {
   Spinner,
 } from "@shopify/polaris";
 import { useEffect, useState } from "react";
-import { useAppBridge } from "@shopify/app-bridge-react";
+import { adminPlansPath } from "../lib/adminPaths";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -48,15 +48,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-// Helper function to get admin plans path
-function getAdminPlansPath(appHandle: string = 'urgify') {
-  const url = new URL(window.location.href);
-  const shop = url.searchParams.get('shop')!;            // z. B. t1l4n0d3v.myshopify.com
-  const host = url.searchParams.get('host')!;            // Base64 aus Admin-URL
-  const storeSlug = shop.replace('.myshopify.com', '');  // z. B. t1l4n0d3v
-  return `/store/${storeSlug}/apps/${appHandle}/pricing_plans?shop=${shop}&host=${host}`;
-}
-
 export default function BillingConfirmation() {
   const data = useLoaderData<typeof loader>();
   const success = 'success' in data ? data.success : false;
@@ -64,17 +55,11 @@ export default function BillingConfirmation() {
   const error = 'error' in data ? data.error : null;
   const shop = 'shop' in data ? data.shop : '';
   const [isLoading, setIsLoading] = useState(true);
-  const app = useAppBridge();
+  const navigate = useNavigate();
 
   const goToPricingPlans = () => {
-    // Use App Bridge to navigate to pricing plans
-    app.dispatch({
-      type: 'APP::NAVIGATION::REDIRECT',
-      payload: {
-        path: getAdminPlansPath('urgify'),
-        target: 'ADMIN_PATH'
-      }
-    });
+    // Use App Bridge v4 to navigate to pricing plans
+    navigate(adminPlansPath('urgify'));
   };
 
   useEffect(() => {

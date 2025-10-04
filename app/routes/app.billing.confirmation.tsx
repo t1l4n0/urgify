@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, Link } from "@remix-run/react";
+import { useLoaderData, Link, useLocation } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
 import { BillingManager } from "../utils/billing";
 import {
@@ -55,6 +55,7 @@ export default function BillingConfirmation() {
   const error = 'error' in data ? data.error : null;
   const shop = 'shop' in data ? data.shop : '';
   const [isLoading, setIsLoading] = useState(true);
+  const { search } = useLocation(); // enthält ?host=...&shop=...
 
   useEffect(() => {
     // Simulate loading time for better UX
@@ -107,7 +108,7 @@ export default function BillingConfirmation() {
                     <InlineStack gap="300">
                       <Button 
                         variant="primary"
-                        url="/app/pricing"
+                        url={`/app/pricing${search}`}
                       >
                         View Pricing Plans
                       </Button>
@@ -140,7 +141,7 @@ export default function BillingConfirmation() {
                     <InlineStack gap="300">
                       <Button 
                         variant="primary"
-                        url="/app/pricing"
+                        url={`/app/pricing${search}`}
                       >
                         View Pricing Plans
                       </Button>

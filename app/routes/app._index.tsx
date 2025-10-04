@@ -1,4 +1,4 @@
-import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse, Link } from "@remix-run/react";
+import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse, Link, useLocation } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -68,6 +68,7 @@ export default function Index() {
   const shop = data?.shop as string;
   const hasActiveSub = Boolean(data?.hasActiveSub);
   const actionData = useActionData<typeof action>();
+  const { search } = useLocation(); // enthält ?host=...&shop=...
 
   return (
     <Page title="Urgify – Urgency Marketing Suite">
@@ -84,7 +85,7 @@ export default function Index() {
               external: true,
             } : {
               content: '💰 View Plans',
-              url: '/app/pricing',
+              url: `/app/pricing${search}`,
             }}
           >
             <p>

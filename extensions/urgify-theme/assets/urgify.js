@@ -491,12 +491,12 @@
       if (lowStockAlert) lowStockAlert.style.display = 'none';
       if (criticalStockAlert) criticalStockAlert.style.display = 'none';
 
-      if (stockLevel <= criticalThreshold) {
+      if (stockLevel > 0 && stockLevel <= criticalThreshold) {
         if (criticalStockAlert) {
           this.updateAlertMessage(criticalStockAlert, stockLevel, 'critical');
           criticalStockAlert.style.display = 'block';
         }
-      } else if (stockLevel <= threshold) {
+      } else if (stockLevel > 0 && stockLevel <= threshold) {
         if (lowStockAlert) {
           this.updateAlertMessage(lowStockAlert, stockLevel, 'low');
           lowStockAlert.style.display = 'block';

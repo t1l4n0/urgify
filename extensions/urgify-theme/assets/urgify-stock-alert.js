@@ -83,19 +83,27 @@
         // Retry shortly — some themes mount product forms late
         setTimeout(render, 250);
         host.hidden = true;
+        host.style.display = 'none'; // Force hide
         return;
       }
       
       const qty = invMap[id];
+      
+      // Hide banner if inventory tracking is disabled
       if (!tracksInventory) {
         host.hidden = true;
+        host.style.display = 'none'; // Force hide
         return;
       }
+      
+      // Hide banner if quantity is not a valid number or is 0 or negative
       if (typeof qty !== 'number' || qty <= 0) { 
         host.hidden = true; 
+        host.style.display = 'none'; // Force hide
         return; 
       }
       
+      // Show banner only if quantity is <= threshold (e.g., <= 20)
       if (qty <= threshold) {
         textEl.innerHTML = template.replace(/\{\{qty\}\}/g, qty);
         host.classList.remove('urgify-stock-alert--critical');
@@ -121,8 +129,17 @@
         if (animation === 'shake') host.style.setProperty('--urgify-animation', 'criticalShake 0.5s infinite');
         if (shake === 'enabled') host.style.setProperty('--urgify-animation-critical', 'criticalShake 0.5s infinite');
         host.hidden = false;
+        host.style.display = 'flex'; // Ensure it's visible
       } else {
+        // Hide banner if quantity is above threshold
         host.hidden = true;
+        host.style.display = 'none'; // Force hide
+        host.style.visibility = 'hidden'; // Additional safety
+        host.style.opacity = '0'; // Additional safety
+        host.style.height = '0'; // Additional safety
+        host.style.overflow = 'hidden'; // Additional safety
+        host.style.margin = '0'; // Additional safety
+        host.style.padding = '0'; // Additional safety
       }
     }
 

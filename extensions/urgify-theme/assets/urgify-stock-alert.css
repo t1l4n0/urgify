@@ -444,3 +444,25 @@ div#urgify-stock-alert-auto.urgify-stock-alert.urgify-stock-alert--neumorphism {
   }
 }
 
+/* Critical: Hide when hidden attribute is present - must override all other display rules */
+div#urgify-stock-alert-auto[hidden] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: none !important;
+}
+
+/* Additional safety: Hide any stock alert that should be hidden */
+.urgify-stock-alert[hidden] {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  overflow: hidden !important;
+}
+

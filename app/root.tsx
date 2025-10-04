@@ -1,4 +1,6 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "@remix-run/react";
+import type { HeadersFunction } from "@remix-run/node";
+import { boundary } from "@shopify/shopify-app-remix/server";
 import stockAlertPreviewStyles from "./styles/stock-alert-preview.css?url";
 import { trackCoreWebVitals } from "./utils/performance";
 import { useEffect } from "react";
@@ -26,6 +28,54 @@ export default function App() {
         </div>
         <ScrollRestoration />
         <Scripts />
+      </body>
+    </html>
+  );
+}
+
+export const headers: HeadersFunction = (args) => {
+  const shopify = boundary.headers(args);
+  return {
+    ...shopify,
+    "Content-Security-Policy": "frame-ancestors https://admin.shopify.com https://*.myshopify.com https://*.shopify.com;",
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+  };
+};
+
+export function ErrorBoundary({ error }: { error: Error }) {
+  console.error(JSON.stringify({ 
+    level: "error", 
+    msg: "client_error_boundary", 
+    error: error.message,
+    stack: error.stack 
+  }, null, 0));
+
+  return (
+    <html>
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <title>Unerwarteter Fehler</title>
+      </head>
+      <body>
+        <div style={{ padding: "2rem", fontFamily: "system-ui, sans-serif" }}>
+          <h1>Unerwarteter Fehler</h1>
+          <p>Es ist ein unerwarteter Fehler aufgetreten. Bitte versuchen Sie es später erneut.</p>
+          {process.env.NODE_ENV === "development" && (
+            <details style={{ marginTop: "1rem" }}>
+              <summary>Fehlerdetails (nur in Entwicklung)</summary>
+              <pre style={{ 
+                background: "#f5f5f5", 
+                padding: "1rem", 
+                overflow: "auto",
+                fontSize: "0.875rem"
+              }}>
+                {error.stack}
+              </pre>
+            </details>
+          )}
+        </div>
       </body>
     </html>
   );

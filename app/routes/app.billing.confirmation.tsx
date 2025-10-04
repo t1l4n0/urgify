@@ -48,7 +48,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function BillingConfirmation() {
-  const { success, subscription, error, shop } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>();
+  const success = 'success' in data ? data.success : false;
+  const subscription = 'subscription' in data ? data.subscription : null;
+  const error = 'error' in data ? data.error : null;
+  const shop = 'shop' in data ? data.shop : '';
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -65,10 +69,10 @@ export default function BillingConfirmation() {
       <Page title="Processing Subscription">
         <Layout>
           <Layout.Section>
-            <Card sectioned>
+            <Card>
               <BlockStack gap="400" align="center">
                 <Spinner size="large" />
-                <Text variant="bodyMd">Processing your subscription...</Text>
+                <Text as="p" variant="bodyMd">Processing your subscription...</Text>
               </BlockStack>
             </Card>
           </Layout.Section>
@@ -85,16 +89,16 @@ export default function BillingConfirmation() {
             {success ? (
               <Card>
                 <BlockStack gap="400">
-                  <Banner status="success">
-                    <Text variant="headingMd">Subscription Activated Successfully!</Text>
+                  <Banner tone="success">
+                    <Text as="h2" variant="headingMd">Subscription Activated Successfully!</Text>
                   </Banner>
                   
                   <BlockStack gap="300">
-                    <Text variant="bodyMd">
+                    <Text as="p" variant="bodyMd">
                       Your subscription to <strong>{subscription?.name}</strong> has been activated.
                     </Text>
                     
-                    <Text variant="bodyMd">
+                    <Text as="p" variant="bodyMd">
                       You now have access to all premium features. You can manage your subscription 
                       anytime from the billing dashboard.
                     </Text>
@@ -103,7 +107,7 @@ export default function BillingConfirmation() {
                       <Button 
                         variant="primary"
                         onClick={() => {
-                          const adminUrl = `https://${shop}/admin/apps/urgify/pricing_plans`;
+                          const adminUrl = `https://${shop}/admin/apps/urgify/app/billing`;
                           window.open(adminUrl, '_blank');
                         }}
                       >
@@ -122,16 +126,16 @@ export default function BillingConfirmation() {
             ) : (
               <Card>
                 <BlockStack gap="400">
-                  <Banner status="critical">
-                    <Text variant="headingMd">Subscription Failed</Text>
+                  <Banner tone="critical">
+                    <Text as="h2" variant="headingMd">Subscription Failed</Text>
                   </Banner>
                   
                   <BlockStack gap="300">
-                    <Text variant="bodyMd">
+                    <Text as="p" variant="bodyMd">
                       {error || "There was an error processing your subscription."}
                     </Text>
                     
-                    <Text variant="bodyMd">
+                    <Text as="p" variant="bodyMd">
                       Please try again or contact support if the problem persists.
                     </Text>
                     
@@ -139,7 +143,7 @@ export default function BillingConfirmation() {
                       <Button 
                         variant="primary"
                         onClick={() => {
-                          const adminUrl = `https://${shop}/admin/apps/urgify/pricing_plans`;
+                          const adminUrl = `https://${shop}/admin/apps/urgify/app/billing`;
                           window.open(adminUrl, '_blank');
                         }}
                       >

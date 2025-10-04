@@ -1,10 +1,15 @@
-import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { addDocumentResponseHeaders } from "../shopify.server";
-
-export const headers = addDocumentResponseHeaders;
+import type { LoaderFunctionArgs } from "@remix-run/node";
 
 export async function loader(_args: LoaderFunctionArgs) {
-  return json({ status: "ok" }, { headers: { "Cache-Control": "no-store" } });
+  return new Response("ok", { 
+    status: 200, 
+    headers: { 
+      "content-type": "text/plain",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer"
+    } 
+  });
 }
 
 

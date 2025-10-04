@@ -93,7 +93,7 @@ export default function Index() {
               onAction: () => goToAdmin('/themes/current/editor'),
             } : {
               content: '💰 View Plans',
-              onAction: () => goToAdmin('/apps/urgify/pricing_plans'),
+              onAction: () => goToAdmin('/apps/urgify/app/billing'),
             }}
           >
             <p>
@@ -127,8 +127,8 @@ export default function Index() {
               <Text as="h3" variant="headingMd">Welcome to Urgify</Text>
               <div style={{ marginTop: "1rem" }}>
               <Text as="p" variant="bodyMd">
-                Urgify is a comprehensive urgency marketing suite for Shopify stores. 
-                Create countdown timers, limited-time offers, stock alerts, scarcity banners, and urgency notifications to create urgency and engage customers.
+                Urgify provides urgency marketing tools for Shopify stores. 
+                Add countdown timers, limited-time offers, stock alerts, and scarcity banners to your product pages.
               </Text>
               </div>
               <div style={{ marginTop: '1rem' }}>

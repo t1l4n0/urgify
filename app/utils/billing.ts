@@ -15,9 +15,9 @@ export const BILLING_CONFIG = {
       interval: 'monthly',
       features: [
         'Up to 100 products',
-        'Basic stock alerts',
+        'Stock alerts with custom messages',
         'Email support',
-        'Standard themes'
+        'Basic countdown timers'
       ]
     },
     PRO: {
@@ -28,10 +28,10 @@ export const BILLING_CONFIG = {
       interval: 'monthly',
       features: [
         'Unlimited products',
-        'Advanced stock alerts',
+        'Advanced stock alerts with animations',
         'Priority support',
-        'Custom themes',
-        'Analytics dashboard'
+        'All countdown timer styles',
+        'Limited offer banners'
       ]
     },
     ENTERPRISE: {
@@ -42,10 +42,10 @@ export const BILLING_CONFIG = {
       interval: 'monthly',
       features: [
         'Everything in Pro',
-        'White-label solution',
-        'Custom integrations',
+        'Scarcity banners',
+        'Custom urgency notifications',
         'Dedicated support',
-        'SLA guarantee'
+        'Priority feature requests'
       ]
     }
   },
@@ -380,7 +380,7 @@ export function formatPrice(amount: number, currency: string): string {
 
 export function getPlanFeatures(planId: string): string[] {
   const plan = Object.values(BILLING_CONFIG.PLANS).find(p => p.id === planId);
-  return plan?.features || [];
+  return plan?.features ? [...plan.features] : [];
 }
 
 export function calculateTrialEndDate(): Date {

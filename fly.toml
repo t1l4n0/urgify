@@ -32,9 +32,10 @@ primary_region = "fra"
     interval = "15s"
     method = "GET"
     path = "/health"
-    timeout = "10s"
+    timeout = "5s"
     protocol = "http"
     tls_skip_verify = false
+    restart_limit = 3
 
 [deploy]
   release_command = "npx prisma migrate deploy"

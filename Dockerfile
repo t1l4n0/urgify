@@ -1,27 +1,51 @@
-FROM node:18-alpine
-RUN apk add --no-cache openssl
-
-EXPOSE 3000
-
+# ---- Builder: installiert alle Deps + baut ----
+FROM node:20-alpine AS builder
 WORKDIR /app
 
-ENV NODE_ENV=production
+# System-Pakete für Build/Prisma
+RUN apk add --no-cache openssl libc6-compat
 
-COPY package.json package-lock.json* ./
+# Nur Manifeste für Cache-Hit
+COPY package.json package-lock.json ./
+# Volle Deps (inkl. dev) für den Build
+RUN npm ci --no-audit --no-fund
 
-RUN npm ci --omit=dev && npm cache clean --force
-# Remove CLI packages since we don't need them in production by default.
-# Remove this line if you want to run CLI commands in your container.
-RUN npm remove @shopify/cli
-
+# Quellcode
 COPY . .
 
-# Generate Prisma Client before building
-RUN npx prisma generate
-
-# Cache-Buster ARG, damit der Build bei Fly jedes Mal neu gebacken wird
+# Build (Remix/Vite)
 ARG BUILD_ID
 ENV BUILD_ID=${BUILD_ID}
-RUN echo "BUILD_ID=$BUILD_ID" && npm run build
+RUN echo "$BUILD_ID" > /app/BUILD_ID && npm run build
 
+# ---- Runtime: nur Prod-Dependencies + Build-Artefakte ----
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false
+ENV NODE_OPTIONS="--enable-source-maps"
+
+# System-Pakete, die Prisma benötigt
+RUN apk add --no-cache openssl libc6-compat curl
+
+# 1) Schema VOR npm ci bereitstellen, damit @prisma/client postinstall sauber generiert
+COPY prisma ./prisma
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev --omit=optional --no-audit --no-fund && npm cache clean --force
+
+# 2) Build-Output & Assets
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/app ./app
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/BUILD_ID ./BUILD_ID
+
+# Eigentümerrechte setzen, bevor auf node gewechselt wird
+RUN chown -R node:node /app
+
+# Non-root User für Sicherheit (node user existiert bereits in Alpine)
+USER node
+
+# Port & Start
+EXPOSE 3000
+# Remix-Serve respektiert $PORT; Fly kann PORT setzen
 CMD ["npm", "run", "start"]

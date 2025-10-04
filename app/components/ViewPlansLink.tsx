@@ -38,7 +38,7 @@ export function ViewPlansLink({ children = "💰 View Plans" }: { children?: Rea
   const href = buildPlansHref(search, "urgify");
 
   return (
-    <Button url={href} external>
+    <Button url={href} target="_top">
       {children}
     </Button>
   );

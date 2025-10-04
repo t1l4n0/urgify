@@ -107,8 +107,9 @@ export default function BillingConfirmation() {
                       <Button 
                         variant="primary"
                         onClick={() => {
-                          // Navigate to pricing plans in the same window
-                          window.location.href = '/pricing_plans';
+                          // Navigate to pricing plans using relative path to preserve session
+                          const storeSlug = shop?.replace('.myshopify.com', '');
+                          window.location.href = `/store/${storeSlug}/apps/urgify/pricing_plans?shop=${shop}`;
                         }}
                       >
                         View Pricing Plans
@@ -143,8 +144,9 @@ export default function BillingConfirmation() {
                       <Button 
                         variant="primary"
                         onClick={() => {
-                          // Navigate to pricing plans in the same window
-                          window.location.href = '/pricing_plans';
+                          // Navigate to pricing plans using relative path to preserve session
+                          const storeSlug = shop?.replace('.myshopify.com', '');
+                          window.location.href = `/store/${storeSlug}/apps/urgify/pricing_plans?shop=${shop}`;
                         }}
                       >
                         View Pricing Plans

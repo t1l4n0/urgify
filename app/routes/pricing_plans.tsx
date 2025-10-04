@@ -5,12 +5,16 @@ import { authenticate } from "../shopify.server";
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { session } = await authenticate.admin(request);
   
-  // Extract shop name from session (remove .myshopify.com)
-  const shopName = session.shop.replace('.myshopify.com', '');
+  // Get shop and host from URL parameters to maintain session
+  const url = new URL(request.url);
+  const shop = url.searchParams.get('shop') || session.shop;
+  const host = url.searchParams.get('host');
   
-  // Use the shop's admin URL with proper authentication
-  // This ensures the user stays logged in
-  const pricingPlansUrl = `https://${session.shop}/admin/apps/urgify/pricing_plans`;
+  // Extract store slug from shop name
+  const storeSlug = shop.replace('.myshopify.com', '');
   
-  return redirect(pricingPlansUrl);
+  // Use relative path to stay on admin.shopify.com and preserve session
+  const pricingPlansPath = `/store/${storeSlug}/apps/urgify/pricing_plans?shop=${shop}${host ? `&host=${host}` : ''}`;
+  
+  return redirect(pricingPlansPath);
 };

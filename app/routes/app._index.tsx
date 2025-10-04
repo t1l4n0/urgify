@@ -69,14 +69,8 @@ export default function Index() {
   const actionData = useActionData<typeof action>();
 
   const goToAdmin = (adminPath: string) => {
-    const adminUrl = `https://${shop}/admin${adminPath}`;
-    try {
-      if (window.top) {
-        window.top.location.href = adminUrl;
-        return;
-      }
-    } catch (_e) {}
-    window.location.href = adminUrl;
+    // Use relative path to stay on admin.shopify.com and preserve session
+    window.location.href = adminPath;
   };
 
   return (
@@ -94,8 +88,9 @@ export default function Index() {
             } : {
               content: '💰 View Plans',
               onAction: () => {
-                // Open pricing plans in the same window to avoid iframe issues
-                window.location.href = '/pricing_plans';
+                // Navigate to pricing plans using relative path to preserve session
+                const storeSlug = shop?.replace('.myshopify.com', '');
+                window.location.href = `/store/${storeSlug}/apps/urgify/pricing_plans?shop=${shop}`;
               },
             }}
           >

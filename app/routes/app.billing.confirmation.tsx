@@ -107,7 +107,7 @@ export default function BillingConfirmation() {
                       <Button 
                         variant="primary"
                         onClick={() => {
-                          const adminUrl = `https://${shop}/admin/apps/urgify/app/billing`;
+                          const adminUrl = `https://${shop}/admin/apps/urgify/pricing_plans`;
                           window.open(adminUrl, '_blank');
                         }}
                       >
@@ -143,7 +143,7 @@ export default function BillingConfirmation() {
                       <Button 
                         variant="primary"
                         onClick={() => {
-                          const adminUrl = `https://${shop}/admin/apps/urgify/app/billing`;
+                          const adminUrl = `https://${shop}/admin/apps/urgify/pricing_plans`;
                           window.open(adminUrl, '_blank');
                         }}
                       >

@@ -45,7 +45,7 @@ export function ErrorBoundary() {
       message = error.statusText || message;
     }
   } else if (error instanceof Error) {
-    message = error.message || message;
+    message = toMessage(error);
   } else if (typeof error === "string") {
     message = error;
   }

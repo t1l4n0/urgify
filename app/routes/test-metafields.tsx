@@ -3,6 +3,7 @@ import { useLoaderData, useFetcher } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
 import { Card, Page, Layout, Text, Button, BlockStack, FormLayout, TextField } from "@shopify/polaris";
 import { useState } from "react";
+import { toMessage } from "../lib/errors";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
@@ -33,7 +34,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return json({ metafields, rawData: metafieldsData });
   } catch (error) {
     console.error("Error fetching metafields:", error);
-    return json({ error: error.message, metafields: [] });
+    return json({ error: toMessage(error), metafields: [] });
   }
 };
 
@@ -111,7 +112,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   } catch (error) {
     console.error("Error saving test metafield:", error);
     return json({ 
-      error: "Failed to save test metafield: " + (error as Error).message 
+      error: "Failed to save test metafield: " + toMessage(error) 
     }, { status: 500 });
   }
 };

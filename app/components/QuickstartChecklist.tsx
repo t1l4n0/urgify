@@ -15,6 +15,7 @@ import {
 } from "@shopify/polaris";
 import {CheckCircleIcon, ExternalIcon} from "@shopify/polaris-icons";
 import {useFetcher} from "@remix-run/react";
+import { toMessage } from "../lib/errors";
 
 /**
  * Polaris-conformant Quickstart Checklist (1 Step)
@@ -193,7 +194,7 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
     return (
       <Card>
         <Banner tone="critical">
-          <p>An error occurred: {componentError?.message || "Unknown error"}</p>
+          <p>An error occurred: {toMessage(componentError)}</p>
         </Banner>
       </Card>
     );

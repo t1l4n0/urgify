@@ -12,36 +12,35 @@ export function decodeHost(hostB64: string | null): string | null {
 }
 
 /**
- * Determines the admin base URL from the decoded host parameter
+ * Extracts the store segment from One Admin host
  */
-export function getAdminBaseFromHost(hostB64: string | null): {
-  isOneAdmin: boolean;
-  isLegacyAdmin: boolean;
-  adminBase: string;
+export function parseOneAdminStoreSegment(decodedHost: string | null): string | null {
+  // decodedHost z.B. "admin.shopify.com/store/12345678"
+  if (!decodedHost) return null;
+  const m = decodedHost.match(/admin\.shopify\.com\/store\/([^/?#]+)/);
+  return m?.[1] ?? null; // "12345678"
+}
+
+/**
+ * Determines the admin target from the host parameter
+ */
+export function getAdminTargetFromHost(hostB64: string | null): {
+  mode: "one" | "legacy";
+  base: string;
+  storeSegment?: string; // nur bei one
+  shopDomain?: string;   // nur bei legacy
 } {
-  const decodedHost = decodeHost(hostB64);
-  
-  if (decodedHost?.includes("admin.shopify.com/store/")) {
-    return {
-      isOneAdmin: true,
-      isLegacyAdmin: false,
-      adminBase: "https://admin.shopify.com"
-    };
-  } else if (decodedHost?.includes(".myshopify.com/admin")) {
-    // Extract shop domain from decoded host
-    const shopMatch = decodedHost.match(/([a-zA-Z0-9-]+\.myshopify\.com)/);
-    const shopDomain = shopMatch ? shopMatch[1] : "";
-    return {
-      isOneAdmin: false,
-      isLegacyAdmin: true,
-      adminBase: `https://${shopDomain}`
-    };
-  } else {
-    // Fallback to One Admin
-    return {
-      isOneAdmin: true,
-      isLegacyAdmin: false,
-      adminBase: "https://admin.shopify.com"
-    };
+  const decoded = decodeHost(hostB64);
+
+  if (decoded?.includes("admin.shopify.com/store/")) {
+    const seg = parseOneAdminStoreSegment(decoded);
+    return { mode: "one", base: "https://admin.shopify.com", storeSegment: seg ?? undefined };
   }
+  if (decoded?.includes(".myshopify.com/admin")) {
+    const m = decoded.match(/([a-zA-Z0-9-]+\.myshopify\.com)/);
+    const shopDomain = m ? m[1] : undefined;
+    return { mode: "legacy", base: shopDomain ? `https://${shopDomain}` : "", shopDomain };
+  }
+  // Fallback → One Admin (ohne Segment riskant, daher null)
+  return { mode: "one", base: "https://admin.shopify.com" };
 }

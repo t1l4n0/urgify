@@ -6,3 +6,7 @@ export function adminPlansPath(appHandle = 'urgify') {
 
   return `/store/${storeSlug}/apps/${appHandle}/pricing_plans?shop=${shop}&host=${host}`;
 }
+
+export function adminPlansHref(appHandle = 'urgify') {
+  return `https://admin.shopify.com${adminPlansPath(appHandle)}`;
+}

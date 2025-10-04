@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, Link, useNavigate } from "@remix-run/react";
+import { useLoaderData, Link } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
 import { BillingManager } from "../utils/billing";
 import {
@@ -14,7 +14,8 @@ import {
   Spinner,
 } from "@shopify/polaris";
 import { useEffect, useState } from "react";
-import { adminPlansPath } from "../lib/adminPaths";
+import { adminPlansHref } from "../lib/adminPaths";
+import { toMessage } from "../lib/errors";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -55,11 +56,10 @@ export default function BillingConfirmation() {
   const error = 'error' in data ? data.error : null;
   const shop = 'shop' in data ? data.shop : '';
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
 
   const goToPricingPlans = () => {
-    // Use App Bridge v4 to navigate to pricing plans
-    navigate(adminPlansPath('urgify'));
+    // Navigate to pricing plans by setting top window location
+    window.top?.location.assign(adminPlansHref('urgify'));
   };
 
   useEffect(() => {
@@ -136,7 +136,7 @@ export default function BillingConfirmation() {
                   
                   <BlockStack gap="300">
                     <Text as="p" variant="bodyMd">
-                      {error || "There was an error processing your subscription."}
+                      {error ? toMessage(error) : "There was an error processing your subscription."}
                     </Text>
                     
                     <Text as="p" variant="bodyMd">

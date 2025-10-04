@@ -1,4 +1,4 @@
-import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse, useNavigate } from "@remix-run/react";
+import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -8,7 +8,8 @@ import {
   Banner,
 } from "@shopify/polaris";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
-import { adminPlansPath } from "../lib/adminPaths";
+import { adminPlansHref } from "../lib/adminPaths";
+import { toMessage } from "../lib/errors";
 // QuickstartChecklist intentionally hidden for now
 // import QuickstartChecklist from "../components/QuickstartChecklist";
 
@@ -68,16 +69,15 @@ export default function Index() {
   const shop = data?.shop as string;
   const hasActiveSub = Boolean(data?.hasActiveSub);
   const actionData = useActionData<typeof action>();
-  const navigate = useNavigate();
 
   const goToAdmin = (adminPath: string) => {
-    // Use App Bridge v4 to navigate to admin paths while preserving session
-    navigate(adminPath);
+    // Navigate to admin paths by setting top window location
+    window.top?.location.assign(`https://admin.shopify.com${adminPath}`);
   };
 
   const goToPricingPlans = () => {
-    // Use App Bridge v4 to navigate to pricing plans
-    navigate(adminPlansPath('urgify'));
+    // Navigate to pricing plans by setting top window location
+    window.top?.location.assign(adminPlansHref('urgify'));
   };
 
   return (
@@ -109,7 +109,7 @@ export default function Index() {
         {actionData?.error && (
           <Layout.Section>
             <Banner tone="critical">
-              <p>{actionData.error}</p>
+              <p>{toMessage(actionData.error)}</p>
             </Banner>
           </Layout.Section>
         )}

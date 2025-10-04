@@ -9,6 +9,7 @@ import {
 } from "@shopify/polaris";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { toMessage } from "../lib/errors";
+import { ViewPlansLink } from "../components/ViewPlansLink";
 // QuickstartChecklist intentionally hidden for now
 // import QuickstartChecklist from "../components/QuickstartChecklist";
 
@@ -83,16 +84,18 @@ export default function Index() {
               content: '🎨 Go to Theme Editor',
               url: 'https://admin.shopify.com/themes/current/editor',
               external: true,
-            } : {
-              content: '💰 View Plans',
-              url: `/app/pricing${search}`,
-            }}
+            } : undefined}
           >
             <p>
               {hasActiveSub
                 ? 'You can use all app features.'
                 : 'A subscription is required to use all features.'}
             </p>
+            {!hasActiveSub && (
+              <div style={{ marginTop: '12px' }}>
+                <ViewPlansLink />
+              </div>
+            )}
           </Banner>
         </Layout.Section>
 

@@ -15,6 +15,7 @@ import {
 } from "@shopify/polaris";
 import { useEffect, useState } from "react";
 import { toMessage } from "../lib/errors";
+import { ViewPlansLink } from "../components/ViewPlansLink";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -106,12 +107,9 @@ export default function BillingConfirmation() {
                     </Text>
                     
                     <InlineStack gap="300">
-                      <Button 
-                        variant="primary"
-                        url={`/app/pricing${search}`}
-                      >
-                        View Pricing Plans
-                      </Button>
+                        <ViewPlansLink>
+                          View Pricing Plans
+                        </ViewPlansLink>
                       
                       <Link to="/app">
                         <Button variant="secondary">
@@ -139,12 +137,9 @@ export default function BillingConfirmation() {
                     </Text>
                     
                     <InlineStack gap="300">
-                      <Button 
-                        variant="primary"
-                        url={`/app/pricing${search}`}
-                      >
-                        View Pricing Plans
-                      </Button>
+                        <ViewPlansLink>
+                          View Pricing Plans
+                        </ViewPlansLink>
                       
                       <Link to="/app">
                         <Button variant="secondary">

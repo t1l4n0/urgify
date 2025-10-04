@@ -44,11 +44,14 @@ export const headers: HeadersFunction = (args) => {
 };
 
 export function ErrorBoundary({ error }: { error: Error }) {
+  const errorMessage = error?.message || "Unknown error";
+  const errorStack = error?.stack || "No stack trace available";
+  
   console.error(JSON.stringify({ 
     level: "error", 
     msg: "client_error_boundary", 
-    error: error.message,
-    stack: error.stack 
+    error: errorMessage,
+    stack: errorStack 
   }, null, 0));
 
   return (

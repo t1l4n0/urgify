@@ -1,28 +1,26 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import { getAdminBaseFromHost } from "../lib/adminUtils";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { redirect, session } = await authenticate.admin(request);
   const shop = session.shop; // z.B. "t1l4n0d3v.myshopify.com"
   const storeHandle = shop.replace(".myshopify.com", "");
-  const appHandle = "urgify"; // aus Deiner app.toml übernehmen
+  const appHandle = "urgify";
 
-  // Aktuelle Admin-Domain aus dem Referer bestimmen
-  const referer = request.headers.get("referer") || "";
+  const url = new URL(request.url);
+  const { isOneAdmin, adminBase } = getAdminBaseFromHost(url.searchParams.get("host"));
+
   let plansUrl: string;
-
-  if (referer.includes("admin.shopify.com")) {
-    // Neuer Admin (One Admin)
+  if (isOneAdmin) {
+    // One Admin
     plansUrl = `https://admin.shopify.com/store/${storeHandle}/charges/${appHandle}/pricing_plans`;
-  } else if (referer.includes(".myshopify.com/admin")) {
-    // Legacy Admin-Domain
-    plansUrl = `https://${shop}/admin/charges/${appHandle}/pricing_plans`;
   } else {
-    // Fallback: nimm One Admin
-    plansUrl = `https://admin.shopify.com/store/${storeHandle}/charges/${appHandle}/pricing_plans`;
+    // Legacy Admin
+    plansUrl = `https://${shop}/admin/charges/${appHandle}/pricing_plans`;
   }
 
-  // Wichtig: aus dem iframe raus
+  // Aus dem iFrame heraus navigieren
   return redirect(plansUrl, { target: "_top" });
 }
 

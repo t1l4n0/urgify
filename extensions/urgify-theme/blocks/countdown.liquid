@@ -6,18 +6,33 @@
 {% liquid
   assign target_datetime = block.settings.end_datetime
   
-  if target_datetime contains ' '
-    assign target_timestamp = target_datetime | append: ':00'
-  else
-    assign target_timestamp = target_datetime | append: 'T00:00:00'
+  # Prüfe ob Datum leer oder ungültig ist
+  assign has_valid_datetime = false
+  if target_datetime != blank and target_datetime != empty and target_datetime != null and target_datetime != ''
+    assign has_valid_datetime = true
   endif
   
-  assign now = 'now' | date: '%s'
-  assign target_seconds = target_timestamp | date: '%s'
-  
-  assign is_expired = false
-  if target_seconds != blank and now > target_seconds
-    assign is_expired = true
+  if has_valid_datetime
+    if target_datetime contains ' '
+      assign target_timestamp = target_datetime | replace: ' ', 'T' | append: ':00'
+    else
+      assign target_timestamp = target_datetime | append: 'T00:00:00'
+    endif
+
+    # epoch für JS als Fallback (Zahl, nicht String!)
+    assign target_epoch_str = target_timestamp | date: '%s'
+    assign target_epoch = target_epoch_str | plus: 0
+
+    assign settings_hash = hash
+    assign settings_hash["target_datetime"] = target_timestamp
+    assign settings_hash["target_epoch"]    = target_epoch
+    assign settings_hash["countdown_style"] = block.settings.countdown_style | default: 'digital'
+    assign settings_hash["show_days"]       = block.settings.show_days | default: true
+    assign settings_hash["show_hours"]      = block.settings.show_hours | default: true
+    assign settings_hash["show_minutes"]    = block.settings.show_minutes | default: true
+    assign settings_hash["show_seconds"]    = block.settings.show_seconds | default: true
+    assign settings_hash["expired_message"] = block.settings.expired_message | default: "Time is up!"
+    assign settings_hash["animation"]       = block.settings.animation | default: 'none'
   endif
 %}
 
@@ -33,7 +48,8 @@
 
 /* Countdown Container */
 .countdown-container {
-  display: none;
+  opacity: 0;
+  display: flex;
   justify-content: center;
   align-items: center;
   margin: 20px 0;
@@ -43,6 +59,11 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
   text-align: {{ block.settings.content_alignment | default: 'center' }};
   color: {{ block.settings.font_color | default: 'white' }};
+  transition: opacity 0.2s ease;
+}
+
+.countdown-container.is-ready {
+  opacity: 1;
 }
 
 /* Color Themes - Applied to countdown container */
@@ -597,21 +618,20 @@
 }
 </style>
 
-<div id="urgify-countdown-{{ block.id }}"
-     class="urgify-countdown countdown-theme-{{ block.settings.color_theme | default: 'primary' }}"
-     data-urgify="countdown"
-     data-block-id="{{ block.id }}"
-     data-settings='{
-       "target_datetime": "{{ target_timestamp }}",
-       "countdown_style": "{{ block.settings.countdown_style | default: 'digital' }}",
-       "show_days": {{ block.settings.show_days | default: true }},
-       "show_hours": {{ block.settings.show_hours | default: true }},
-       "show_minutes": {{ block.settings.show_minutes | default: true }},
-       "show_seconds": {{ block.settings.show_seconds | default: true }},
-       "expired_message": "{{ block.settings.expired_message | default: 'Time is up!' | escape }}",
-       "animation": "{{ block.settings.animation | default: 'none' }}"
-     }'
-     style="display:block;">
+{% unless has_valid_datetime %}
+<div style="padding:16px;border:1px dashed #ccc;border-radius:8px;margin:20px 0;">
+  <strong>Countdown:</strong> Bitte ein Ziel-Datum in den Block-Einstellungen setzen
+  (Format: YYYY-MM-DD HH:MM).
+</div>
+{% else %}
+     <div id="urgify-countdown-{{ block.id }}"
+          class="urgify-countdown countdown-theme-{{ block.settings.color_theme | default: 'primary' }}"
+          data-urgify="countdown"
+          data-block-id="{{ block.id }}"
+          data-settings="{{ settings_hash | json | escape }}"
+          data-target-epoch="{{ target_epoch }}"
+          data-target-datetime="{{ target_timestamp }}"
+          style="display:block;">
 
 {% if request.design_mode %}
 <div style="padding: 20px; border: 2px dashed #ff6b35; border-radius: 8px; background: rgba(255, 107, 53, 0.05); margin: 20px 0;">
@@ -810,10 +830,126 @@
             <div class="minimal-label">s</div>
           </div>
         {% endif %}
-    </div>
-  {% endif %}
+      </div>
+    {% endif %}
+  </div>
 </div>
-</div>
+
+<style>
+/* Debug: sichtbar machen, selbst ohne JS */
+.countdown-container { opacity: 1 !important; }
+</style>
+
+<script>
+// Globale parseIsoLocal Funktion für Countdown (wie im Limited Offer)
+function parseIsoLocal(datetimeStr) {
+  // akzeptiert: YYYY-MM-DD, YYYY-MM-DD HH:MM, YYYY-MM-DDTHH:MM, mit/ohne :SS
+  if (!datetimeStr) return null;
+
+  // Hat explizite TZ? -> Native Date reicht.
+  if (/[+-]\d{2}:\d{2}|Z$/.test(datetimeStr)) {
+    const d = new Date(datetimeStr);
+    return isNaN(d) ? null : d;
+  }
+
+  // Space -> T
+  const s = datetimeStr.replace(' ', 'T');
+
+  // Mit Sekunde auffüllen
+  const withSec = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s) ? s + ':00' : s;
+
+  // Manuell lokal parsen (sicher in allen Browsern)
+  const m = withSec.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2}))?)?$/
+  );
+  if (!m) {
+    const d = new Date(withSec);
+    return isNaN(d) ? null : d;
+  }
+  const [, Y, M, D, h = '0', mnt = '0', sec = '0'] = m;
+  return new Date(
+    Number(Y),
+    Number(M) - 1,
+    Number(D),
+    Number(h),
+    Number(mnt),
+    Number(sec),
+    0
+  );
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const countdownBlocks = document.querySelectorAll('[data-urgify="countdown"]');
+  
+  countdownBlocks.forEach(block => {
+    const blockId = block.id;
+    const endDateString = block.dataset.targetDatetime;
+    const endEpoch = Number(block.dataset.targetEpoch || 0);
+    
+    if (endDateString || endEpoch > 0) {
+      // Parse the end date - handle different formats
+      let endDate;
+      
+      // 1) Epoch (vom Liquid sicher geliefert) bevorzugen
+      if (endEpoch > 0) {
+        endDate = endEpoch * 1000;
+      } else {
+        // 2) Fallback auf robustes Parsing
+        endDate = (function(){
+          const d = parseIsoLocal(endDateString);
+          return d ? d.getTime() : NaN;
+        })();
+      }
+      
+      // Check if date is valid
+      if (isNaN(endDate)) {
+        console.error('Invalid countdown date:', endDateString, endEpoch);
+        return;
+      }
+      
+      function updateCountdown() {
+        const now = new Date().getTime();
+        const timeLeft = endDate - now;
+        
+        if (timeLeft > 0) {
+          const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+          const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+          const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+          const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+          
+          // Update elements
+          const daysEl = block.querySelector('#days-' + blockId.replace('urgify-countdown-', ''));
+          const hoursEl = block.querySelector('#hours-' + blockId.replace('urgify-countdown-', ''));
+          const minutesEl = block.querySelector('#minutes-' + blockId.replace('urgify-countdown-', ''));
+          const secondsEl = block.querySelector('#seconds-' + blockId.replace('urgify-countdown-', ''));
+          
+          if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
+          if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
+          if (minutesEl) minutesEl.textContent = String(minutes).padStart(2, '0');
+          if (secondsEl) secondsEl.textContent = String(seconds).padStart(2, '0');
+          
+          // Make countdown visible
+          const container = block.querySelector('.countdown-container');
+          if (container) {
+            container.style.opacity = '1';
+            container.classList.add('is-ready');
+          }
+        } else {
+          // Expired
+          const container = block.querySelector('.countdown-container');
+          if (container) {
+            container.innerHTML = '<div style="text-align: center; font-weight: bold; font-size: 1.2rem;">Time is up!</div>';
+          }
+        }
+      }
+      
+      updateCountdown();
+      setInterval(updateCountdown, 1000);
+    }
+  });
+});
+</script>
+{% endunless %}
 
 
 {% schema %}

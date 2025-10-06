@@ -3,10 +3,21 @@
   Displays a spectacular limited-time offer with countdown timer
 {% endcomment %}
 
+{% liquid
+  assign end_ts = block.settings.end_date
+  if end_ts contains ' '
+    assign end_iso = end_ts | replace: ' ', 'T' | append: ':00'
+  else
+    assign end_iso = end_ts | append: 'T00:00:00'
+  endif
+  assign end_epoch = end_iso | date: '%s' | plus: 0
+%}
+
 <div class="urgify-limited-offer offer-style-{{ block.settings.offer_style | default: 'brutalist' }}" 
      data-urgify="limited-offer" 
      data-block-id="{{ block.id }}"
-     data-end-date="{{ block.settings.end_date }}"
+     data-end-date="{{ end_iso }}"
+     data-end-epoch="{{ end_epoch }}"
      style="
        {% if block.settings.text_align != blank %}
          text-align: {{ block.settings.text_align }};
@@ -738,6 +749,43 @@
 </style>
 
 <script>
+// Globale parseIsoLocal Funktion für Limited-Offer
+function parseIsoLocal(datetimeStr) {
+  // akzeptiert: YYYY-MM-DD, YYYY-MM-DD HH:MM, YYYY-MM-DDTHH:MM, mit/ohne :SS
+  if (!datetimeStr) return null;
+
+  // Hat explizite TZ? -> Native Date reicht.
+  if (/[+-]\d{2}:\d{2}|Z$/.test(datetimeStr)) {
+    const d = new Date(datetimeStr);
+    return isNaN(d) ? null : d;
+  }
+
+  // Space -> T
+  const s = datetimeStr.replace(' ', 'T');
+
+  // Mit Sekunde auffüllen
+  const withSec = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s) ? s + ':00' : s;
+
+  // Manuell lokal parsen (sicher in allen Browsern)
+  const m = withSec.match(
+    /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2}))?)?$/
+  );
+  if (!m) {
+    const d = new Date(withSec);
+    return isNaN(d) ? null : d;
+  }
+  const [, Y, M, D, h = '0', mnt = '0', sec = '0'] = m;
+  return new Date(
+    Number(Y),
+    Number(M) - 1,
+    Number(D),
+    Number(h),
+    Number(mnt),
+    Number(sec),
+    0
+  );
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   const offerBlocks = document.querySelectorAll('[data-urgify="limited-offer"]');
   
@@ -749,12 +797,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (timerElement && endDateString) {
       // Parse the end date - handle different formats
       let endDate;
-      if (endDateString.includes('T')) {
-        // Format: YYYY-MM-DDTHH:MM
-        endDate = new Date(endDateString).getTime();
+      
+      // 1) Epoch (vom Liquid sicher geliefert) bevorzugen
+      const endEpoch = Number(block.dataset.endEpoch || 0);
+      if (endEpoch > 0) {
+        endDate = endEpoch * 1000;
       } else {
-        // Format: YYYY-MM-DD HH:MM
-        endDate = new Date(endDateString.replace(' ', 'T')).getTime();
+        // 2) Fallback auf robustes Parsing
+        endDate = (function(){
+          const d = parseIsoLocal(endDateString);
+          return d ? d.getTime() : NaN;
+        })();
       }
       
       // Check if date is valid

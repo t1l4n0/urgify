@@ -13,50 +13,50 @@ api_version = "2025-04"
 
   # App lifecycle webhooks
   [[webhooks.subscriptions]]
-  uri = "https://urgify.fly.dev/app/webhooks/app/uninstalled"
+  uri = "https://urgify.fly.dev/webhooks/app/uninstalled"
   topics = [ "app/uninstalled" ]
 
   [[webhooks.subscriptions]]
-  uri = "https://urgify.fly.dev/app/webhooks/app/subscriptions/update"
+  uri = "https://urgify.fly.dev/webhooks/app/subscriptions/update"
   topics = [ "app_subscriptions/update" ]
 
   [[webhooks.subscriptions]]
-  uri = "https://urgify.fly.dev/app/webhooks/app/scopes/update"
+  uri = "https://urgify.fly.dev/webhooks/app/scopes/update"
   topics = [ "app/scopes_update" ]
 
   # Compliance webhooks (required for GDPR)
   [[webhooks.subscriptions]]
-  uri = "https://urgify.fly.dev/app/webhooks/customers/data_request"
+  uri = "https://urgify.fly.dev/webhooks/customers/data_request"
   compliance_topics = [ "customers/data_request" ]
 
   [[webhooks.subscriptions]]
-  uri = "https://urgify.fly.dev/app/webhooks/customers/redact"
+  uri = "https://urgify.fly.dev/webhooks/customers/redact"
   compliance_topics = [ "customers/redact" ]
 
   [[webhooks.subscriptions]]
-  uri = "https://urgify.fly.dev/app/webhooks/shop/redact"
+  uri = "https://urgify.fly.dev/webhooks/shop/redact"
   compliance_topics = [ "shop/redact" ]
 
   # Product webhooks
   [[webhooks.subscriptions]]
-  uri = "https://urgify.fly.dev/app/webhooks/products/create"
+  uri = "https://urgify.fly.dev/webhooks/products/create"
   topics = [ "products/create" ]
 
   [[webhooks.subscriptions]]
-  uri = "https://urgify.fly.dev/app/webhooks/products/update"
+  uri = "https://urgify.fly.dev/webhooks/products/update"
   topics = [ "products/update" ]
 
   [[webhooks.subscriptions]]
-  uri = "https://urgify.fly.dev/app/webhooks/products/delete"
+  uri = "https://urgify.fly.dev/webhooks/products/delete"
   topics = [ "products/delete" ]
 
   # Theme webhooks
   [[webhooks.subscriptions]]
-  uri = "https://urgify.fly.dev/app/webhooks/themes/publish"
+  uri = "https://urgify.fly.dev/webhooks/themes/publish"
   topics = [ "themes/publish" ]
 
   [[webhooks.subscriptions]]
-  uri = "https://urgify.fly.dev/app/webhooks/themes/delete"
+  uri = "https://urgify.fly.dev/webhooks/themes/delete"
   topics = [ "themes/delete" ]
 
 [access_scopes]

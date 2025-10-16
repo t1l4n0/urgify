@@ -47,3 +47,30 @@ model QuickstartProgress {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }
+
+// Webhook-Event-Tracking für Idempotenz
+model WebhookEvent {
+  id          String   @id
+  topic       String
+  shop        String
+  processedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@map("webhook_events")
+}
+
+// Dead-Letter-Queue für fehlgeschlagene Webhook-Verarbeitungen
+model DeadLetter {
+  id          String    @id @default(cuid())
+  topic       String
+  shop        String
+  payload     String    // JSON-String
+  error       String
+  stack       String?
+  retryCount  Int       @default(0)
+  retriedAt   DateTime?
+  lastError   String?
+  createdAt   DateTime  @default(now())
+
+  @@map("dead_letters")
+}

@@ -1,6 +1,9 @@
 (function () {
   'use strict';
   
+  // Set presence flag early to prevent fallback conflicts
+  window.__URGIFY_PRESENT__ = true;
+  
   // Keine frühe Rückkehr! Klassen/Fixes sollen immer (neu) definiert werden.
 
   /**
@@ -20,14 +23,22 @@
      * Initialize all Urgify blocks on the page
      */
     init() {
+      console.log('Urgify: Starting initialization...');
+      
       // Find and initialize all Urgify blocks
       const blocks = document.querySelectorAll('[data-urgify]');
-      blocks.forEach(block => this.initBlock(block));
+      console.log('Urgify: Found', blocks.length, 'blocks');
+      
+      blocks.forEach(block => {
+        console.log('Urgify: Initializing block:', block.id, 'type:', block.dataset.urgify);
+        this.initBlock(block);
+      });
       
       // Listen for dynamic content changes
       this.observeChanges();
       
       this.initialized = true;
+      console.log('Urgify: Initialization complete');
     }
 
     /**
@@ -95,52 +106,76 @@
      * Initialize Countdown Block
      */
     initCountdown(block) {
+      console.log('Urgify: Initializing countdown block:', block.id);
+      console.log('Urgify: Block settings:', block.getAttribute('data-settings'));
+      console.log('Urgify: Target epoch:', block.getAttribute('data-target-epoch'));
+      console.log('Urgify: Target datetime:', block.getAttribute('data-target-datetime'));
+      
       // The UrgifyCountdown constructor now handles everything automatically
       // It reads settings from data-settings attribute and initializes itself
       new UrgifyCountdown(block);
     }
 
-    /**
-     * Initialize Stock Alert Block
-     */
-    initStockAlert(block) {
-      const productId = block.dataset.productId;
-      const variantId = block.dataset.variantId;
-      const threshold = parseInt(block.dataset.threshold) || 10;
-      const criticalThreshold = parseInt(block.dataset.criticalThreshold) || 5;
-      
-      const stockAlert = new UrgifyStockAlert(block, {
-        productId,
-        variantId,
-        threshold,
-        criticalThreshold
-      });
-      
-      stockAlert.init();
-    }
+  /**
+   * Initialize Stock Alert Block
+   */
+  initStockAlert(block) {
+    const productId = block.dataset.productId;
+    const variantId = block.dataset.variantId;
+    const threshold = parseInt(block.dataset.threshold) || 10;
+    const criticalThreshold = parseInt(block.dataset.criticalThreshold) || 5;
+    
+    // Defer initialization until class is defined
+    setTimeout(() => {
+      if (typeof UrgifyStockAlert !== 'undefined') {
+        const stockAlert = new UrgifyStockAlert(block, {
+          productId,
+          variantId,
+          threshold,
+          criticalThreshold
+        });
+        stockAlert.init();
+      }
+    }, 0);
+  }
 
     /**
      * Initialize Limited Offer Block
      */
     initLimitedOffer(block) {
-      const offer = new UrgifyLimitedOffer(block);
-      offer.init();
+      // Defer initialization until class is defined
+      setTimeout(() => {
+        if (typeof UrgifyLimitedOffer !== 'undefined') {
+          const offer = new UrgifyLimitedOffer(block);
+          offer.init();
+        }
+      }, 0);
     }
 
     /**
      * Initialize Scarcity Banner Block
      */
     initScarcityBanner(block) {
-      const banner = new UrgifyScarcityBanner(block);
-      banner.init();
+      // Defer initialization until class is defined
+      setTimeout(() => {
+        if (typeof UrgifyScarcityBanner !== 'undefined') {
+          const banner = new UrgifyScarcityBanner(block);
+          banner.init();
+        }
+      }, 0);
     }
 
     /**
      * Initialize Urgency Notification Block
      */
     initUrgencyNotification(block) {
-      const notification = new UrgifyUrgencyNotification(block);
-      notification.init();
+      // Defer initialization until class is defined
+      setTimeout(() => {
+        if (typeof UrgifyUrgencyNotification !== 'undefined') {
+          const notification = new UrgifyUrgencyNotification(block);
+          notification.init();
+        }
+      }, 0);
     }
 
     /**
@@ -210,6 +245,14 @@
       this.settings = this.parseSettings();
       this.countdownInterval = null;
       this.isExpired = false;
+      
+      // Race-safe flip tracking - store previous values internally
+      this.lastValues = {
+        days: -1,
+        hours: -1,
+        minutes: -1,
+        seconds: -1
+      };
 
       this.init();
     }
@@ -235,7 +278,9 @@
 
     try {
       const settingsStr = this.block.getAttribute('data-settings');
-      if (!settingsStr) return { ...defaults, ...fallback };
+      if (!settingsStr || settingsStr === 'null' || settingsStr === '') {
+        return { ...defaults, ...fallback };
+      }
       const parsed = JSON.parse(settingsStr);
       // ensure parsed target_epoch is numeric if present
       if (parsed && parsed.target_epoch != null && !isNaN(Number(parsed.target_epoch))) {
@@ -273,15 +318,26 @@
   }
 
     init() {
+      console.log('UrgifyCountdown: Initializing with settings:', this.settings);
+      
       // Mindestens einer der beiden muss da sein
       if (
         !(typeof this.settings.target_epoch === 'number' && this.settings.target_epoch > 0) &&
         !this.settings.target_datetime
       ) {
-        console.warn('No target provided (neither epoch nor datetime).');
+        console.warn('UrgifyCountdown: No target provided (neither epoch nor datetime).');
         return;
       }
       
+      // Log target time for debugging
+      if (this.settings.target_epoch) {
+        console.log('UrgifyCountdown: Target epoch:', this.settings.target_epoch, '->', new Date(this.settings.target_epoch * 1000).toISOString());
+      }
+      if (this.settings.target_datetime) {
+        console.log('UrgifyCountdown: Target datetime:', this.settings.target_datetime);
+      }
+      
+      console.log('UrgifyCountdown: Target found, setting up countdown...');
       this.setupCountdown();
       this.updateCountdown();
     }
@@ -289,9 +345,12 @@
   setupCountdown() {
     const countdownContainer = this.block.querySelector('.countdown-container');
     if (!countdownContainer) {
-      console.warn('Countdown container not found');
+      console.warn('UrgifyCountdown: Countdown container not found');
       return;
     }
+
+    console.log('UrgifyCountdown: Setting up countdown for block:', this.block.id);
+    console.log('UrgifyCountdown: Countdown style:', this.settings.countdown_style);
 
     // Make countdown visible
     countdownContainer.style.display = 'flex';
@@ -389,6 +448,8 @@
       const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
       const seconds = totalSeconds % 60;
 
+      console.log('UrgifyCountdown update:', { days, hours, minutes, seconds, style: this.settings.countdown_style });
+
       // DEBUG: only log when value changes (avoids noisy console)
       if (this._lastTotalSeconds !== totalSeconds) {
         console.debug('UrgifyCountdown update:', {
@@ -458,43 +519,65 @@
     }
 
     updateFlipCard(type, newValue, blockId) {
-      // blockId is raw (e.g. 'urgify-countdown-abc123')
+      // Race-safe: Compare with internally stored previous value, not DOM
+      if (this.lastValues[type] === newValue) {
+        return; // No change, no flip needed
+      }
+
       const rawId   = blockId;
       const shortId = blockId.replace(/^urgify-countdown-/, '');
 
-      // find the card using either raw or short data-* id
-      const flipCard =
-        this.block.querySelector(`.flip-card[data-${type}="${rawId}"]`) ||
-        this.block.querySelector(`.flip-card[data-${type}="${shortId}"]`);
-      if (!flipCard) return;
+      // Find flipCard more tolerant
+      let flipCard = this.block.querySelector(`.flip-card[data-${type}="${rawId}"]`) ||
+                     this.block.querySelector(`.flip-card[data-${type}="${shortId}"]`);
 
-      // find front/back using either raw or short ids
+      if (!flipCard) {
+        // try to find by inner id and then climb up
+        const frontById = this.block.querySelector(`#${type}-${shortId}`) || this.block.querySelector(`#${type}-${rawId}`);
+        if (frontById) flipCard = frontById.closest('.flip-card');
+      }
+
+      if (!flipCard) {
+        // last resort: global search (some themes move nodes)
+        flipCard = document.querySelector(`.flip-card[data-${type}="${rawId}"]`) ||
+                   document.querySelector(`.flip-card[data-${type}="${shortId}"]`);
+      }
+
+      if (!flipCard) {
+        console.debug('Urgify: flip-card not found for', type, 'blockId', blockId);
+        return;
+      }
+
       const frontElement =
         flipCard.querySelector(`#${type}-${shortId}`) ||
         flipCard.querySelector(`#${type}-${rawId}`);
       const backElement =
         flipCard.querySelector(`#${type}-${shortId}-back`) ||
         flipCard.querySelector(`#${type}-${rawId}-back`);
-      if (!frontElement || !backElement) return;
 
-      const currentValue = frontElement.textContent;
+      if (!frontElement || !backElement) {
+        console.debug('Urgify: flip front/back not found', { type, blockId, flipCard });
+        return;
+      }
+
       const newValueStr = this.padZero(newValue);
 
-      // Only flip if value actually changed
-      if (currentValue !== newValueStr) {
-        // Check if card is currently flipped
-        const isFlipped = flipCard.classList.contains('flipped');
-        
-        if (isFlipped) {
-          // Card is on back side, update front and flip back
-          frontElement.textContent = newValueStr;
-          flipCard.classList.remove('flipped');
-        } else {
-          // Card is on front side, update back and flip forward
-          backElement.textContent = newValueStr;
-          flipCard.classList.add('flipped');
-        }
-      }
+      // Update both elements immediately
+      frontElement.textContent = newValueStr;
+      backElement.textContent = newValueStr;
+
+      // force reflow to allow CSS transition retrigger
+      // eslint-disable-next-line no-unused-expressions
+      void flipCard.offsetWidth;
+
+      flipCard.classList.add('flipped');
+
+      setTimeout(() => {
+        flipCard.classList.remove('flipped');
+      }, 600);
+
+      // Store the new value for next comparison
+      this.lastValues[type] = newValue;
     }
 
     updateCircularDisplay(days, hours, minutes, seconds) {
@@ -521,13 +604,41 @@
                          this.block.querySelector(`.circular-progress-bar[data-${type}="${blockId.replace(/^urgify-countdown-/, '')}"]`);
       if (!progressBar) return;
 
-      const radius = 52;
-      const circumference = 2 * Math.PI * radius;
-      const progress = current / total;
-      const offset = circumference - (progress * circumference);
+      // find the actual circle element inside (support <svg><circle> or direct element)
+      const circle = progressBar.tagName && progressBar.tagName.toLowerCase() === 'circle'
+        ? progressBar
+        : progressBar.querySelector('circle') || progressBar;
 
-      progressBar.style.strokeDasharray = circumference;
-      progressBar.style.strokeDashoffset = offset;
+      // radius detection (use attribute if present)
+      let radius = 52;
+      const rAttr = circle.getAttribute && circle.getAttribute('r');
+      if (rAttr && !isNaN(Number(rAttr))) {
+        radius = Number(rAttr);
+      }
+
+      const circumference = 2 * Math.PI * radius;
+      // protect against divide-by-zero
+      const safeTotal = (typeof total === 'number' && total > 0) ? total : 1;
+      const progress = Math.min(Math.max(current / safeTotal, 0), 1);
+
+      // remaining portion (we want strokeDashoffset to represent remaining)
+      const remainingProgress = 1 - progress;
+      const offset = circumference * remainingProgress;
+
+      // Robust stroke-dasharray setting: "circumference circumference" for better browser compatibility
+      const dashArray = `${circumference} ${circumference}`;
+
+      // Apply as attributes and styles (both for broader compatibility)
+      if (circle.style) {
+        circle.style.strokeDasharray = dashArray;
+        circle.style.strokeDashoffset = `${offset}`;
+      }
+      try { 
+        circle.setAttribute('stroke-dasharray', dashArray); 
+        circle.setAttribute('stroke-dashoffset', `${offset}`);
+      } catch(e){
+        console.warn('Urgify: Failed to set stroke attributes:', e);
+      }
     }
 
     updateMinimalDisplay(days, hours, minutes, seconds) {
@@ -570,17 +681,18 @@
       clearInterval(this.countdownInterval);
       this.countdownInterval = null;
     }
-  }
+    }
 
-  destroy() {
-    this.stopCountdown();
-    try {
-      if (this.block) {
-        delete this.block.__urgifyInst;
-        // keep bootstrapped flag maybe, but safe to remove
-        delete this.block.__urgifyBootstrapped;
-      }
-    } catch(e){/* ignore */}
+    destroy() {
+      this.stopCountdown();
+      try {
+        if (this.block) {
+          delete this.block.__urgifyInst;
+          // keep bootstrapped flag maybe, but safe to remove
+          delete this.block.__urgifyBootstrapped;
+        }
+      } catch(e){/* ignore */}
+    }
   }
 
   /**
@@ -765,15 +877,24 @@
 
   // Initialize / reuse singleton
   window.Urgify = (window.Urgify instanceof Urgify) ? window.Urgify : new Urgify();
-  // Export the countdown class for inline bootstrap fallbacks
+  // Export all classes for global access
   window.UrgifyCountdown = UrgifyCountdown;
+  window.UrgifyStockAlert = UrgifyStockAlert;
+  window.UrgifyLimitedOffer = UrgifyLimitedOffer;
+  window.UrgifyScarcityBanner = UrgifyScarcityBanner;
+  window.UrgifyUrgencyNotification = UrgifyUrgencyNotification;
+  
+  // Debug: Log initialization
+  console.log('Urgify: Script loaded, initializing...');
   
   // Initialize when DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
+      console.log('Urgify: DOM ready, initializing...');
       window.Urgify.init();
     });
   } else {
+    console.log('Urgify: DOM already ready, initializing immediately...');
     window.Urgify.init();
   }
 

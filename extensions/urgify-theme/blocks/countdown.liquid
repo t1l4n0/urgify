@@ -33,6 +33,9 @@
     assign settings_hash["show_seconds"]    = block.settings.show_seconds | default: true
     assign settings_hash["expired_message"] = block.settings.expired_message | default: "Time is up!"
     assign settings_hash["animation"]       = block.settings.animation | default: 'none'
+    
+    # Konvertiere zu JSON String
+    assign settings_json = settings_hash | json
   endif
 %}
 
@@ -362,8 +365,8 @@
   width: 100%;
   height: 100%;
   text-align: center;
-  transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
   transform-style: preserve-3d;
+  transition: transform 0.6s ease-in-out;
 }
 
 .flip-card:hover .flip-card-inner {
@@ -374,18 +377,10 @@
   transform: rotateY(180deg);
 }
 
+
+/* Flip card styling */
 .flip-card-front, .flip-card-back {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  backface-visibility: hidden;
   border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
   background: linear-gradient(145deg, {{ block.settings.unit_background_color | default: 'rgba(255, 255, 255, 0.25)' }}, {{ block.settings.unit_background_color | default: 'rgba(255, 255, 255, 0.1)' }});
   box-shadow: 
     0 8px 25px rgba(0, 0, 0, 0.2),
@@ -393,6 +388,36 @@
     inset 0 -1px 0 rgba(0, 0, 0, 0.1);
   border: 1px solid {{ block.settings.unit_border_color | default: 'rgba(255, 255, 255, 0.3)' }};
   overflow: hidden;
+}
+
+/* Ensure proper 3D positioning for flip cards */
+.flip-card {
+  perspective: 1000px;
+  display: inline-block;
+}
+
+.flip-card .flip-card-inner {
+  transition: transform 0.6s ease-in-out;
+  transform-style: preserve-3d;
+  position: relative;
+}
+
+.flip-card .flip-card-front,
+.flip-card .flip-card-back {
+  backface-visibility: hidden;
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flip-card .flip-card-back {
+  transform: rotateY(180deg);
+}
+
+.flip-card.flipped .flip-card-inner {
+  transform: rotateY(180deg);
 }
 
 .flip-card-front::before {
@@ -411,15 +436,6 @@
   transform: translateX(100%);
 }
 
-.flip-card-back {
-  transform: rotateY(180deg);
-  background: linear-gradient(145deg, {{ block.settings.unit_background_color | default: 'rgba(255, 255, 255, 0.25)' }}, {{ block.settings.unit_background_color | default: 'rgba(255, 255, 255, 0.1)' }});
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
-  border: 1px solid {{ block.settings.unit_border_color | default: 'rgba(255, 255, 255, 0.3)' }};
-}
 
 .flip-value {
   font-size: {{ block.settings.value_font_size | default: '2.2' }}rem;
@@ -473,9 +489,21 @@
   stroke: {{ block.settings.progress_color | default: 'white' }};
   stroke-width: 8;
   stroke-linecap: round;
-  stroke-dasharray: 0;
-  stroke-dashoffset: 0;
-  transition: stroke-dashoffset 1s ease-in-out;
+  stroke-dasharray: 326.73; /* 2 * PI * 52 (radius) */
+  stroke-dashoffset: 326.73; /* Start with full circle hidden */
+  transition: stroke-dashoffset 0.4s linear;
+}
+
+/* Circular progress - ensure circle is rotated so stroke starts at top */
+.circular-progress-bar svg { 
+  display: block; 
+}
+
+.circular-progress-bar circle {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.4s linear;
+  stroke-linecap: round;
 }
 
 .circular-content {
@@ -628,7 +656,7 @@
           class="urgify-countdown countdown-theme-{{ block.settings.color_theme | default: 'primary' }}"
           data-urgify="countdown"
           data-block-id="{{ block.id }}"
-          data-settings="{{ settings_hash | json | escape }}"
+          data-settings="{{ settings_json | escape }}"
           data-target-epoch="{{ target_epoch }}"
           data-target-datetime="{{ target_timestamp }}"
           style="display:block;">
@@ -840,114 +868,82 @@
 .countdown-container { opacity: 1 !important; }
 </style>
 
-<script>
-// Globale parseIsoLocal Funktion für Countdown (wie im Limited Offer)
-function parseIsoLocal(datetimeStr) {
-  // akzeptiert: YYYY-MM-DD, YYYY-MM-DD HH:MM, YYYY-MM-DDTHH:MM, mit/ohne :SS
-  if (!datetimeStr) return null;
+        <script>
+        // Countdown wird von Urgify.js automatisch initialisiert
+        // Kein zusätzliches JavaScript nötig
 
-  // Hat explizite TZ? -> Native Date reicht.
-  if (/[+-]\d{2}:\d{2}|Z$/.test(datetimeStr)) {
-    const d = new Date(datetimeStr);
-    return isNaN(d) ? null : d;
-  }
-
-  // Space -> T
-  const s = datetimeStr.replace(' ', 'T');
-
-  // Mit Sekunde auffüllen
-  const withSec = /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s) ? s + ':00' : s;
-
-  // Manuell lokal parsen (sicher in allen Browsern)
-  const m = withSec.match(
-    /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2})(?::(\d{2}))?)?$/
-  );
-  if (!m) {
-    const d = new Date(withSec);
-    return isNaN(d) ? null : d;
-  }
-  const [, Y, M, D, h = '0', mnt = '0', sec = '0'] = m;
-  return new Date(
-    Number(Y),
-    Number(M) - 1,
-    Number(D),
-    Number(h),
-    Number(mnt),
-    Number(sec),
-    0
-  );
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  const countdownBlocks = document.querySelectorAll('[data-urgify="countdown"]');
-  
-  countdownBlocks.forEach(block => {
-    const blockId = block.id;
-    const endDateString = block.dataset.targetDatetime;
-    const endEpoch = Number(block.dataset.targetEpoch || 0);
-    
-    if (endDateString || endEpoch > 0) {
-      // Parse the end date - handle different formats
-      let endDate;
-      
-      // 1) Epoch (vom Liquid sicher geliefert) bevorzugen
-      if (endEpoch > 0) {
-        endDate = endEpoch * 1000;
-      } else {
-        // 2) Fallback auf robustes Parsing
-        endDate = (function(){
-          const d = parseIsoLocal(endDateString);
-          return d ? d.getTime() : NaN;
-        })();
-      }
-      
-      // Check if date is valid
-      if (isNaN(endDate)) {
-        console.error('Invalid countdown date:', endDateString, endEpoch);
-        return;
-      }
-      
-      function updateCountdown() {
-        const now = new Date().getTime();
-        const timeLeft = endDate - now;
-        
-        if (timeLeft > 0) {
-          const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-          const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-          const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-          const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-          
-          // Update elements
-          const daysEl = block.querySelector('#days-' + blockId.replace('urgify-countdown-', ''));
-          const hoursEl = block.querySelector('#hours-' + blockId.replace('urgify-countdown-', ''));
-          const minutesEl = block.querySelector('#minutes-' + blockId.replace('urgify-countdown-', ''));
-          const secondsEl = block.querySelector('#seconds-' + blockId.replace('urgify-countdown-', ''));
-          
-          if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
-          if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
-          if (minutesEl) minutesEl.textContent = String(minutes).padStart(2, '0');
-          if (secondsEl) secondsEl.textContent = String(seconds).padStart(2, '0');
-          
-          // Make countdown visible
-          const container = block.querySelector('.countdown-container');
-          if (container) {
-            container.style.opacity = '1';
-            container.classList.add('is-ready');
-          }
+        // Verhindere, dass das alte JavaScript läuft
+        if (typeof window.__URGIFY_PRESENT__ !== 'undefined') {
+          console.log('Urgify present; skip fallback');
         } else {
-          // Expired
-          const container = block.querySelector('.countdown-container');
-          if (container) {
-            container.innerHTML = '<div style="text-align: center; font-weight: bold; font-size: 1.2rem;">Time is up!</div>';
+          console.log('Urgify: Fallback initialization for countdown');
+  
+  // Fallback für den Fall, dass Urgify.js nicht geladen ist
+  document.addEventListener('DOMContentLoaded', function() {
+    const countdownBlocks = document.querySelectorAll('[data-urgify="countdown"]');
+    
+    countdownBlocks.forEach(block => {
+      const blockId = block.id;
+      const endDateString = block.dataset.targetDatetime;
+      const endEpoch = Number(block.dataset.targetEpoch || 0);
+      
+      if (endDateString || endEpoch > 0) {
+        let endDate;
+        
+        if (endEpoch > 0) {
+          endDate = endEpoch * 1000;
+        } else {
+          const d = new Date(endDateString);
+          endDate = isNaN(d.getTime()) ? null : d.getTime();
+        }
+        
+        if (!endDate || isNaN(endDate)) {
+          console.error('Invalid countdown date:', endDateString, endEpoch);
+          return;
+        }
+        
+        function updateCountdown() {
+          const now = new Date().getTime();
+          const timeLeft = endDate - now;
+          
+          if (timeLeft > 0) {
+            const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+            
+            // Update elements
+            const daysEl = block.querySelector('#days-' + blockId.replace('urgify-countdown-', ''));
+            const hoursEl = block.querySelector('#hours-' + blockId.replace('urgify-countdown-', ''));
+            const minutesEl = block.querySelector('#minutes-' + blockId.replace('urgify-countdown-', ''));
+            const secondsEl = block.querySelector('#seconds-' + blockId.replace('urgify-countdown-', ''));
+            
+            if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
+            if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
+            if (minutesEl) minutesEl.textContent = String(minutes).padStart(2, '0');
+            if (secondsEl) secondsEl.textContent = String(seconds).padStart(2, '0');
+            
+            // Make countdown visible
+            const container = block.querySelector('.countdown-container');
+            if (container) {
+              container.style.opacity = '1';
+              container.classList.add('is-ready');
+            }
+          } else {
+            // Expired
+            const container = block.querySelector('.countdown-container');
+            if (container) {
+              container.innerHTML = '<div style="text-align: center; font-weight: bold; font-size: 1.2rem;">Time is up!</div>';
+            }
           }
         }
+        
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
       }
-      
-      updateCountdown();
-      setInterval(updateCountdown, 1000);
-    }
+    });
   });
-});
+}
 </script>
 {% endunless %}
 

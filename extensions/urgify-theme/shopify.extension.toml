@@ -5,8 +5,8 @@ type = "theme_app_extension"
 
 # Assets to be bundled and served
 [[assets]]
-source = "assets/urgify.min.js"
-destination = "assets/urgify.min.js"
+source = "assets/urgify.js"
+destination = "assets/urgify.js"
 
 [[assets]]
 source = "assets/urgify.min.css"

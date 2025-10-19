@@ -448,14 +448,10 @@
       const minutes = Math.floor((totalSeconds % (60 * 60)) / 60);
       const seconds = totalSeconds % 60;
 
-      console.log('UrgifyCountdown update:', { days, hours, minutes, seconds, style: this.settings.countdown_style });
+      // Countdown update (removed console.log to reduce noise)
 
-      // DEBUG: only log when value changes (avoids noisy console)
+      // Track last total seconds to avoid unnecessary updates
       if (this._lastTotalSeconds !== totalSeconds) {
-        console.debug('UrgifyCountdown update:', {
-          blockId: this.block.id,
-          totalSeconds, days, hours, minutes, seconds
-        });
         this._lastTotalSeconds = totalSeconds;
       }
 
@@ -570,10 +566,13 @@
       // eslint-disable-next-line no-unused-expressions
       void flipCard.offsetWidth;
 
-      flipCard.classList.add('flipped');
+      // Trigger flip animation
+      flipCard.classList.add('animating');
 
+      // Remove animation class after animation completes
       setTimeout(() => {
-        flipCard.classList.remove('flipped');
+        flipCard.classList.remove('animating');
+        flipCard.classList.add('flipped');
       }, 600);
 
       // Store the new value for next comparison
@@ -593,21 +592,75 @@
       if (secondsElement) secondsElement.textContent = this.padZero(seconds);
 
       // Update circular progress bars
-      this.updateCircularProgress('days', days, 365, this.block.id);
-      this.updateCircularProgress('hours', hours, 24, this.block.id);
-      this.updateCircularProgress('minutes', minutes, 60, this.block.id);
-      this.updateCircularProgress('seconds', seconds, 60, this.block.id);
+      // For countdown: show progress as "remaining time" vs "total time"
+      // Circle starts empty and fills up as time runs out
+      
+      // Calculate total time for each unit (maximum possible values)
+      const maxDays = Math.max(days, 30); // At least 30 days
+      const maxHours = 24;
+      const maxMinutes = 60;
+      const maxSeconds = 60;
+      
+      // Use remaining time directly for progress calculation
+      // More remaining time = less filled circle, less remaining time = more filled circle
+      this.updateCircularProgress('days', days, maxDays, this.block.id);
+      this.updateCircularProgress('hours', hours, maxHours, this.block.id);
+      this.updateCircularProgress('minutes', minutes, maxMinutes, this.block.id);
+      this.updateCircularProgress('seconds', seconds, maxSeconds, this.block.id);
     }
 
     updateCircularProgress(type, current, total, blockId) {
-      const progressBar = this.block.querySelector(`.circular-progress-bar[data-${type}="${blockId}"]`) ||
-                         this.block.querySelector(`.circular-progress-bar[data-${type}="${blockId.replace(/^urgify-countdown-/, '')}"]`);
-      if (!progressBar) return;
+      // Update circular progress for countdown
+      
+      // Try multiple selectors to find the circle element
+      let progressBar = this.block.querySelector(`.circular-progress-bar[data-${type}="${blockId}"]`);
+      
+      if (!progressBar) {
+        const shortId = blockId.replace(/^urgify-countdown-/, '');
+        progressBar = this.block.querySelector(`.circular-progress-bar[data-${type}="${shortId}"]`);
+      }
+      
+      if (!progressBar) {
+        // Fallback: try to find by class and type
+        progressBar = this.block.querySelector(`.circular-progress-bar[data-${type}]`);
+      }
+      
+      if (!progressBar) {
+        // Last resort: find any circular progress bar in this block
+        const allProgressBars = this.block.querySelectorAll('.circular-progress-bar');
+        
+        // Try to find by position/index
+        const typeIndex = ['days', 'hours', 'minutes', 'seconds'].indexOf(type);
+        if (typeIndex >= 0 && allProgressBars[typeIndex]) {
+          progressBar = allProgressBars[typeIndex];
+        }
+      }
+      
+      if (!progressBar) {
+        return;
+      }
 
       // find the actual circle element inside (support <svg><circle> or direct element)
-      const circle = progressBar.tagName && progressBar.tagName.toLowerCase() === 'circle'
+      let circle = progressBar.tagName && progressBar.tagName.toLowerCase() === 'circle'
         ? progressBar
-        : progressBar.querySelector('circle') || progressBar;
+        : progressBar.querySelector('circle');
+
+      if (!circle) {
+        // Try to find circle in parent SVG
+        const svg = progressBar.closest('svg');
+        if (svg) {
+          circle = svg.querySelector('circle.circular-progress-bar');
+          if (!circle) {
+            // Find any circle in the SVG
+            const circles = svg.querySelectorAll('circle');
+            circle = circles[circles.length - 1]; // Usually the last circle is the progress bar
+          }
+        }
+      }
+
+      if (!circle) {
+        return;
+      }
 
       // radius detection (use attribute if present)
       let radius = 52;
@@ -619,25 +672,42 @@
       const circumference = 2 * Math.PI * radius;
       // protect against divide-by-zero
       const safeTotal = (typeof total === 'number' && total > 0) ? total : 1;
+      
+      // COUNTDOWN LOGIC: Circle fills up as remaining time decreases
+      // When remaining time is high, circle should be empty (0% filled)
+      // When remaining time is low, circle should be full (100% filled)
       const progress = Math.min(Math.max(current / safeTotal, 0), 1);
 
-      // remaining portion (we want strokeDashoffset to represent remaining)
-      const remainingProgress = 1 - progress;
-      const offset = circumference * remainingProgress;
+      // strokeDashoffset represents the "gap" - when 0, circle is full; when circumference, circle is empty
+      // For countdown: invert progress so circle fills as time runs out
+      // More remaining time = less filled circle = more offset
+      const offset = circumference * (1 - progress);
 
       // Robust stroke-dasharray setting: "circumference circumference" for better browser compatibility
       const dashArray = `${circumference} ${circumference}`;
+
+      // Track last circular values to avoid unnecessary updates
+      if (this._lastCircularValues && this._lastCircularValues[type] !== current) {
+        // Update circular progress values
+      }
 
       // Apply as attributes and styles (both for broader compatibility)
       if (circle.style) {
         circle.style.strokeDasharray = dashArray;
         circle.style.strokeDashoffset = `${offset}`;
       }
+      
       try { 
         circle.setAttribute('stroke-dasharray', dashArray); 
         circle.setAttribute('stroke-dashoffset', `${offset}`);
+        
+        // Store last value for change detection
+        if (!this._lastCircularValues) this._lastCircularValues = {};
+        this._lastCircularValues[type] = current;
+        
+        // Successfully updated circle attributes
       } catch(e){
-        console.warn('Urgify: Failed to set stroke attributes:', e);
+        // Silently handle attribute setting errors
       }
     }
 

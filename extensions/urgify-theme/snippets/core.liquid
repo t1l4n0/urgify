@@ -13,7 +13,7 @@
   endif
   
   if should_load
-    assign config = shop.metafields.urgify.stock_alert_config.value
+    # Configuration loaded in individual snippets as needed
   endif
 %}
 
@@ -27,8 +27,8 @@
 {% else %}
 {{ 'urgify.min.css' | asset_url | stylesheet_tag }}
 {{ 'urgify-stock-alert.css' | asset_url | stylesheet_tag }}
-{{ 'urgify.js' | asset_url | script_tag: defer: true }}
-{{ 'urgify-stock-alert.js' | asset_url | script_tag: defer: true }}
+<script src="{{ 'urgify.js' | asset_url }}"></script>
+<script src="{{ 'urgify-stock-alert.js' | asset_url }}" async></script>
 {% render 'urgify-stock-alert-auto' %}
 {% endunless %}
 

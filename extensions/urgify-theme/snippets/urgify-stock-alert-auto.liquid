@@ -15,9 +15,6 @@
   
   # Only proceed if subscription is active
   if should_render
-    # JSON-Config laden (kann fehlen)
-    assign cfg_json = shop.metafields.urgify.stock_alert_config.value | default: '{}'
-    
     # Einzel-Metafields → dann JSON → dann Default
     assign enabled = shop.metafields.urgify.stock_alert_enabled.value | default: false
     assign threshold = shop.metafields.urgify.global_threshold.value | default: 5
@@ -82,5 +79,5 @@
   {% endunless %}
 
 {% if should_render %}
-<script src="{{ 'urgify-stock-alert.js' | asset_url }}" defer></script>
+<script src="{{ 'urgify-stock-alert.js' | asset_url }}" async></script>
 {% endif %}

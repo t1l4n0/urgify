@@ -35,19 +35,8 @@
     assign target_epoch_str = target_timestamp | date: '%s'
     assign target_epoch = target_epoch_str | plus: 0
 
-    assign settings_hash = hash
-    assign settings_hash["target_datetime"] = target_timestamp
-    assign settings_hash["target_epoch"]    = target_epoch
-    assign settings_hash["countdown_style"] = block.settings.countdown_style | default: 'digital'
-    assign settings_hash["show_days"]       = block.settings.show_days | default: true
-    assign settings_hash["show_hours"]      = block.settings.show_hours | default: true
-    assign settings_hash["show_minutes"]    = block.settings.show_minutes | default: true
-    assign settings_hash["show_seconds"]    = block.settings.show_seconds | default: true
-    assign settings_hash["expired_message"] = block.settings.expired_message | default: "Time is up!"
-    assign settings_hash["animation"]       = block.settings.animation | default: 'none'
-    
-    # Konvertiere zu JSON String
-    assign settings_json = settings_hash | json
+    # Erstelle settings hash direkt
+    assign settings_json = '{"target_datetime":"' | append: target_timestamp | append: '","target_epoch":' | append: target_epoch | append: ',"countdown_style":"' | append: block.settings.countdown_style | append: '","show_days":' | append: block.settings.show_days | append: ',"show_hours":' | append: block.settings.show_hours | append: ',"show_minutes":' | append: block.settings.show_minutes | append: ',"show_seconds":' | append: block.settings.show_seconds | append: ',"expired_message":"' | append: block.settings.expired_message | append: '","animation":"' | append: block.settings.animation | append: '"}'
   endif
 %}
 
@@ -297,6 +286,12 @@
   }
 }
 
+@keyframes flipDown {
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(-90deg); }
+  100% { transform: rotateX(-180deg); }
+}
+
 .countdown-container.expired {
   background: {{ block.settings.expired_background_color | default: 'rgba(255, 0, 0, 0.1)' }};
   color: {{ block.settings.expired_text_color | default: '#d32f2f' }};
@@ -364,11 +359,18 @@
   justify-content: center;
 }
 
+.flip-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
 .flip-card {
   position: relative;
   width: 90px;
-  height: 120px;
-  perspective: 1200px;
+  height: 100px;
+  perspective: 600px;
   cursor: pointer;
 }
 
@@ -378,17 +380,16 @@
   height: 100%;
   text-align: center;
   transform-style: preserve-3d;
-  transition: transform 0.6s ease-in-out;
-}
-
-.flip-card:hover .flip-card-inner {
-  transform: rotateY(15deg);
+  transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
 .flip-card.flipped .flip-card-inner {
-  transform: rotateY(180deg);
+  transform: rotateX(180deg);
 }
 
+.flip-card.animating .flip-card-inner {
+  animation: flipDown 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
 
 /* Flip card styling */
 .flip-card-front, .flip-card-back {
@@ -425,11 +426,11 @@
 }
 
 .flip-card .flip-card-back {
-  transform: rotateY(180deg);
+  transform: rotateX(180deg);
 }
 
 .flip-card.flipped .flip-card-inner {
-  transform: rotateY(180deg);
+  transform: rotateX(180deg);
 }
 
 .flip-card-front::before {
@@ -447,7 +448,6 @@
 .flip-card:hover .flip-card-front::before {
   transform: translateX(100%);
 }
-
 
 .flip-value {
   font-size: {{ block.settings.value_font_size | default: '2.2' }}rem;
@@ -468,6 +468,7 @@
   margin-top: 5px;
   opacity: 0.9;
   color: {{ block.settings.label_color | default: 'white' }};
+  text-align: center;
 }
 
 /* Circular Style */
@@ -502,7 +503,7 @@
   stroke-width: 8;
   stroke-linecap: round;
   stroke-dasharray: 326.73; /* 2 * PI * 52 (radius) */
-  stroke-dashoffset: 326.73; /* Start with full circle hidden */
+  stroke-dashoffset: 326.73; /* Start with empty circle, fills up as time progresses */
   transition: stroke-dashoffset 0.4s linear;
 }
 
@@ -593,13 +594,21 @@
     font-size: {{ block.settings.value_font_size | default: '2' }}rem;
   }
   
+  .flip-card-wrapper {
+    gap: 6px;
+  }
+  
   .flip-card {
     width: 70px;
-    height: 90px;
+    height: 80px;
   }
   
   .flip-value {
     font-size: {{ block.settings.value_font_size | default: '1.5' }}rem;
+  }
+  
+  .flip-label {
+    font-size: {{ block.settings.label_font_size | default: '0.7' }}rem;
   }
   
   .circular-progress {
@@ -634,13 +643,21 @@
     font-size: {{ block.settings.value_font_size | default: '1.5' }}rem;
   }
   
+  .flip-card-wrapper {
+    gap: 5px;
+  }
+  
   .flip-card {
     width: 60px;
-    height: 80px;
+    height: 70px;
   }
   
   .flip-value {
     font-size: {{ block.settings.value_font_size | default: '1.25' }}rem;
+  }
+  
+  .flip-label {
+    font-size: {{ block.settings.label_font_size | default: '0.65' }}rem;
   }
   
   .circular-progress {
@@ -671,6 +688,24 @@
   (Format: YYYY-MM-DD HH:MM).
 </div>
 {% else %}
+     <!-- Ensure urgify.js is loaded as fallback -->
+     <script>
+       // Check if urgify.js is already loaded, if not load it
+       if (!document.querySelector('script[src*="urgify.js"]') && 
+           typeof window.__URGIFY_PRESENT__ === 'undefined') {
+         console.log('Urgify: Loading script as fallback...');
+         var script = document.createElement('script');
+         script.src = '{{ 'urgify.js' | asset_url }}';
+         script.onload = function() {
+           console.log('Urgify: Fallback script loaded successfully');
+         };
+         script.onerror = function() {
+           console.error('Urgify: Failed to load fallback script');
+         };
+         document.head.appendChild(script);
+       }
+     </script>
+
      <div id="urgify-countdown-{{ block.id }}"
           class="urgify-countdown countdown-theme-{{ block.settings.color_theme | default: 'primary' }}"
           data-urgify="countdown"
@@ -735,59 +770,63 @@
     {% elsif block.settings.countdown_style == 'flip' %}
       <div class="countdown-flip">
         {% if block.settings.show_days %}
-          <div class="flip-card" data-days="{{ block.id }}">
-            <div class="flip-card-inner">
-              <div class="flip-card-front">
-                <div id="days-{{ block.id }}" class="flip-value">00</div>
-                <div class="flip-label">Days</div>
-              </div>
-              <div class="flip-card-back">
-                <div id="days-{{ block.id }}-back" class="flip-value">00</div>
-                <div class="flip-label">Days</div>
+          <div class="flip-card-wrapper">
+            <div class="flip-card" data-days="{{ block.id }}">
+              <div class="flip-card-inner">
+                <div class="flip-card-front">
+                  <div id="days-{{ block.id }}" class="flip-value">00</div>
+                </div>
+                <div class="flip-card-back">
+                  <div id="days-{{ block.id }}-back" class="flip-value">00</div>
+                </div>
               </div>
             </div>
+            <div class="flip-label">Days</div>
           </div>
         {% endif %}
         {% if block.settings.show_hours %}
-          <div class="flip-card" data-hours="{{ block.id }}">
-            <div class="flip-card-inner">
-              <div class="flip-card-front">
-                <div id="hours-{{ block.id }}" class="flip-value">00</div>
-                <div class="flip-label">Hours</div>
-              </div>
-              <div class="flip-card-back">
-                <div id="hours-{{ block.id }}-back" class="flip-value">00</div>
-                <div class="flip-label">Hours</div>
+          <div class="flip-card-wrapper">
+            <div class="flip-card" data-hours="{{ block.id }}">
+              <div class="flip-card-inner">
+                <div class="flip-card-front">
+                  <div id="hours-{{ block.id }}" class="flip-value">00</div>
+                </div>
+                <div class="flip-card-back">
+                  <div id="hours-{{ block.id }}-back" class="flip-value">00</div>
+                </div>
               </div>
             </div>
+            <div class="flip-label">Hours</div>
           </div>
         {% endif %}
         {% if block.settings.show_minutes %}
-          <div class="flip-card" data-minutes="{{ block.id }}">
-            <div class="flip-card-inner">
-              <div class="flip-card-front">
-                <div id="minutes-{{ block.id }}" class="flip-value">00</div>
-                <div class="flip-label">Min</div>
-              </div>
-              <div class="flip-card-back">
-                <div id="minutes-{{ block.id }}-back" class="flip-value">00</div>
-                <div class="flip-label">Min</div>
+          <div class="flip-card-wrapper">
+            <div class="flip-card" data-minutes="{{ block.id }}">
+              <div class="flip-card-inner">
+                <div class="flip-card-front">
+                  <div id="minutes-{{ block.id }}" class="flip-value">00</div>
+                </div>
+                <div class="flip-card-back">
+                  <div id="minutes-{{ block.id }}-back" class="flip-value">00</div>
+                </div>
               </div>
             </div>
+            <div class="flip-label">Min</div>
           </div>
         {% endif %}
         {% if block.settings.show_seconds %}
-          <div class="flip-card" data-seconds="{{ block.id }}">
-            <div class="flip-card-inner">
-              <div class="flip-card-front">
-                <div id="seconds-{{ block.id }}" class="flip-value">00</div>
-                <div class="flip-label">Sec</div>
-              </div>
-              <div class="flip-card-back">
-                <div id="seconds-{{ block.id }}-back" class="flip-value">00</div>
-                <div class="flip-label">Sec</div>
+          <div class="flip-card-wrapper">
+            <div class="flip-card" data-seconds="{{ block.id }}">
+              <div class="flip-card-inner">
+                <div class="flip-card-front">
+                  <div id="seconds-{{ block.id }}" class="flip-value">00</div>
+                </div>
+                <div class="flip-card-back">
+                  <div id="seconds-{{ block.id }}-back" class="flip-value">00</div>
+                </div>
               </div>
             </div>
+            <div class="flip-label">Sec</div>
           </div>
         {% endif %}
       </div>
@@ -889,80 +928,43 @@
 
         <script>
         // Countdown wird von Urgify.js automatisch initialisiert
-        // Kein zusätzliches JavaScript nötig
-
-        // Verhindere, dass das alte JavaScript läuft
-        if (typeof window.__URGIFY_PRESENT__ !== 'undefined') {
-          console.log('Urgify present; skip fallback');
-        } else {
-          console.log('Urgify: Fallback initialization for countdown');
-  
-  // Fallback für den Fall, dass Urgify.js nicht geladen ist
-  document.addEventListener('DOMContentLoaded', function() {
-    const countdownBlocks = document.querySelectorAll('[data-urgify="countdown"]');
-    
-    countdownBlocks.forEach(block => {
-      const blockId = block.id;
-      const endDateString = block.dataset.targetDatetime;
-      const endEpoch = Number(block.dataset.targetEpoch || 0);
-      
-      if (endDateString || endEpoch > 0) {
-        let endDate;
+        // Robuster Fallback mit Retry-Logic für den Fall, dass Urgify.js nicht geladen ist
         
-        if (endEpoch > 0) {
-          endDate = endEpoch * 1000;
-        } else {
-          const d = new Date(endDateString);
-          endDate = isNaN(d.getTime()) ? null : d.getTime();
-        }
-        
-        if (!endDate || isNaN(endDate)) {
-          console.error('Invalid countdown date:', endDateString, endEpoch);
-          return;
-        }
-        
-        function updateCountdown() {
-          const now = new Date().getTime();
-          const timeLeft = endDate - now;
+        // Robusterer Check mit Retry-Logic
+        function checkUrgifyLoaded(retries = 10, delay = 200) {
+          console.log(`Urgify: Checking if loaded (${retries} retries left)...`);
           
-          if (timeLeft > 0) {
-            const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
-            const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
-            const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
-            
-            // Update elements
-            const daysEl = block.querySelector('#days-' + blockId.replace('urgify-countdown-', ''));
-            const hoursEl = block.querySelector('#hours-' + blockId.replace('urgify-countdown-', ''));
-            const minutesEl = block.querySelector('#minutes-' + blockId.replace('urgify-countdown-', ''));
-            const secondsEl = block.querySelector('#seconds-' + blockId.replace('urgify-countdown-', ''));
-            
-            if (daysEl) daysEl.textContent = String(days).padStart(2, '0');
-            if (hoursEl) hoursEl.textContent = String(hours).padStart(2, '0');
-            if (minutesEl) minutesEl.textContent = String(minutes).padStart(2, '0');
-            if (secondsEl) secondsEl.textContent = String(seconds).padStart(2, '0');
-            
-            // Make countdown visible
-            const container = block.querySelector('.countdown-container');
-            if (container) {
-              container.style.opacity = '1';
-              container.classList.add('is-ready');
-            }
+          if (typeof window.__URGIFY_PRESENT__ !== 'undefined' || 
+              typeof window.Urgify !== 'undefined' ||
+              typeof window.UrgifyCountdown !== 'undefined') {
+            console.log('Urgify: Scripts loaded successfully');
+            return;
+          }
+          
+          if (retries > 0) {
+            setTimeout(() => checkUrgifyLoaded(retries - 1, delay), delay);
           } else {
-            // Expired
-            const container = block.querySelector('.countdown-container');
-            if (container) {
-              container.innerHTML = '<div style="text-align: center; font-weight: bold; font-size: 1.2rem;">Time is up!</div>';
-            }
+            console.warn('Urgify: Core script not loaded after retries - showing fallback message');
+            
+            // Fallback: Countdown-Container sichtbar machen
+            const countdownBlocks = document.querySelectorAll('[data-urgify="countdown"]');
+            countdownBlocks.forEach(block => {
+              const container = block.querySelector('.countdown-container');
+              if (container) {
+                container.style.opacity = '1';
+                container.classList.add('is-ready');
+                container.innerHTML = '<div style="text-align: center; padding: 20px; color: #ff6b35; font-weight: bold;">Countdown requires Urgify app to be loaded</div>';
+              }
+            });
           }
         }
-        
-        updateCountdown();
-        setInterval(updateCountdown, 1000);
-      }
-    });
-  });
-}
+
+        // Start check nach DOM ready
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', () => checkUrgifyLoaded());
+        } else {
+          checkUrgifyLoaded();
+        }
 </script>
 {% endunless %}
 

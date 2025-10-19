@@ -16,6 +16,7 @@ import {
 import { useEffect, useState } from "react";
 import { toMessage } from "../lib/errors";
 import { ViewPlansLink } from "../components/ViewPlansLink";
+import { useFetcher } from "@remix-run/react";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -48,8 +49,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const shopId = shopData.data?.shop?.id;
 
     if (shopId) {
-      const { syncSubscriptionStatusToMetafield } = await import("../utils/billing");
-      await syncSubscriptionStatusToMetafield(admin, shopId);
+      try {
+        const { syncSubscriptionStatusToMetafield } = await import("../utils/billing");
+        const syncResult = await syncSubscriptionStatusToMetafield(admin, shopId);
+        console.log("Metafield sync result:", syncResult);
+      } catch (syncError) {
+        console.error("Failed to sync metafield in billing confirmation:", syncError);
+        // Continue even if sync fails
+      }
     }
     
     return json({
@@ -73,7 +80,9 @@ export default function BillingConfirmation() {
   const error = 'error' in data ? data.error : null;
   const shop = 'shop' in data ? data.shop : '';
   const [isLoading, setIsLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState<string>("");
   const { search } = useLocation(); // enthält ?host=...&shop=...
+  const fetcher = useFetcher();
 
   useEffect(() => {
     // Simulate loading time for better UX
@@ -83,6 +92,21 @@ export default function BillingConfirmation() {
 
     return () => clearTimeout(timer);
   }, []);
+
+  const handleSyncMetafield = () => {
+    setSyncStatus("Syncing...");
+    fetcher.submit({}, { method: "POST", action: "/api/trigger-metafield-sync" });
+  };
+
+  useEffect(() => {
+    if (fetcher.data) {
+      if (fetcher.data.success) {
+        setSyncStatus("✅ Metafield synced successfully! Theme blocks should now work.");
+      } else {
+        setSyncStatus(`❌ Sync failed: ${fetcher.data.error || "Unknown error"}`);
+      }
+    }
+  }, [fetcher.data]);
 
   if (isLoading) {
     return (
@@ -122,11 +146,25 @@ export default function BillingConfirmation() {
                       You now have access to all premium features. You can manage your subscription 
                       anytime from the billing dashboard.
                     </Text>
+
+                    {syncStatus && (
+                      <Banner tone={syncStatus.includes("✅") ? "success" : "critical"}>
+                        <Text as="p" variant="bodyMd">{syncStatus}</Text>
+                      </Banner>
+                    )}
                     
                     <InlineStack gap="300">
                         <ViewPlansLink>
                           View Pricing Plans
                         </ViewPlansLink>
+                      
+                      <Button 
+                        onClick={handleSyncMetafield}
+                        loading={fetcher.state === "submitting"}
+                        disabled={fetcher.state === "submitting"}
+                      >
+                        Sync Theme Blocks
+                      </Button>
                       
                       <Link to="/app">
                         <Button variant="secondary">

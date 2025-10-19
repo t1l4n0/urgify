@@ -684,7 +684,7 @@
   </div>
 {% elsif has_valid_datetime == false %}
 <div style="padding:16px;border:1px dashed #ccc;border-radius:8px;margin:20px 0;">
-  <strong>Countdown:</strong> Bitte ein Ziel-Datum in den Block-Einstellungen setzen
+  <strong>Countdown:</strong> Please set a target date in the block settings
   (Format: YYYY-MM-DD HH:MM).
 </div>
 {% else %}
@@ -987,6 +987,7 @@
       "type": "text",
       "id": "end_datetime",
       "label": "Target Date & Time",
+      "default": "2025-12-23 23:59",
       "info": "The date and time when the countdown should end (Format: YYYY-MM-DD HH:MM). Example: 2025-12-23 23:59"
     },
     {

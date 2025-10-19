@@ -10,6 +10,7 @@ import {
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { toMessage } from "../lib/errors";
 import { ViewPlansLink } from "../components/ViewPlansLink";
+import { authenticate } from "../shopify.server";
 // QuickstartChecklist intentionally hidden for now
 // import QuickstartChecklist from "../components/QuickstartChecklist";
 
@@ -23,7 +24,32 @@ export async function loader({ request }: LoaderFunctionArgs) {
   try {
     const url = new URL(request.url);
     const shop = url.searchParams.get("shop") ?? undefined;
-    // ⚠️ hier KEINE externen Calls, KEIN Throw
+    
+    // Sync subscription status to metafield for Liquid templates
+    try {
+      const { admin } = await authenticate.admin(request);
+      
+      // Get shop ID for metafield sync
+      const shopResponse = await admin.graphql(`
+        query getShop {
+          shop {
+            id
+          }
+        }
+      `);
+      
+      const shopData = await shopResponse.json();
+      const shopId = shopData.data?.shop?.id;
+      
+      if (shopId) {
+        const { syncSubscriptionStatusToMetafield } = await import("../utils/billing");
+        await syncSubscriptionStatusToMetafield(admin, shopId);
+      }
+    } catch (syncError) {
+      console.error("Failed to sync subscription status in app._index:", syncError);
+      // Continue with normal flow even if sync fails
+    }
+    
     return json({ shop }, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
     console.error("app._index loader failed", err);
@@ -171,6 +197,7 @@ export default function Index() {
             </div>
           </Card>
         </Layout.Section>
+
         <Layout.Section>
           <Card>
             <div style={{ padding: "1rem", textAlign: "center" }}>

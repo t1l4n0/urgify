@@ -1,3 +1,23 @@
+{% liquid
+  # Check subscription status first
+  assign subscription_active = shop.metafields.urgify.subscription_active.value | default: false
+  if subscription_active != true and subscription_active != 'true'
+    # No active subscription, don't render anything
+    assign should_render = false
+  else
+    assign should_render = true
+  endif
+%}
+
+{% unless should_render %}
+  {% comment %}No active subscription - show subscription required message{% endcomment %}
+  <div style="padding: 20px; border: 2px dashed #e74c3c; border-radius: 8px; margin: 20px 0; background: #fdf2f2; text-align: center;">
+    <div style="color: #e74c3c; font-weight: bold; margin-bottom: 8px;">🔒 Subscription Required</div>
+    <div style="color: #666; font-size: 14px; margin-bottom: 12px;">This block requires an active Urgify subscription to display.</div>
+    <div style="color: #999; font-size: 12px;">Configure your settings below. The block will appear once you subscribe.</div>
+  </div>
+{% else %}
+
 <div id="scarcity-banner-urgify-{{ block.id }}" 
      class="urgify-scarcity-banner notify-style-{{ block.settings.notify_style | default: 'spectacular' }} badge" 
      data-urgify="scarcity-banner"
@@ -337,11 +357,17 @@ body .urgify-scarcity-banner {
 }
 </style>
 
+{% endunless %}
+
 {% schema %}
 {
   "name": "Scarcity Banner",
   "target": "section",
   "settings": [
+    {
+      "type": "paragraph",
+      "content": "🔒 **Subscription Required**\n\nThis block requires an active Urgify subscription to display on your storefront. Configure your settings below - the banner will appear once you subscribe."
+    },
     { "type": "select", "id": "notify_style", "label": "Notification Style", "options": [
       {"value": "spectacular", "label": "Spectacular"},
       {"value": "brutalist", "label": "Brutalist Bold"},

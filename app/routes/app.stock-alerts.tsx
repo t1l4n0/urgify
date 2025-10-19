@@ -1,6 +1,7 @@
-import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
+import { json, type LoaderFunctionArgs, type ActionFunctionArgs, redirect } from "@remix-run/node";
 import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
+import { BillingManager } from "../utils/billing";
 import { z } from "zod";
 import { shouldRateLimit, checkShopifyRateLimit } from "../utils/rateLimiting";
 import { performanceMonitor, trackApiPerformance } from "../utils/performance";
@@ -46,7 +47,44 @@ const stockAlertSettingsSchema = z.object({
 });
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+  const { admin, session } = await authenticate.admin(request);
+
+  // Sync subscription status to metafield first
+  try {
+    const shopResponse = await admin.graphql(`
+      query getShop {
+        shop {
+          id
+        }
+      }
+    `);
+    
+    const shopData = await shopResponse.json();
+    const shopId = shopData.data?.shop?.id;
+    
+    if (shopId) {
+      const { syncSubscriptionStatusToMetafield } = await import("../utils/billing");
+      await syncSubscriptionStatusToMetafield(admin, shopId);
+    }
+  } catch (syncError) {
+    console.error("Failed to sync subscription status:", syncError);
+    // Continue with subscription check even if sync fails
+  }
+
+  // Check subscription status first
+  try {
+    const billingManager = new BillingManager(session.shop, admin);
+    const subscriptionStatus = await billingManager.getSubscriptionStatus();
+    
+    // If no active subscription or trial, redirect to pricing
+    if (!subscriptionStatus.hasActiveSubscription && !subscriptionStatus.isTrialActive) {
+      throw redirect("/app/pricing?reason=subscription_required");
+    }
+  } catch (error) {
+    // If subscription check fails, redirect to pricing as well
+    console.error("Error checking subscription status:", error);
+    throw redirect("/app/pricing?reason=subscription_required");
+  }
 
   try {
     // Fetch shop metafield for stock alert settings (single JSON metafield)

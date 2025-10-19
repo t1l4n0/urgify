@@ -35,6 +35,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const billingManager = new BillingManager(session.shop, admin);
     const subscriptionStatus = await billingManager.getSubscriptionStatus();
     
+    // Sync subscription status to metafield for Liquid templates
+    const shopResponse = await admin.graphql(`
+      query getShop {
+        shop {
+          id
+        }
+      }
+    `);
+
+    const shopData = await shopResponse.json();
+    const shopId = shopData.data?.shop?.id;
+
+    if (shopId) {
+      const { syncSubscriptionStatusToMetafield } = await import("../utils/billing");
+      await syncSubscriptionStatusToMetafield(admin, shopId);
+    }
+    
     return json({
       success: subscriptionStatus.hasActiveSubscription,
       subscription: subscriptionStatus.subscription,

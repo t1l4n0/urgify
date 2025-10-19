@@ -111,7 +111,6 @@ export class BillingManager {
               name
               status
               currentPeriodEnd
-              trialEndsAt
               lineItems {
                 id
                 plan {
@@ -145,7 +144,8 @@ export class BillingManager {
       }
 
       const activeSubscription = subscriptions.find((sub: any) => 
-        sub.status === 'ACTIVE' && new Date(sub.currentPeriodEnd) > new Date()
+        (sub.status === 'ACTIVE' && new Date(sub.currentPeriodEnd) > new Date()) ||
+        (sub.status === 'TRIAL' && new Date(sub.currentPeriodEnd) > new Date())
       );
 
       if (!activeSubscription) {
@@ -163,18 +163,18 @@ export class BillingManager {
         name: activeSubscription.name,
         status: activeSubscription.status.toLowerCase(),
         currentPeriodEnd: activeSubscription.currentPeriodEnd,
-        trialEndsAt: activeSubscription.trialEndsAt,
+        trialEndsAt: undefined, // Field not available in API 2025-04
         planId: activeSubscription.lineItems?.[0]?.plan?.pricingDetails?.price?.amount ? 'urgify_pro' : 'urgify_basic',
         price: activeSubscription.lineItems?.[0]?.plan?.pricingDetails?.price?.amount || 0,
         currency: activeSubscription.lineItems?.[0]?.plan?.pricingDetails?.price?.currencyCode || 'USD',
         interval: activeSubscription.lineItems?.[0]?.plan?.pricingDetails?.interval || 'monthly',
       };
 
-      const isTrialActive = activeSubscription.trialEndsAt && 
-        new Date(activeSubscription.trialEndsAt) > new Date();
+      const isTrialActive = activeSubscription.status === 'TRIAL' && 
+        new Date(activeSubscription.currentPeriodEnd) > new Date();
       
       const daysUntilTrialEnds = isTrialActive ? 
-        Math.ceil((new Date(activeSubscription.trialEndsAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 
+        Math.ceil((new Date(activeSubscription.currentPeriodEnd).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)) : 
         null;
       
       const daysUntilSubscriptionEnds = Math.ceil(
@@ -405,4 +405,73 @@ export function isTrialActive(subscription: Subscription | null): boolean {
   const trialEnd = new Date(subscription.trialEndsAt);
   
   return trialEnd > now;
+}
+
+// Sync subscription status to shop metafield for Liquid templates
+export async function syncSubscriptionStatusToMetafield(admin: any, shopId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const billingManager = new BillingManager(shopId.replace('.myshopify.com', ''), admin);
+    const subscriptionStatus = await billingManager.getSubscriptionStatus();
+    
+    console.log("Subscription status:", subscriptionStatus);
+    
+    // Consider both active subscription and trial as "active"
+    const isActive = subscriptionStatus.hasActiveSubscription || subscriptionStatus.isTrialActive;
+    
+    console.log("Setting subscription_active to:", isActive);
+    
+    const response = await admin.graphql(`#graphql
+      mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) {
+          metafields {
+            id
+            namespace
+            key
+            value
+            type
+          }
+          userErrors {
+            field
+            message
+            code
+          }
+        }
+      }
+    `, {
+      variables: {
+        metafields: [{
+          ownerId: shopId,
+          namespace: "urgify",
+          key: "subscription_active",
+          value: isActive.toString(),
+          type: "boolean"
+        }]
+      }
+    });
+
+        const data = await response.json();
+        console.log("Metafield response:", data);
+        
+        const userErrors = data?.data?.metafieldsSet?.userErrors || [];
+        
+        if (userErrors.length > 0) {
+          console.error("Error syncing subscription status:", userErrors);
+          return {
+            success: false,
+            error: userErrors[0]?.message || 'Failed to sync subscription status'
+          };
+        }
+
+        console.log(`Subscription status synced: ${isActive ? 'active' : 'inactive'}`);
+        return { success: true };
+  } catch (error) {
+    console.error("Error syncing subscription status to metafield:", error);
+    return {
+      success: false,
+      error: 'Failed to sync subscription status'
+    };
+  }
 }

@@ -4,12 +4,24 @@
 {% endcomment %}
 
 {% liquid
-  assign target_datetime = block.settings.end_datetime
+  # Check subscription status first
+  assign subscription_active = shop.metafields.urgify.subscription_active.value | default: false
+  if subscription_active != true and subscription_active != 'true'
+    # No active subscription, don't render anything
+    assign should_render = false
+  else
+    assign should_render = true
+  endif
   
-  # Prüfe ob Datum leer oder ungültig ist
-  assign has_valid_datetime = false
-  if target_datetime != blank and target_datetime != empty and target_datetime != null and target_datetime != ''
-    assign has_valid_datetime = true
+  # Only proceed if subscription is active
+  if should_render
+    assign target_datetime = block.settings.end_datetime
+    
+    # Prüfe ob Datum leer oder ungültig ist
+    assign has_valid_datetime = false
+    if target_datetime != blank and target_datetime != empty and target_datetime != null and target_datetime != ''
+      assign has_valid_datetime = true
+    endif
   endif
   
   if has_valid_datetime
@@ -646,7 +658,14 @@
 }
 </style>
 
-{% unless has_valid_datetime %}
+{% unless should_render %}
+  {% comment %}No active subscription - show subscription required message{% endcomment %}
+  <div style="padding: 20px; border: 2px dashed #e74c3c; border-radius: 8px; margin: 20px 0; background: #fdf2f2; text-align: center;">
+    <div style="color: #e74c3c; font-weight: bold; margin-bottom: 8px;">🔒 Subscription Required</div>
+    <div style="color: #666; font-size: 14px; margin-bottom: 12px;">This block requires an active Urgify subscription to display.</div>
+    <div style="color: #999; font-size: 12px;">Configure your settings below. The block will appear once you subscribe.</div>
+  </div>
+{% elsif has_valid_datetime == false %}
 <div style="padding:16px;border:1px dashed #ccc;border-radius:8px;margin:20px 0;">
   <strong>Countdown:</strong> Bitte ein Ziel-Datum in den Block-Einstellungen setzen
   (Format: YYYY-MM-DD HH:MM).
@@ -953,6 +972,10 @@
   "name": "Countdown",
   "target": "section",
   "settings": [
+    {
+      "type": "paragraph",
+      "content": "🔒 **Subscription Required**\n\nThis block requires an active Urgify subscription to display on your storefront. Configure your settings below - the countdown will appear once you subscribe."
+    },
     {
       "type": "header",
       "content": "⏰ Countdown Settings",

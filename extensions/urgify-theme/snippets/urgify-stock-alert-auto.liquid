@@ -4,27 +4,39 @@
 {% endcomment %}
 
 {% liquid
-  # JSON-Config laden (kann fehlen)
-  assign cfg_json = shop.metafields.urgify.stock_alert_config.value | default: '{}'
+  # Check subscription status first
+  assign subscription_active = shop.metafields.urgify.subscription_active.value | default: false
+  if subscription_active != true and subscription_active != 'true'
+    # No active subscription, don't render anything
+    assign should_render = false
+  else
+    assign should_render = true
+  endif
   
-  # Einzel-Metafields → dann JSON → dann Default
-  assign enabled = shop.metafields.urgify.stock_alert_enabled.value | default: false
-  assign threshold = shop.metafields.urgify.global_threshold.value | default: 5
-  assign low_msg = shop.metafields.urgify.low_stock_message.value | default: 'Only {{qty}} left in stock!'
-  assign font_size = shop.metafields.urgify.font_size.value | default: '18px'
-  assign text_color = shop.metafields.urgify.text_color.value | default: '#ffffff'
-  assign background_color = shop.metafields.urgify.background_color.value | default: '#e74c3c'
-  assign animation = shop.metafields.urgify.stock_counter_animation.value | default: 'pulse'
-  assign position = shop.metafields.urgify.stock_counter_position.value | default: 'above'
-  assign style = shop.metafields.urgify.stock_alert_style.value | default: 'spectacular'
+  # Only proceed if subscription is active
+  if should_render
+    # JSON-Config laden (kann fehlen)
+    assign cfg_json = shop.metafields.urgify.stock_alert_config.value | default: '{}'
+    
+    # Einzel-Metafields → dann JSON → dann Default
+    assign enabled = shop.metafields.urgify.stock_alert_enabled.value | default: false
+    assign threshold = shop.metafields.urgify.global_threshold.value | default: 5
+    assign low_msg = shop.metafields.urgify.low_stock_message.value | default: 'Only {{qty}} left in stock!'
+    assign font_size = shop.metafields.urgify.font_size.value | default: '18px'
+    assign text_color = shop.metafields.urgify.text_color.value | default: '#ffffff'
+    assign background_color = shop.metafields.urgify.background_color.value | default: '#e74c3c'
+    assign animation = shop.metafields.urgify.stock_counter_animation.value | default: 'pulse'
+    assign position = shop.metafields.urgify.stock_counter_position.value | default: 'above'
+    assign style = shop.metafields.urgify.stock_alert_style.value | default: 'spectacular'
 
-  assign tracks_inventory = false
-  for v in product.variants
-    if v.inventory_management
-      assign tracks_inventory = true
-      break
-    endif
-  endfor
+    assign tracks_inventory = false
+    for v in product.variants
+      if v.inventory_management
+        assign tracks_inventory = true
+        break
+      endif
+    endfor
+  endif
 %}
 
 <script type="application/json" id="urgify-variant-qty-auto">
@@ -35,7 +47,14 @@
 }
 </script>
 
-{% if enabled == true or enabled == 'true' %}
+{% unless should_render %}
+  {% comment %}No active subscription - show subscription required message{% endcomment %}
+  <div style="padding: 20px; border: 2px dashed #e74c3c; border-radius: 8px; margin: 20px 0; background: #fdf2f2; text-align: center;">
+    <div style="color: #e74c3c; font-weight: bold; margin-bottom: 8px;">🔒 Subscription Required</div>
+    <div style="color: #666; font-size: 14px; margin-bottom: 12px;">Stock alerts require an active Urgify subscription to display.</div>
+    <div style="color: #999; font-size: 12px;">Configure your settings in the app. Alerts will appear once you subscribe.</div>
+  </div>
+{% elsif enabled == true or enabled == 'true' %}
   {{ 'urgify-stock-alert.css' | asset_url | stylesheet_tag }}
   <div id="urgify-stock-alert-auto" class="urgify-stock-alert urgify-stock-alert--{{ style }}" hidden
        data-threshold="{{ threshold | escape }}"
@@ -60,6 +79,8 @@
     </style>
     <span class="urgify-stock-alert__text"></span>
   </div>
-{% endif %}
+  {% endunless %}
 
+{% if should_render %}
 <script src="{{ 'urgify-stock-alert.js' | asset_url }}" defer></script>
+{% endif %}

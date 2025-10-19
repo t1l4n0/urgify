@@ -3,13 +3,33 @@
   when enabled via Urgify settings. No manual block placement required.
 {% endcomment %}
 {% liquid
-  assign config = shop.metafields.urgify.stock_alert_config.value
+  # Check subscription status first
+  assign subscription_active = shop.metafields.urgify.subscription_active.value | default: false
+  if subscription_active != true and subscription_active != 'true'
+    # No active subscription, don't load anything
+    assign should_load = false
+  else
+    assign should_load = true
+  endif
+  
+  if should_load
+    assign config = shop.metafields.urgify.stock_alert_config.value
+  endif
 %}
 
+{% unless should_load %}
+  {% comment %}No active subscription - show subscription required message{% endcomment %}
+  <div style="padding: 20px; border: 2px dashed #e74c3c; border-radius: 8px; margin: 20px 0; background: #fdf2f2; text-align: center;">
+    <div style="color: #e74c3c; font-weight: bold; margin-bottom: 8px;">🔒 Subscription Required</div>
+    <div style="color: #666; font-size: 14px; margin-bottom: 12px;">Urgify features require an active subscription to display.</div>
+    <div style="color: #999; font-size: 12px;">Subscribe to unlock all Urgify blocks and features.</div>
+  </div>
+{% else %}
 {{ 'urgify.min.css' | asset_url | stylesheet_tag }}
 {{ 'urgify-stock-alert.css' | asset_url | stylesheet_tag }}
 {{ 'urgify.js' | asset_url | script_tag: defer: true }}
 {{ 'urgify-stock-alert.js' | asset_url | script_tag: defer: true }}
 {% render 'urgify-stock-alert-auto' %}
+{% endunless %}
 
 

@@ -1,4 +1,4 @@
-import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse, Link, useLocation } from "@remix-run/react";
+import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse, Link, useLocation, useFetcher } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -6,16 +6,49 @@ import {
   Text,
   Button,
   Banner,
+  BlockStack,
+  InlineStack,
 } from "@shopify/polaris";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { toMessage } from "../lib/errors";
 import { ViewPlansLink } from "../components/ViewPlansLink";
 import { authenticate } from "../shopify.server";
+import { useState, useEffect } from "react";
 // QuickstartChecklist intentionally hidden for now
 // import QuickstartChecklist from "../components/QuickstartChecklist";
 
 // App embedding is managed through the Theme Editor, not programmatically
 export const action = async ({ request }: ActionFunctionArgs) => {
+  if (request.method === "POST") {
+    try {
+      const { admin } = await authenticate.admin(request);
+      
+      // Get shop ID for metafield sync
+      const shopResponse = await admin.graphql(`
+        query getShop {
+          shop {
+            id
+          }
+        }
+      `);
+
+      const shopData = await shopResponse.json();
+      const shopId = shopData.data?.shop?.id;
+
+      if (shopId) {
+        const { syncSubscriptionStatusToMetafield } = await import("../utils/billing");
+        const syncResult = await syncSubscriptionStatusToMetafield(admin, shopId);
+        console.log("Manual metafield sync:", syncResult);
+        return json({ success: true, message: "Theme blocks synced successfully!" });
+      } else {
+        return json({ success: false, error: "Shop ID not found" });
+      }
+    } catch (error) {
+      console.error("Manual metafield sync error:", error);
+      return json({ success: false, error: "Failed to sync theme blocks" });
+    }
+  }
+  
   return json({ success: false, error: "App embedding must be enabled manually through the Theme Editor" });
 };
 
@@ -28,7 +61,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
     // Sync subscription status to metafield for Liquid templates
     try {
       const { admin } = await authenticate.admin(request);
-      
+
       // Get shop ID for metafield sync
       const shopResponse = await admin.graphql(`
         query getShop {
@@ -37,13 +70,14 @@ export async function loader({ request }: LoaderFunctionArgs) {
           }
         }
       `);
-      
+
       const shopData = await shopResponse.json();
       const shopId = shopData.data?.shop?.id;
-      
+
       if (shopId) {
         const { syncSubscriptionStatusToMetafield } = await import("../utils/billing");
-        await syncSubscriptionStatusToMetafield(admin, shopId);
+        const syncResult = await syncSubscriptionStatusToMetafield(admin, shopId);
+        console.log("Metafield sync in app._index:", syncResult);
       }
     } catch (syncError) {
       console.error("Failed to sync subscription status in app._index:", syncError);
@@ -96,6 +130,18 @@ export default function Index() {
   const hasActiveSub = Boolean(data?.hasActiveSub);
   const actionData = useActionData<typeof action>();
   const { search } = useLocation(); // enthält ?host=...&shop=...
+  const fetcher = useFetcher();
+  const [syncStatus, setSyncStatus] = useState<string>("");
+
+  useEffect(() => {
+    if (actionData) {
+      if (actionData.success) {
+        setSyncStatus("✅ Theme blocks synced successfully! The 'Subscription Required' message should now be gone.");
+      } else {
+        setSyncStatus(`❌ Sync failed: ${actionData.error || "Unknown error"}`);
+      }
+    }
+  }, [actionData]);
 
   return (
     <Page title="Urgify – Urgency Marketing Suite">
@@ -124,6 +170,45 @@ export default function Index() {
             )}
           </Banner>
         </Layout.Section>
+
+        {hasActiveSub && (
+          <Layout.Section>
+            <Card>
+              <BlockStack gap="400">
+                <Text as="h3" variant="headingMd">Theme Block Sync</Text>
+                <Text as="p" variant="bodyMd">
+                  If you see "Subscription Required" messages in your theme blocks after subscribing, 
+                  click the button below to sync your subscription status.
+                </Text>
+                
+                {syncStatus && (
+                  <Banner tone={syncStatus.includes("✅") ? "success" : "critical"}>
+                    <Text as="p" variant="bodyMd">{syncStatus}</Text>
+                  </Banner>
+                )}
+                
+                <InlineStack gap="300">
+                  <fetcher.Form method="post">
+                    <Button 
+                      type="submit"
+                      loading={fetcher.state === "submitting"}
+                      disabled={fetcher.state === "submitting"}
+                    >
+                      {fetcher.state === "submitting" ? "Syncing..." : "Sync Theme Blocks"}
+                    </Button>
+                  </fetcher.Form>
+                  
+                  <Button 
+                    variant="secondary"
+                    onClick={() => window.open('https://admin.shopify.com/themes/current/editor', '_blank')}
+                  >
+                    Open Theme Editor
+                  </Button>
+                </InlineStack>
+              </BlockStack>
+            </Card>
+          </Layout.Section>
+        )}
 
         {/* Success/Error Messages */}
         {actionData?.error && (

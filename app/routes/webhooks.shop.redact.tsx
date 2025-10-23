@@ -1,6 +1,7 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import { processWebhookSafely } from "../utils/webhookHelpers";
 import prisma from "../db.server";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -8,6 +9,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     const hmac = request.headers.get("X-Shopify-Hmac-Sha256");
 
     if (hmac) {
+      const webhookId = request.headers.get("X-Shopify-Webhook-Id") || crypto.randomUUID();
       const { topic, shop, payload } = await authenticate.webhook(request);
 
       if (topic?.toUpperCase() !== "SHOP/REDACT") {
@@ -15,25 +17,20 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
 
       if (shop) {
-        console.log(`SHOP/REDACT: queuing cleanup for ${shop}`);
-        
-        // Asynchrone Verarbeitung ohne await → Response sofort zurückgeben
         Promise.resolve().then(async () => {
-          try {
-            await prisma.$transaction([
-              prisma.session.deleteMany({ where: { shop } }),
-              prisma.quickstart.deleteMany({ where: { shop } }),
-              prisma.quickstartProgress.deleteMany({ where: { shop } }),
-              // Weitere Löschungen (alle Shop-spezifischen Daten):
-              // - Metafields
-              // - Subscription-Daten
-              // - Logs mit Shop-Identifikation
-              // - Jobs/Queues
-            ]);
-            console.log(`SHOP/REDACT: cleanup done for ${shop}`);
-          } catch (err) {
-            console.error(`SHOP/REDACT: cleanup error for ${shop}`, err);
-          }
+          await processWebhookSafely(
+            webhookId,
+            topic,
+            shop,
+            payload,
+            async () => {
+              await prisma.$transaction([
+                prisma.session.deleteMany({ where: { shop } }),
+                prisma.quickstart.deleteMany({ where: { shop } }),
+                prisma.quickstartProgress.deleteMany({ where: { shop } }),
+              ]);
+            }
+          );
         });
       }
     } else {

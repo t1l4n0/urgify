@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint:ci
+
+      - name: Test
+        run: |
+          if [ -f package.json ] && cat package.json | jq -e '.scripts.test' > /dev/null; then
+            npm test --silent --if-present
+          else
+            echo "No tests configured"
+          fi
+
+      - name: Audit (prod)
+        run: npm audit --omit=dev || true
+
+      - name: Theme Check
+        run: |
+          if command -v theme-check >/dev/null 2>&1; then
+            theme-check --fail-level suggestion extensions/**
+          else
+            echo "theme-check not installed; skipping"
+          fi
+

@@ -44,3 +44,35 @@ export function getAdminTargetFromHost(hostB64: string | null): {
   // Fallback → One Admin (ohne Segment riskant, daher null)
   return { mode: "one", base: "https://admin.shopify.com" };
 }
+
+/**
+ * Paginierte GraphQL-Abfrage über edges/pageInfo
+ * Erwartet, dass die Query ein Feld mit edges/node und pageInfo { hasNextPage, endCursor } zurückgibt
+ * `extract` ist eine Funktion, die aus dem GraphQL-Ergebnis das zu paginierende Feld extrahiert.
+ */
+export async function paginateGraphQL<TNode = any>(
+  admin: any,
+  query: string,
+  variables: Record<string, any> = {},
+  pageSize = 50,
+  extract: (data: any) => { edges?: Array<{ node: TNode; cursor: string }>; pageInfo?: { hasNextPage: boolean; endCursor?: string } }
+): Promise<TNode[]> {
+  const all: TNode[] = [];
+  let after: string | undefined = variables.after;
+  let hasNext = true;
+
+  while (hasNext) {
+    const resp = await admin.graphql(query, {
+      variables: { ...variables, first: pageSize, after },
+    });
+    const json = await resp.json();
+    const { edges = [], pageInfo = { hasNextPage: false } } = extract(json.data || {});
+    for (const e of edges) {
+      if (e?.node) all.push(e.node);
+    }
+    hasNext = Boolean(pageInfo.hasNextPage);
+    after = pageInfo.endCursor;
+  }
+
+  return all;
+}

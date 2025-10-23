@@ -12,6 +12,7 @@ import {
   BlockStack,
   Toast,
   Banner,
+  Spinner,
 } from "@shopify/polaris";
 import {CheckCircleIcon, ExternalIcon} from "@shopify/polaris-icons";
 import {useFetcher} from "@remix-run/react";
@@ -42,10 +43,13 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
   // Error boundary for component errors
   const [componentError, setComponentError] = React.useState<Error | null>(null);
 
-  // Initial status load
+  // Initial status load - only once when shop changes and component is mounted
   React.useEffect(() => {
-    statusFetcher.load(`/api/quickstart-status?shop=${encodeURIComponent(shop)}`);
-  }, [shop, statusFetcher]);
+    if (shop) {
+      console.log("🔄 Loading initial status for shop:", shop);
+      statusFetcher.load(`/api/quickstart-status?shop=${encodeURIComponent(shop)}`);
+    }
+  }, [shop]); // Removed statusFetcher from dependencies
   
   React.useEffect(() => {
     if (process.env.NODE_ENV === 'development') {
@@ -82,25 +86,16 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
     }
   }, [statusFetcher.data]);
 
-  // Handle API errors and timeouts
-  React.useEffect(() => {
-    if (statusFetcher.state === "idle" && !statusFetcher.data) {
-      const timeout = setTimeout(() => {
-        if (!statusFetcher.data) {
-          console.warn("API timeout - no data received after 5 seconds");
-          setHasError(true);
-        }
-      }, 5000);
-      
-      return () => clearTimeout(timeout);
-    }
-  }, [statusFetcher.state, statusFetcher.data]);
 
-  // Auto-refresh when tab comes back (classic Shopify behavior)
+  // Auto-refresh when tab comes back (classic Shopify behavior) - but only if not polling
   React.useEffect(() => {
-    const onFocus = () => statusFetcher.load(`/api/quickstart-status?shop=${encodeURIComponent(shop)}`);
+    const onFocus = () => {
+      if (!polling) {
+        statusFetcher.load(`/api/quickstart-status?shop=${encodeURIComponent(shop)}`);
+      }
+    };
     const onVisibilityChange = () => {
-      if (!document.hidden) onFocus();
+      if (!document.hidden && !polling) onFocus();
     };
     
     window.addEventListener("focus", onFocus);
@@ -110,7 +105,7 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
-  }, [shop, statusFetcher]);
+  }, [shop, polling]); // Removed statusFetcher from dependencies
 
   // Polling after activation - check status every 3 seconds until activated
   React.useEffect(() => {
@@ -157,7 +152,7 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
         clearTimeout(timeout);
       }
     };
-  }, [polling, isDone, shop, statusFetcher]); // hasError entfernt - Polling läuft auch bei Fehlern weiter
+  }, [polling, isDone, shop]); // Removed statusFetcher from dependencies
 
   // Callback hook
   const handleActivate = React.useCallback(() => {
@@ -167,21 +162,12 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
       setHasError(false);
       setPolling(true); // Starte Polling nach Klick
       
-      // Open Theme Editor in new tab - both approaches are fine,
-      // in the screenshot you typically open it in the admin.
+      // Direkte Navigation statt window.open
       const themeEditorUrl = `/activate-embed?shop=${encodeURIComponent(shop)}`;
-      const newWindow = window.open(themeEditorUrl, "_blank", "noopener,noreferrer");
+      window.location.href = themeEditorUrl;
       
-      // Check if popup was blocked
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-        setHasError(true);
-        setIsActivating(false);
-        setShowActivationToast(false);
-        setPolling(false); // Stoppe Polling bei Fehler
-        console.error("Theme Editor popup was blocked. Please allow popups for this site.");
-      }
     } catch (error) {
-      console.error("Error opening Theme Editor:", error);
+      console.error("Error navigating to Theme Editor:", error);
       setHasError(true);
       setIsActivating(false);
       setShowActivationToast(false);
@@ -192,7 +178,7 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
   // NOW ALL EARLY RETURNS AFTER ALL HOOKS
   if (componentError) {
     return (
-      <Card>
+      <Card padding="400">
         <Banner tone="critical">
           <p>An error occurred: {toMessage(componentError)}</p>
         </Banner>
@@ -205,10 +191,13 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
   // Show loading state while fetching initial data or when data is not yet available
   if (isDone === null) {
     return (
-      <Card>
+      <Card padding="400">
         <BlockStack gap="400">
           <Text as="h2" variant="headingMd">Quickstart</Text>
-          <Text as="p" tone="subdued">Loading...</Text>
+          <InlineStack align="center" gap="200">
+            <Spinner accessibilityLabel="Loading activation status" size="small" />
+            <Text as="p" tone="subdued">Loading activation status...</Text>
+          </InlineStack>
         </BlockStack>
       </Card>
     );
@@ -220,7 +209,7 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
 
   return (
     <>
-      <Card>
+      <Card padding="400">
         <BlockStack gap="400">
           {/* Header with title left and progress right */}
           <InlineGrid columns={2} gap="200" alignItems="center">
@@ -276,15 +265,14 @@ export default function QuickstartChecklist({ shop }: QuickstartChecklistProps) 
             /* Activation State - App needs to be activated */
             <InlineGrid columns={2} gap="300" alignItems="center">
               <BlockStack gap="150">
-                <Text as="h3" variant="headingMd">Activate App in Theme</Text>
                 <Text as="p" tone="subdued">
-                  Activate our app in your theme to enable countdown timer functionality. This will open the Theme Editor where you can add and configure the app blocks.
+                  Activate the Urgify-App in your theme to enable Stock-Alert functionality. This will open the Theme Editor to activate the Urgify-App Embedding.
                 </Text>
                 <Text as="p" variant="bodySm" tone="subdued">
-                  💡 <strong>Tip:</strong> The Theme Editor will open in a new tab. After adding the app blocks, return here to see the activation status update automatically.
+                  💡 <strong>Tip:</strong> The Theme Editor will open in a new tab. After activating the Urgify-App Embedding, return here to see the activation status update automatically.
                 </Text>
                 {polling && (
-                  <Text as="p" variant="bodySm" tone="info">
+                  <Text as="p" variant="bodySm" tone="subdued">
                     🔄 <strong>Monitoring:</strong> Waiting for activation in Theme Editor... This will update automatically. 
                     <br />
                     <Text as="span" variant="bodySm" tone="subdued">

@@ -1,12 +1,14 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
+import { processWebhookSafely } from "../utils/webhookHelpers";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     const hmac = request.headers.get("X-Shopify-Hmac-Sha256");
 
     if (hmac) {
+      const webhookId = request.headers.get("X-Shopify-Webhook-Id") || crypto.randomUUID();
       const { topic, shop, payload } = await authenticate.webhook(request);
 
       if (topic?.toUpperCase() !== "CUSTOMERS/REDACT") {
@@ -14,17 +16,17 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       }
 
       if (shop && payload) {
-        console.log(`CUSTOMERS/REDACT: queuing customer redaction for ${shop}`);
-        
-        // Asynchrone Verarbeitung ohne await → Response sofort zurückgeben
         Promise.resolve().then(async () => {
-          try {
-            console.log(`CUSTOMERS/REDACT payload for ${shop}:`, JSON.stringify(payload));
-            // TODO: GDPR-Compliance - Kunden-Daten löschen
-            // await redactCustomerData(payload.customer.id, shop);
-          } catch (err) {
-            console.error(`CUSTOMERS/REDACT: processing error for ${shop}`, err);
-          }
+          await processWebhookSafely(
+            webhookId,
+            topic,
+            shop,
+            payload,
+            async () => {
+              // TODO: Implement real customer data deletion pipeline
+              console.log(`CUSTOMERS/REDACT payload for ${shop}:`, JSON.stringify(payload));
+            }
+          );
         });
       }
     } else {

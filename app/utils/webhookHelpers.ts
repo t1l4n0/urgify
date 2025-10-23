@@ -9,8 +9,8 @@
  * - Dead-Letter-Queue
  */
 
-import shopify from "~/shopify.server";
-import prisma from "~/db.server";
+import shopify from "../shopify.server";
+import prisma from "../db.server";
 
 // ============================================================================
 // 1. OFFLINE-TOKEN-MANAGEMENT
@@ -47,7 +47,7 @@ export async function adminCall(
   variables?: any
 ): Promise<any> {
   const token = await getOfflineToken(shop);
-  const url = `https://${shop}/admin/api/2025-04/graphql.json`;
+  const url = `https://${shop}/admin/api/2025-10/graphql.json`;
 
   for (let attempt = 0; attempt < 4; attempt++) {
     try {

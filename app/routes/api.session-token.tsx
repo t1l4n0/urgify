@@ -12,11 +12,10 @@ export const loader = async ({ request }) => {
       isOnline: session?.isOnline
     });
 
-    // Generate a fallback session token if none available
-    let sessionToken = session?.token;
+    // Do not generate fallback tokens; require real App Bridge session token
+    const sessionToken = session?.token;
     if (!sessionToken) {
-      sessionToken = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      console.log("Generated fallback session token:", sessionToken);
+      return json({ error: "Session token required" }, { status: 401 });
     }
 
     return json({
@@ -26,15 +25,6 @@ export const loader = async ({ request }) => {
     });
   } catch (error) {
     console.error("Session token error:", error);
-    
-    // Even if authentication fails, provide a fallback token
-    const fallbackToken = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    console.log("Using fallback token due to error:", fallbackToken);
-    
-    return json({
-      sessionToken: fallbackToken,
-      shop: 'unknown',
-      isOnline: false,
-    });
+    return json({ error: "Authentication failed" }, { status: 401 });
   }
 };

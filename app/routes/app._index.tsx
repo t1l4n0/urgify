@@ -9,10 +9,11 @@ import {
 } from "@shopify/polaris";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { toMessage } from "../lib/errors";
+import { Suspense, lazy } from "react";
 import { ViewPlansLink } from "../components/ViewPlansLink";
 import { authenticate } from "../shopify.server";
-// QuickstartChecklist intentionally hidden for now
-// import QuickstartChecklist from "../components/QuickstartChecklist";
+import QuickstartChecklist from "../components/QuickstartChecklist";
+import prisma from "../db.server";
 
 // App embedding is managed through the Theme Editor, not programmatically
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -51,7 +52,22 @@ export async function loader({ request }: LoaderFunctionArgs) {
       // Continue with normal flow even if sync fails
     }
     
-    return json({ shop }, { headers: { "Cache-Control": "no-store" } });
+    // Check embed status for conditional rendering
+    let embedActive = false;
+    if (shop) {
+      try {
+        const quickstart = await prisma.quickstart.findUnique({ 
+          where: { shop },
+          select: { embedActive: true }
+        });
+        embedActive = quickstart?.embedActive ?? false;
+      } catch (dbError) {
+        console.error("Failed to check embed status:", dbError);
+        // Default to false if DB check fails
+      }
+    }
+    
+    return json({ shop, embedActive }, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
     console.error("app._index loader failed", err);
     return json({ shop: undefined }, { headers: { "Cache-Control": "no-store" } });
@@ -93,29 +109,23 @@ export function ErrorBoundary() {
 
 export default function Index() {
   const data = useRouteLoaderData("routes/app") as any;
-  const shop = data?.shop as string;
+  const shop = data?.shop as string ?? "";
   const hasActiveSub = Boolean(data?.hasActiveSub);
+  const embedActive = Boolean(data?.embedActive);
   const actionData = useActionData<typeof action>();
   const { search } = useLocation(); // enthält ?host=...&shop=...
 
   return (
     <Page title="Urgify – Urgency Marketing Suite">
       <Layout>
-        {/* Quickstart Checklist hidden */}
-
         <Layout.Section>
           <Banner
             title={hasActiveSub ? 'Subscription active' : 'No active subscription'}
             tone={hasActiveSub ? 'success' : 'warning'}
-            action={hasActiveSub ? {
-              content: '🎨 Go to Theme Editor',
-              url: 'https://admin.shopify.com/themes/current/editor',
-              external: true,
-            } : undefined}
           >
             <p>
               {hasActiveSub
-                ? 'You can use all app features.'
+                ? 'You can use all app features: countdown timers, limited-time offers, smart stock alerts, scarcity banners, and complete customization options.'
                 : 'A subscription is required to use all features.'}
             </p>
             {!hasActiveSub && (
@@ -125,6 +135,12 @@ export default function Index() {
             )}
           </Banner>
         </Layout.Section>
+
+        {shop && !embedActive && (
+          <Layout.Section>
+            <QuickstartChecklist shop={shop} />
+          </Layout.Section>
+        )}
 
 
         {/* Success/Error Messages */}
@@ -144,6 +160,8 @@ export default function Index() {
           </Layout.Section>
         )}
 
+
+
         <Layout.Section>
           <Card>
             <div style={{ padding: "1rem" }}>
@@ -154,32 +172,13 @@ export default function Index() {
                   Add countdown timers, limited-time offers, stock alerts, and scarcity banners to your product pages.
                 </Text>
               </div>
-              
-              <div style={{ marginTop: "2rem" }}>
-                <Text as="h4" variant="headingMd">Key Features</Text>
-                <div style={{ marginTop: "1rem" }}>
-                  <div style={{ marginBottom: "1rem" }}>
-                    <Text as="h5" variant="headingSm">⏰ Advanced Countdown Timers</Text>
-                    <Text as="p" variant="bodyMd">Create stunning countdown timers with 4 different styles: Digital Clock, Flip Cards, Circular Progress, and Minimal. Fully customizable colors, animations, and responsive layouts.</Text>
-                  </div>
-                  <div style={{ marginBottom: "1rem" }}>
-                    <Text as="h5" variant="headingSm">🎯 Limited Time Offers</Text>
-                    <Text as="p" variant="bodyMd">Design spectacular limited-time offers with 4 unique styles: Spectacular (animated), Brutalist Bold, Glassmorphism, and Neumorphism. Perfect for flash sales and special promotions.</Text>
-                  </div>
-                  <div style={{ marginBottom: "1rem" }}>
-                    <Text as="h5" variant="headingSm">📦 Smart Stock Alerts</Text>
-                    <Text as="p" variant="bodyMd">Automatically display low stock warnings when inventory falls below your threshold. Customizable messages, colors, and animations to create urgency and inform customers.</Text>
-                  </div>
-                  <div style={{ marginBottom: "1rem" }}>
-                    <Text as="h5" variant="headingSm">⚠️ Scarcity Banners</Text>
-                    <Text as="p" variant="bodyMd">Add scarcity messaging with customizable banners featuring 3 unique styles: Spectacular (animated), Brutalist Bold, and Glassmorphism. Perfect for creating urgency and highlighting product scarcity.</Text>
-                  </div>
-                  <div style={{ marginBottom: "1rem" }}>
-                    <Text as="h5" variant="headingSm">🎨 Complete Customization</Text>
-                    <Text as="p" variant="bodyMd">Every element is fully customizable: colors, fonts, animations, positioning, and responsive behavior. Match your brand perfectly with our extensive styling options.</Text>
-                  </div>
-                </div>
-              </div>
+
+              <Suspense fallback={<div aria-busy="true">Loading features…</div>}>
+                {(() => {
+                  const LazyFeatures = lazy(() => import("../components/Features"));
+                  return <LazyFeatures />;
+                })()}
+              </Suspense>
             </div>
           </Card>
         </Layout.Section>
@@ -196,6 +195,20 @@ export default function Index() {
                 <li><Text as="span" variant="bodyMd"><strong>Customize appearance:</strong> Adjust colors, fonts, and layout to match your theme.</Text></li>
                 <li><Text as="span" variant="bodyMd"><strong>Save & test:</strong> Save and test on your storefront.</Text></li>
               </ol>
+              
+              {hasActiveSub && (
+                <div style={{ marginTop: "2rem", textAlign: "left" }}>
+                  <Button
+                    variant="primary"
+                    accessibilityLabel="Open the Shopify Theme Editor in a new tab"
+                    onClick={() => {
+                      window.open('https://admin.shopify.com/themes/current/editor', '_blank');
+                    }}
+                  >
+                    🎨 Go to Theme Editor
+                  </Button>
+                </div>
+              )}
             </div>
           </Card>
         </Layout.Section>
@@ -212,6 +225,7 @@ export default function Index() {
               <Button 
                 variant="primary" 
                 tone="success"
+                accessibilityLabel="Leave a review for Urgify"
                 onClick={() => {
                   // Shopify App Bridge v4 Review API, fails gracefully if unavailable
                   if (typeof window !== 'undefined' && (window as any).shopify?.reviews?.request) {
@@ -226,6 +240,16 @@ export default function Index() {
                   Your feedback helps other merchants discover Urgify
                 </Text>
               </div>
+            </div>
+          </Card>
+        </Layout.Section>
+
+        <Layout.Section>
+          <Card>
+            <div style={{ padding: "1rem" }}>
+              <Text as="p" variant="bodySm">
+                Read our <Link to="/privacy" target="_blank" rel="noopener noreferrer">privacy policy</Link> for details about data processing and cookies.
+              </Text>
             </div>
           </Card>
         </Layout.Section>

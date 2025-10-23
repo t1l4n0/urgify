@@ -42,13 +42,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   isAppEmbeddingEnabled = true;
 
 
-  // Generate session token for App Bridge
-  let sessionToken = session.token;
-  
-  // If no session token, generate a fallback
-  if (!sessionToken) {
-    sessionToken = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  }
+	// Use session token from Shopify session; do not fabricate fallbacks
+	const sessionToken = session.token;
 
   const result = { 
     apiKey: process.env.SHOPIFY_API_KEY || "", 

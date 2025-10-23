@@ -99,6 +99,17 @@ This template comes preconfigured with examples of:
 Please read the [documentation for @shopify/shopify-app-remix](https://www.npmjs.com/package/@shopify/shopify-app-remix#authenticating-admin-requests) to understand what other API's are available.
 
 ## Deployment
+## Cookies & Data
+
+This app uses:
+- Session token (in-memory / App Bridge token) for authenticated Admin requests; no persistent cookies set by the app UI.
+- Basic performance metrics (Core Web Vitals logs in development only). No PII is collected. Logs include a request id for correlation.
+
+See the in-app privacy policy at `/privacy`.
+
+### Sessions
+
+The app uses Prisma-based durable session storage via `@shopify/shopify-app-session-storage-prisma`, configured in `app/shopify.server.ts` and the `Session` model in `prisma/schema.prisma`. This avoids in-memory sessions in production.
 
 ### Application Storage
 

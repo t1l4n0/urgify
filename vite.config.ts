@@ -1,6 +1,7 @@
 import { vitePlugin as remix } from "@remix-run/dev";
 import { installGlobals } from "@remix-run/node";
 import { defineConfig, type UserConfig } from "vite";
+import { visualizer } from "rollup-plugin-visualizer";
 import tsconfigPaths from "vite-tsconfig-paths";
 
 installGlobals({ nativeFetch: true });
@@ -66,6 +67,16 @@ export default defineConfig({
       },
     }),
     tsconfigPaths(),
+    ...(process.env.ANALYZE === "true"
+      ? [
+          visualizer({
+            filename: "build/client/assets/bundle-report.html",
+            template: "treemap",
+            gzipSize: true,
+            brotliSize: true,
+          }) as unknown as any,
+        ]
+      : []),
   ],
   build: {
     assetsInlineLimit: 0,

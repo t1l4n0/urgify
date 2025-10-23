@@ -8,52 +8,46 @@ import { validateSessionToken } from "../utils/sessionToken";
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
-    // Get GraphQL query from query parameters
-    const url = new URL(request.url);
-    const query = url.searchParams.get('query');
-    
-    if (!query) {
-      return json(
-        { error: "GraphQL query required" },
-        { status: 400 }
-      );
+    // Enforce session token on GET as well
+    const sessionToken = validateSessionToken(request);
+    if (!sessionToken) {
+      return json({ error: "Session token required" }, { status: 401 });
     }
 
-    // For demo purposes, return mock GraphQL data
-    // This avoids authentication issues with real GraphQL calls
-    return json({
-      success: true,
-      message: 'GraphQL query successful',
-      data: {
-        data: {
-          shop: {
-            name: 'Demo Shop',
-            domain: 'demo-shop.myshopify.com',
-            currency: 'USD',
-            timezone: 'UTC'
-          }
-        }
-      }
-    });
+    const { admin } = await authenticate.admin(request);
 
+    const url = new URL(request.url);
+    const query = url.searchParams.get('query');
+    const variablesRaw = url.searchParams.get('variables');
+    const first = url.searchParams.get('first');
+    const after = url.searchParams.get('after');
+
+    if (!query) {
+      return json({ error: "GraphQL query required" }, { status: 400 });
+    }
+
+    let variables: Record<string, any> | undefined = undefined;
+    if (variablesRaw) {
+      try {
+        variables = JSON.parse(variablesRaw);
+      } catch {
+        return json({ error: "Invalid variables JSON" }, { status: 400 });
+      }
+    }
+
+    if (first) {
+      variables = { ...(variables || {}), first: Number(first) };
+    }
+    if (after) {
+      variables = { ...(variables || {}), after };
+    }
+
+    const response = await admin.graphql(query, { variables });
+    const data = await response.json();
+    return json({ success: true, data });
   } catch (error) {
     console.error("GraphQL API error:", error);
-    
-    // Return mock data even on error
-    return json({
-      success: true,
-      message: 'GraphQL query successful (fallback)',
-      data: {
-        data: {
-          shop: {
-            name: 'Demo Shop (Fallback)',
-            domain: 'demo-shop.myshopify.com',
-            currency: 'USD',
-            timezone: 'UTC'
-          }
-        }
-      }
-    });
+    return json({ error: "GraphQL request failed" }, { status: 500 });
   }
 };
 

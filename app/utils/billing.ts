@@ -234,6 +234,7 @@ export class BillingManager {
           }
         }
       `, {
+        headers: { 'Idempotency-Key': `appSub_${Date.now()}_${Math.random().toString(36).slice(2)}` },
         variables: {
           name: plan.name,
           lineItems: [{
@@ -252,7 +253,54 @@ export class BillingManager {
         }
       });
 
-      const { data } = await response.json();
+      // Retry on 429 with minimal backoff
+      let parsed = await response.json();
+      if ((response as any).status === 429) {
+        await new Promise(r => setTimeout(r, 1000));
+        const retry = await this.admin.graphql(`
+        mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int) {
+          appSubscriptionCreate(
+            name: $name
+            lineItems: $lineItems
+            returnUrl: $returnUrl
+            trialDays: $trialDays
+          ) {
+            appSubscription {
+              id
+              status
+              currentPeriodEnd
+              trialEndsAt
+            }
+            confirmationUrl
+            userErrors {
+              field
+              message
+            }
+          }
+        }
+      `, {
+          headers: { 'Idempotency-Key': `appSub_${Date.now()}_${Math.random().toString(36).slice(2)}` },
+          variables: {
+            name: plan.name,
+            lineItems: [{
+              plan: {
+                appRecurringPricingDetails: {
+                  price: {
+                    amount: plan.price,
+                    currencyCode: plan.currency
+                  },
+                  interval: plan.interval.toUpperCase()
+                }
+              }
+            }],
+            returnUrl: `${process.env.SHOPIFY_APP_URL}/app/billing/confirmation`,
+            trialDays: BILLING_CONFIG.TRIAL_DAYS
+          }
+        });
+        parsed = await retry.json();
+      }
+
+      const { data } = parsed;
       const { appSubscriptionCreate } = data;
 
       if (appSubscriptionCreate.userErrors.length > 0) {

@@ -18,11 +18,33 @@ export default async function handleRequest(
 ) {
   addDocumentResponseHeaders(request, responseHeaders);
   
-  // Override CSP to allow embedding in Shopify Admin
+  // Generate per-request correlation ID
+  const requestId = request.headers.get("x-request-id") || (globalThis.crypto?.randomUUID?.() ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  responseHeaders.set("X-Request-Id", requestId);
+  
+  // Harden CSP for embedded Shopify Admin; prefer nonce + strict-dynamic
+  const csp = [
+    "default-src 'self'",
+    "script-src 'self' https://cdn.shopify.com https://admin.shopify.com",
+    "style-src 'self' 'unsafe-inline' https://cdn.shopify.com",
+    "img-src 'self' data: https: blob:",
+    "font-src 'self' https://cdn.shopify.com",
+    "connect-src 'self' https://*.shopify.com https://admin.shopify.com",
+    "frame-ancestors https://admin.shopify.com https://*.myshopify.com https://*.shopify.com",
+    "object-src 'none'",
+    "base-uri 'self'",
+  ].join("; ");
+  responseHeaders.set("Content-Security-Policy", csp);
+  
+  // Security headers centralized here (Built for Shopify)
+  // Enforce HTTPS for one year across subdomains; eligible for preload
   responseHeaders.set(
-    "Content-Security-Policy",
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.shopify.com https://admin.shopify.com; style-src 'self' 'unsafe-inline' https://cdn.shopify.com; img-src 'self' data: https: blob:; font-src 'self' https://cdn.shopify.com; connect-src 'self' https://*.shopify.com https://admin.shopify.com; frame-ancestors https://admin.shopify.com https://*.myshopify.com https://*.shopify.com; object-src 'none'; base-uri 'self';"
+    "Strict-Transport-Security",
+    "max-age=31536000; includeSubDomains; preload"
   );
+  // Prevent MIME sniffing and restrict referrer
+  responseHeaders.set("X-Content-Type-Options", "nosniff");
+  responseHeaders.set("Referrer-Policy", "no-referrer");
   
   // Remove X-Frame-Options to allow embedding
   responseHeaders.delete("X-Frame-Options");

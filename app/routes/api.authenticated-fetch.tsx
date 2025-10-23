@@ -82,20 +82,34 @@ export const action = async ({ request }: LoaderFunctionArgs) => {
       );
     }
 
-    // Make authenticated request to target URL
-    let response;
-    if (method === 'POST') {
-      response = await admin.rest.post(targetUrl, {
-        body: body ? JSON.parse(body) : undefined,
-      });
-    } else if (method === 'PUT') {
-      response = await admin.rest.put(targetUrl, {
-        body: body ? JSON.parse(body) : undefined,
-      });
-    } else if (method === 'DELETE') {
-      response = await admin.rest.delete(targetUrl);
-    } else {
-      response = await admin.rest.get(targetUrl);
+    // Make authenticated request to target URL with Idempotency-Key and 429 retry/backoff
+    const idempotencyKey = request.headers.get('x-idempotency-key') || `idem_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const performRequest = async (): Promise<Response> => {
+      if (method === 'POST') {
+        return admin.rest.post(targetUrl, {
+          headers: { 'Idempotency-Key': idempotencyKey },
+          body: body ? JSON.parse(body) : undefined,
+        });
+      } else if (method === 'PUT') {
+        return admin.rest.put(targetUrl, {
+          headers: { 'Idempotency-Key': idempotencyKey },
+          body: body ? JSON.parse(body) : undefined,
+        });
+      } else if (method === 'DELETE') {
+        return admin.rest.delete(targetUrl, {
+          headers: { 'Idempotency-Key': idempotencyKey },
+        } as any);
+      } else {
+        return admin.rest.get(targetUrl, { headers: { 'Idempotency-Key': idempotencyKey } } as any);
+      }
+    };
+
+    let response = await performRequest();
+    // Basic 429 handling with Retry-After
+    if (response.status === 429) {
+      const retryAfter = Number(response.headers.get('Retry-After') || '1');
+      await new Promise(r => setTimeout(r, Math.min(5000, retryAfter * 1000)));
+      response = await performRequest();
     }
 
     const data = await response.json();

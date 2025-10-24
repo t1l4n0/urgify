@@ -6,16 +6,7 @@
 
 {% render 'core' %}
 
-<!-- Self-reporting: Ping the app when embed is loaded (no CORS issues) -->
-<script>
-  // Track embed activation asynchronously
-  if (typeof fetch !== 'undefined') {
-    fetch('https://urgify.fly.dev/api/embed-activated?shop={{ shop.permanent_domain | url_encode }}&theme_id={{ theme.id }}&t={{ 'now' | date: '%s' }}', {
-      method: 'GET',
-      mode: 'no-cors'
-    }).catch(() => {}); // Ignore errors
-  }
-</script>
+<!-- Quickstart entfernt: kein Embed-Ping mehr nötig -->
 
 {% schema %}
 {

@@ -2,8 +2,7 @@ import type { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import { shouldRateLimit } from "../utils/rateLimiting";
 import { WebhookProcessor, WEBHOOK_EVENTS } from "../utils/webhooks";
-import { checkEmbedStatusFromShopify } from "../utils/embedStatus";
-import prisma from "../db.server";
+// Quickstart entfernt: kein Embed-Status-Check mehr nötig
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   // Check rate limiting for webhooks
@@ -37,39 +36,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     if (result.success) {
       console.log("✅ Theme publish processed successfully");
       
-      // Check if app embedding is now active after theme publish
-      try {
-        console.log("🔍 Checking app embed status after theme publish...");
-        const embedActive = await checkEmbedStatusFromShopify(shop, admin);
-        
-        if (embedActive) {
-          console.log("🎉 App embedding is active! Updating database...");
-          
-          // Update Quickstart status in database
-          await prisma.quickstart.upsert({
-            where: { shop },
-            update: { 
-              embedActive: true, 
-              lastActivated: new Date(),
-              updatedAt: new Date()
-            },
-            create: { 
-              shop, 
-              embedActive: true, 
-              lastActivated: new Date(),
-              createdAt: new Date(),
-              updatedAt: new Date()
-            }
-          });
-          
-          console.log("✅ Database updated with embed active status");
-        } else {
-          console.log("ℹ️ App embedding not yet active");
-        }
-      } catch (embedError) {
-        console.error("❌ Error checking embed status:", embedError);
-        // Don't fail the webhook if embed check fails
-      }
+      // Quickstart entfernt: keine DB-Aktualisierung mehr nötig
       
       return new Response("OK", { status: 200 });
     } else {

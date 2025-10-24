@@ -22,15 +22,23 @@ export default async function handleRequest(
   const requestId = request.headers.get("x-request-id") || (globalThis.crypto?.randomUUID?.() ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
   responseHeaders.set("X-Request-Id", requestId);
   
-  // Harden CSP for embedded Shopify Admin; prefer nonce + strict-dynamic
+  // Harden CSP for embedded Shopify Admin
   const csp = [
     "default-src 'self'",
-    "script-src 'self' https://cdn.shopify.com https://admin.shopify.com",
+    // Allow inline scripts (Shopify admin bootstraps)
+    "script-src 'self' 'unsafe-inline' https://cdn.shopify.com https://admin.shopify.com https://*.shopifycloud.com",
+    // Mirror allowances for script elements explicitly
+    "script-src-elem 'self' 'unsafe-inline' https://cdn.shopify.com https://admin.shopify.com https://*.shopifycloud.com",
+    // Polaris styles and inline styles from Remix runtime
     "style-src 'self' 'unsafe-inline' https://cdn.shopify.com",
     "img-src 'self' data: https: blob:",
     "font-src 'self' https://cdn.shopify.com",
-    "connect-src 'self' https://*.shopify.com https://admin.shopify.com",
+    // Allow Shopify Admin and metrics beacons
+    "connect-src 'self' https://*.shopify.com https://admin.shopify.com https://monorail-edge.shopifysvc.com https://*.shopifycloud.com",
+    // Embedded inside Shopify Admin
     "frame-ancestors https://admin.shopify.com https://*.myshopify.com https://*.shopify.com",
+    // Allow iframes we might open to Shopify Admin
+    "frame-src https://admin.shopify.com https://*.myshopify.com https://*.shopify.com",
     "object-src 'none'",
     "base-uri 'self'",
   ].join("; ");

@@ -26,8 +26,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             async () => {
               await prisma.$transaction([
                 prisma.session.deleteMany({ where: { shop } }),
-                prisma.quickstart.deleteMany({ where: { shop } }),
-                prisma.quickstartProgress.deleteMany({ where: { shop } }),
               ]);
             }
           );

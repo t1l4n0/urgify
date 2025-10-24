@@ -31,23 +31,6 @@ model Session {
   emailVerified Boolean?  @default(false)
 }
 
-model Quickstart {
-  shop          String   @id
-  embedActive   Boolean  @default(false)
-  themeId       String?
-  lastActivated DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
-model QuickstartProgress {
-  shop          String   @id
-  activateEmbed String   @default("todo") // "todo" | "clicked" | "done"
-  dismissedAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-}
-
 // Webhook-Event-Tracking für Idempotenz
 model WebhookEvent {
   id          String   @id

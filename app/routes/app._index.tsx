@@ -1,4 +1,4 @@
-import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse, Link, useLocation } from "@remix-run/react";
+import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse } from "@remix-run/react";
 import {
   Page,
   Layout,
@@ -12,7 +12,6 @@ import { toMessage } from "../lib/errors";
 import { Suspense, lazy } from "react";
 import { ViewPlansLink } from "../components/ViewPlansLink";
 import { authenticate } from "../shopify.server";
-import QuickstartChecklist from "../components/QuickstartChecklist";
 import prisma from "../db.server";
 
 // App embedding is managed through the Theme Editor, not programmatically
@@ -52,22 +51,7 @@ export async function loader({ request }: LoaderFunctionArgs) {
       // Continue with normal flow even if sync fails
     }
     
-    // Check embed status for conditional rendering
-    let embedActive = false;
-    if (shop) {
-      try {
-        const quickstart = await prisma.quickstart.findUnique({ 
-          where: { shop },
-          select: { embedActive: true }
-        });
-        embedActive = quickstart?.embedActive ?? false;
-      } catch (dbError) {
-        console.error("Failed to check embed status:", dbError);
-        // Default to false if DB check fails
-      }
-    }
-    
-    return json({ shop, embedActive }, { headers: { "Cache-Control": "no-store" } });
+    return json({ shop }, { headers: { "Cache-Control": "no-store" } });
   } catch (err) {
     console.error("app._index loader failed", err);
     return json({ shop: undefined }, { headers: { "Cache-Control": "no-store" } });
@@ -111,9 +95,7 @@ export default function Index() {
   const data = useRouteLoaderData("routes/app") as any;
   const shop = data?.shop as string ?? "";
   const hasActiveSub = Boolean(data?.hasActiveSub);
-  const embedActive = Boolean(data?.embedActive);
   const actionData = useActionData<typeof action>();
-  const { search } = useLocation(); // enthält ?host=...&shop=...
 
   return (
     <Page title="Urgify – Urgency Marketing Suite">
@@ -136,13 +118,8 @@ export default function Index() {
           </Banner>
         </Layout.Section>
 
-        {shop && !embedActive && (
-          <Layout.Section>
-            <QuickstartChecklist shop={shop} />
-          </Layout.Section>
-        )}
-
-
+        
+        
         {/* Success/Error Messages */}
         {actionData?.error && (
           <Layout.Section>
@@ -244,15 +221,7 @@ export default function Index() {
           </Card>
         </Layout.Section>
 
-        <Layout.Section>
-          <Card>
-            <div style={{ padding: "1rem" }}>
-              <Text as="p" variant="bodySm">
-                Read our <Link to="/privacy" target="_blank" rel="noopener noreferrer">privacy policy</Link> for details about data processing and cookies.
-              </Text>
-            </div>
-          </Card>
-        </Layout.Section>
+        
       </Layout>
     </Page>
   );

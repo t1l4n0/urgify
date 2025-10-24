@@ -8,7 +8,7 @@ RUN apk add --no-cache openssl libc6-compat
 # Nur Manifeste für Cache-Hit
 COPY package.json package-lock.json ./
 # Volle Deps (inkl. dev) für den Build
-RUN npm ci --no-audit --no-fund
+RUN npm install --no-audit --no-fund
 
 # Quellcode
 COPY . .
@@ -31,7 +31,7 @@ RUN apk add --no-cache openssl libc6-compat curl
 # 1) Schema VOR npm ci bereitstellen, damit @prisma/client postinstall sauber generiert
 COPY prisma ./prisma
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --omit=optional --no-audit --no-fund && npm cache clean --force
+RUN npm install --omit=dev --omit=optional --no-audit --no-fund && npm cache clean --force
 
 # 2) Build-Output & Assets
 COPY --from=builder /app/build ./build

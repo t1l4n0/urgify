@@ -51,7 +51,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 };
 
-export const action = async ({ request }: LoaderFunctionArgs) => {
-  // Allow both GET and POST for flexibility
-  return loader({ request });
+export const action = async ({ request, params, context }: LoaderFunctionArgs) => {
+  // Mirror loader signature to satisfy types
+  return loader({ request, params, context } as LoaderFunctionArgs);
 };

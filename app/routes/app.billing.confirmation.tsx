@@ -74,11 +74,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function BillingConfirmation() {
-  const data = useLoaderData<typeof loader>();
-  const success = 'success' in data ? data.success : false;
-  const subscription = 'subscription' in data ? data.subscription : null;
-  const error = 'error' in data ? data.error : null;
-  const shop = 'shop' in data ? data.shop : '';
+  const data = useLoaderData<typeof loader>() as any;
+  const success = !!data?.success;
+  const subscription = data?.subscription ?? null;
+  const error = data?.error ?? null;
+  const shop = data?.shop ?? '';
   const [isLoading, setIsLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<string>("");
   const { search } = useLocation(); // enthält ?host=...&shop=...

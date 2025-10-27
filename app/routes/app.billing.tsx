@@ -120,13 +120,13 @@ export default function BillingDashboard() {
   }, [subscriptionStatus.subscription, fetcher]);
 
   // Handle subscription creation response
-  if (fetcher.data?.success && fetcher.data?.confirmationUrl) {
-    window.location.href = fetcher.data.confirmationUrl;
+  if ((fetcher.data as any)?.success && (fetcher.data as any)?.confirmationUrl) {
+    window.location.href = (fetcher.data as any).confirmationUrl as string;
   }
 
   // Handle subscription cancellation
-  if (fetcher.data?.success && fetcher.data?.action === "cancel_subscription") {
-    revalidator.reload();
+  if ((fetcher.data as any)?.success && (fetcher.data as any)?.action === "cancel_subscription") {
+    revalidator.revalidate();
     setShowCancelModal(false);
   }
 
@@ -158,25 +158,25 @@ export default function BillingDashboard() {
             {/* Current Subscription Status */}
             <Card>
               <BlockStack gap="400">
-                <Text variant="headingMd">Current Subscription</Text>
+                <Text as="h2" variant="headingMd">Current Subscription</Text>
                 
                 {subscriptionStatus.hasActiveSubscription && subscriptionStatus.subscription ? (
                   <BlockStack gap="300">
                     <InlineStack gap="400" align="space-between">
-                      <Text variant="bodyMd" fontWeight="semibold">
+                      <Text as="p" variant="bodyMd" fontWeight="semibold">
                         {subscriptionStatus.subscription.name}
                       </Text>
-                      <Badge status={getStatusColor(subscriptionStatus.subscription.status)}>
+                      <Badge tone={getStatusColor(subscriptionStatus.subscription.status) as any}>
                         {getStatusText(subscriptionStatus.subscription.status)}
                       </Badge>
                     </InlineStack>
                     
                     <InlineStack gap="400" align="space-between">
-                      <Text variant="bodyMd">
+                      <Text as="p" variant="bodyMd">
                         {formatPrice(subscriptionStatus.subscription.price, subscriptionStatus.subscription.currency)}
                         /{subscriptionStatus.subscription.interval}
                       </Text>
-                      <Text variant="bodyMd" color="subdued">
+                      <Text as="p" variant="bodyMd" tone="subdued">
                         Next billing: {new Date(subscriptionStatus.subscription.currentPeriodEnd).toLocaleDateString()}
                       </Text>
                     </InlineStack>
@@ -184,7 +184,7 @@ export default function BillingDashboard() {
                     {/* Trial Status */}
                     {subscriptionStatus.isTrialActive && subscriptionStatus.daysUntilTrialEnds && (
                       <BlockStack gap="200">
-                        <Text variant="bodyMd" color="warning">
+                        <Text as="p" variant="bodyMd" tone="warning">
                           Trial ends in {subscriptionStatus.daysUntilTrialEnds} days
                         </Text>
                         <ProgressBar 
@@ -205,12 +205,12 @@ export default function BillingDashboard() {
                   </BlockStack>
                 ) : (
                   <BlockStack gap="300">
-                    <Text variant="bodyMd" color="subdued">
+                    <Text as="p" variant="bodyMd" tone="subdued">
                       No active subscription
                     </Text>
                     
                     {isEligibleForTrial && (
-                      <Banner status="info">
+                      <Banner tone="info">
                         You're eligible for a {BILLING_CONFIG.TRIAL_DAYS}-day free trial!
                       </Banner>
                     )}
@@ -229,18 +229,18 @@ export default function BillingDashboard() {
             {/* Available Plans */}
             <Card>
               <BlockStack gap="400">
-                <Text variant="headingMd">Available Plans</Text>
+                <Text as="h2" variant="headingMd">Available Plans</Text>
                 
                 <BlockStack gap="300">
                   {Object.values(plans).map((plan) => (
-                    <Card key={plan.id} sectioned>
+                    <Card key={plan.id}>
                       <BlockStack gap="300">
                         <InlineStack gap="400" align="space-between">
                           <BlockStack gap="100">
-                            <Text variant="headingSm">{plan.name}</Text>
-                            <Text variant="headingLg">
+                            <Text as="h3" variant="headingSm">{plan.name}</Text>
+                            <Text as="h2" variant="headingLg">
                               {formatPrice(plan.price, plan.currency)}
-                              <Text variant="bodyMd" color="subdued">/{plan.interval}</Text>
+                              <Text as="span" variant="bodyMd" tone="subdued">/{plan.interval}</Text>
                             </Text>
                           </BlockStack>
                           
@@ -270,9 +270,9 @@ export default function BillingDashboard() {
             </Card>
 
             {/* Error Banner */}
-            {fetcher.data?.error && (
-              <Banner status="critical">
-                {fetcher.data.error}
+            {(fetcher.data as any)?.error && (
+              <Banner tone="critical">
+                {(fetcher.data as any).error}
               </Banner>
             )}
           </BlockStack>
@@ -318,7 +318,7 @@ export default function BillingDashboard() {
         primaryAction={{
           content: "Yes, Cancel",
           onAction: handleCancel,
-          tone: "critical",
+          destructive: true,
           disabled: fetcher.state === "submitting"
         }}
         secondaryActions={[
@@ -329,7 +329,7 @@ export default function BillingDashboard() {
         ]}
       >
         <Modal.Section>
-          <Text variant="bodyMd">
+          <Text as="p" variant="bodyMd">
             Are you sure you want to cancel your subscription? You'll lose access to all premium features.
           </Text>
         </Modal.Section>

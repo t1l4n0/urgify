@@ -42,17 +42,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   isAppEmbeddingEnabled = true;
 
 
-	// Session token kommt über Authorization Header zur Laufzeit; nicht aus serverseitiger Session
-	const sessionToken = undefined as unknown as string;
+  // Session token wird clientseitig per App Bridge verwaltet
+  const sessionToken = null as unknown as string;
 
   const result = { 
     apiKey: process.env.SHOPIFY_API_KEY || "", 
-    shop: session.shop, 
     hasActiveSub,
     isAppEmbeddingEnabled,
-    // Session token placeholder for App Bridge v4 (NavMenu/TitleBar funktionieren ohne hier gesetzten Token)
-    sessionToken: sessionToken,
-    isOnline: session.isOnline,
   };
 
 
@@ -60,7 +56,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function App() {
-  const { apiKey, shop, sessionToken, isOnline } = useLoaderData<typeof loader>();
+  const { apiKey } = useLoaderData<typeof loader>();
   const location = useLocation();
 
 
@@ -68,25 +64,17 @@ export default function App() {
     <AppProvider 
       isEmbeddedApp 
       apiKey={apiKey}
-      shop={shop}
-      // Enable session token authentication
-      forceRedirect={true}
-      // Pass session token to App Bridge
-      sessionToken={sessionToken}
     >
-      <ServerSessionTokenProvider initialToken={sessionToken}>
+      <ServerSessionTokenProvider initialToken={null}>
         <PolarisAppProvider i18n={enTranslations}>
           <Frame>
             <NavMenu>
-              <a href="/" rel="home">Urgify</a>
-              <a href="/stock-alerts">Stock Alerts</a>
-              <a href="/pricing">Pricing</a>
+              <a href="/app" rel="home">Urgify</a>
+              <a href="/app/stock-alerts">Stock Alerts</a>
+              <a href="/app/pricing">Pricing</a>
             </NavMenu>
             <TitleBar
-              title={
-                location.pathname === "/app/stock-alerts" ? "Stock Alerts" :
-                "Urgify"
-              }
+              title={location.pathname === "/app/stock-alerts" ? "Stock Alerts" : "Urgify"}
             />
             <Outlet />
           </Frame>

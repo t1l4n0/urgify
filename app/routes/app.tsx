@@ -3,9 +3,9 @@ import { Outlet, useLoaderData, useRouteError, useLocation } from "@remix-run/re
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
-import { AppProvider as PolarisAppProvider, Frame, Navigation } from "@shopify/polaris";
+import { AppProvider as PolarisAppProvider, Frame } from "@shopify/polaris";
 import enTranslations from "@shopify/polaris/locales/en.json" with { type: "json" };
-import { TitleBar } from "@shopify/app-bridge-react";
+import { TitleBar, NavMenu } from "@shopify/app-bridge-react";
 import { ServerSessionTokenProvider } from "../components/ServerSessionTokenProvider";
 
 import { authenticate } from "../shopify.server";
@@ -76,31 +76,12 @@ export default function App() {
     >
       <ServerSessionTokenProvider initialToken={sessionToken}>
         <PolarisAppProvider i18n={enTranslations}>
-          <Frame
-            navigation={
-              <Navigation location={location.pathname}>
-                <Navigation.Section
-                  items={[
-                    {
-                      label: "Dashboard",
-                      url: "/app",
-                      selected: location.pathname === "/app" || location.pathname === "/app/",
-                    },
-                    {
-                      label: "Stock Alerts",
-                      url: "/app/stock-alerts",
-                      selected: location.pathname.startsWith("/app/stock-alerts"),
-                    },
-                    {
-                      label: "Pricing",
-                      url: "/app/pricing",
-                      selected: location.pathname.startsWith("/app/pricing"),
-                    },
-                  ]}
-                />
-              </Navigation>
-            }
-          >
+          <Frame>
+            <NavMenu>
+              <a href="/app" rel="home">Urgify</a>
+              <a href="/app/stock-alerts">Stock Alerts</a>
+              <a href="/app/pricing">Pricing</a>
+            </NavMenu>
             <TitleBar
               title={
                 location.pathname === "/app/stock-alerts" ? "Stock Alerts" :

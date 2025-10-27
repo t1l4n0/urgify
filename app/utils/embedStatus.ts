@@ -50,7 +50,6 @@ export async function checkEmbedStatusFromShopify(
     console.log("📊 Shopify GraphQL response:", JSON.stringify(data, null, 2));
     
     // Debug: Check the structure of the response
-    const shopData = data.data?.shop;
     const themes = data.data?.themes?.edges || [];
     const mainTheme = themes[0]?.node;
     const appEmbeds = mainTheme?.appEmbeds || [];

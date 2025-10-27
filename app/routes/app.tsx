@@ -13,8 +13,7 @@ import { authenticate } from "../shopify.server";
 export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin, session } = await authenticate.admin(request);
-  // host wird von der Library aus der URL gelesen; hier nicht benötigt
+  const { admin } = await authenticate.admin(request);
 
   let hasActiveSub = false;
   let isAppEmbeddingEnabled = false;
@@ -40,10 +39,6 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
   // App embedding is managed through Theme Editor, always show as enabled
   isAppEmbeddingEnabled = true;
-
-
-  // Session token wird clientseitig per App Bridge verwaltet
-  const sessionToken = null as unknown as string;
 
   const result = { 
     apiKey: process.env.SHOPIFY_API_KEY || "", 

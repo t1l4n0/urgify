@@ -1,7 +1,6 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { useSearchParams } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
-import { getAdminTargetFromHost, decodeHost } from "../lib/adminUtils";
+import { getAdminTargetFromHost } from "../lib/adminUtils";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { redirect, session } = await authenticate.admin(request);
@@ -53,9 +52,6 @@ function _redir(
 }
 
 export default function PricingRedirect() { 
-  const [searchParams] = useSearchParams();
-  const reason = searchParams.get('reason');
-  
   // This component is only shown briefly before redirect
   // The actual pricing page is handled by Shopify's billing system
   return null; 

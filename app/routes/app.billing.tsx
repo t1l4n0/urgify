@@ -1,7 +1,7 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
-import { BillingManager, BILLING_CONFIG, formatPrice, getPlanFeatures } from "../utils/billing";
+import { BillingManager, BILLING_CONFIG, formatPrice } from "../utils/billing";
 import {
   Page,
   Layout,
@@ -13,12 +13,10 @@ import {
   InlineStack,
   List,
   Banner,
-  Divider,
   ProgressBar,
   Modal,
   FormLayout,
   RadioButton,
-  ButtonGroup,
 } from "@shopify/polaris";
 import { useState, useCallback } from "react";
 

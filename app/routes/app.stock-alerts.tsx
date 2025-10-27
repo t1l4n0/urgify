@@ -4,7 +4,6 @@ import { authenticate } from "../shopify.server";
 import { BillingManager } from "../utils/billing";
 import { z } from "zod";
 import { shouldRateLimit, checkShopifyRateLimit } from "../utils/rateLimiting";
-import { performanceMonitor, trackApiPerformance } from "../utils/performance";
 import {
   Frame,
   Card,

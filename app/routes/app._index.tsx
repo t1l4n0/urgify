@@ -6,6 +6,8 @@ import {
   Text,
   Button,
   Banner,
+  InlineStack,
+  BlockStack,
 } from "@shopify/polaris";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { toMessage } from "../lib/errors";
@@ -140,24 +142,50 @@ export default function Index() {
 
 
         <Layout.Section>
-          <Card>
-            <div style={{ padding: "1rem" }}>
-              <Text as="h3" variant="headingMd">Welcome to Urgify</Text>
-              <div style={{ marginTop: "1rem" }}>
-                <Text as="p" variant="bodyMd">
-                  Urgify provides urgency marketing tools for Shopify stores. 
-                  Add countdown timers, limited-time offers, stock alerts, and scarcity banners to your product pages.
-                </Text>
-              </div>
+          <BlockStack gap="400">
+            <Card>
+              <div style={{ padding: "1rem" }}>
+                <Text as="h3" variant="headingMd">Welcome to Urgify</Text>
+                <div style={{ marginTop: "1rem" }}>
+                  <Text as="p" variant="bodyMd">
+                    Urgify provides urgency marketing tools for Shopify stores. 
+                    Add countdown timers, limited-time offers, stock alerts, and scarcity banners to your product pages.
+                  </Text>
+                </div>
 
-              <Suspense fallback={<div aria-busy="true">Loading features…</div>}>
-                {(() => {
-                  const LazyFeatures = lazy(() => import("../components/Features"));
-                  return <LazyFeatures />;
-                })()}
-              </Suspense>
-            </div>
-          </Card>
+                <Suspense fallback={<div aria-busy="true">Loading features…</div>}>
+                  {(() => {
+                    const LazyFeatures = lazy(() => import("../components/Features"));
+                    return <LazyFeatures />;
+                  })()}
+                </Suspense>
+              </div>
+            </Card>
+
+            <Card>
+              <div style={{ padding: "1rem" }}>
+                <Text as="h3" variant="headingMd">Quick Access</Text>
+                <div style={{ marginTop: "1rem" }}>
+                  <InlineStack gap="400" wrap>
+                    <Button 
+                      url="/app/stock-alerts" 
+                      variant="primary"
+                      size="large"
+                    >
+                      📊 Stock Alerts
+                    </Button>
+                    <Button 
+                      url="/app/pricing" 
+                      variant="secondary"
+                      size="large"
+                    >
+                      💰 Pricing
+                    </Button>
+                  </InlineStack>
+                </div>
+              </div>
+            </Card>
+          </BlockStack>
         </Layout.Section>
 
         <Layout.Section>

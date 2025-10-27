@@ -69,9 +69,9 @@ export default function App() {
         <PolarisAppProvider i18n={enTranslations}>
           <Frame>
             <NavMenu>
-              <a href="/app" rel="home">Urgify</a>
-              <a href="/app/stock-alerts">Stock Alerts</a>
-              <a href="/app/pricing">Pricing</a>
+              <a href="/" rel="home">Urgify</a>
+              <a href="/stock-alerts">Stock Alerts</a>
+              <a href="/pricing">Pricing</a>
             </NavMenu>
             <TitleBar
               title={location.pathname === "/app/stock-alerts" ? "Stock Alerts" : "Urgify"}

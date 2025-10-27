@@ -65,14 +65,14 @@ export default function App() {
       isEmbeddedApp 
       apiKey={apiKey}
     >
+      <NavMenu>
+        <a href="/app" rel="home">Urgify</a>
+        <a href="/app/stock-alerts">Stock Alerts</a>
+        <a href="/app/pricing">Pricing</a>
+      </NavMenu>
       <ServerSessionTokenProvider initialToken={null}>
         <PolarisAppProvider i18n={enTranslations}>
           <Frame>
-            <NavMenu>
-              <a href="/app" rel="home">Urgify</a>
-              <a href="/app/stock-alerts">Stock Alerts</a>
-              <a href="/app/pricing">Pricing</a>
-            </NavMenu>
             <TitleBar
               title={location.pathname === "/app/stock-alerts" ? "Stock Alerts" : "Urgify"}
             />

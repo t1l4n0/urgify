@@ -1,9 +1,9 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { Outlet, useLoaderData, useRouteError, useLocation, Link } from "@remix-run/react";
+import { Outlet, useLoaderData, useRouteError, useLocation } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
-import { AppProvider as PolarisAppProvider, Frame } from "@shopify/polaris";
+import { AppProvider as PolarisAppProvider, Frame, Navigation } from "@shopify/polaris";
 import enTranslations from "@shopify/polaris/locales/en.json" with { type: "json" };
 import { TitleBar } from "@shopify/app-bridge-react";
 import { ServerSessionTokenProvider } from "../components/ServerSessionTokenProvider";
@@ -75,13 +75,32 @@ export default function App() {
       sessionToken={sessionToken}
     >
       <ServerSessionTokenProvider initialToken={sessionToken}>
-        {/* App Bridge Navigation Menu */}
-        <ui-nav-menu>
-          <Link to="/app" rel="home">Home</Link>
-          <Link to="/app/stock-alerts">Stock Alerts</Link>
-        </ui-nav-menu>
         <PolarisAppProvider i18n={enTranslations}>
-          <Frame>
+          <Frame
+            navigation={
+              <Navigation location={location.pathname}>
+                <Navigation.Section
+                  items={[
+                    {
+                      label: "Dashboard",
+                      url: "/app",
+                      selected: location.pathname === "/app" || location.pathname === "/app/",
+                    },
+                    {
+                      label: "Stock Alerts",
+                      url: "/app/stock-alerts",
+                      selected: location.pathname.startsWith("/app/stock-alerts"),
+                    },
+                    {
+                      label: "Pricing",
+                      url: "/app/pricing",
+                      selected: location.pathname.startsWith("/app/pricing"),
+                    },
+                  ]}
+                />
+              </Navigation>
+            }
+          >
             <TitleBar
               title={
                 location.pathname === "/app/stock-alerts" ? "Stock Alerts" :

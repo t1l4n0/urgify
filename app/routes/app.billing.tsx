@@ -184,7 +184,7 @@ export default function BillingDashboard() {
                     {/* Trial Status */}
                     {subscriptionStatus.isTrialActive && subscriptionStatus.daysUntilTrialEnds && (
                       <BlockStack gap="200">
-                        <Text as="p" variant="bodyMd" tone="warning">
+                        <Text as="p" variant="bodyMd" tone="caution">
                           Trial ends in {subscriptionStatus.daysUntilTrialEnds} days
                         </Text>
                         <ProgressBar 

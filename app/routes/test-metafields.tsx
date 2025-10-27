@@ -118,11 +118,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function TestMetafields() {
-  const { metafields, error } = useLoaderData<typeof loader>();
+  const data = useLoaderData<typeof loader>() as any;
+  const metafields = (data?.metafields as any[]) || [];
+  const error = data?.error as string | undefined;
   const fetcher = useFetcher();
   const [testValue, setTestValue] = useState("");
 
-  const testMetafield = metafields.find(m => m.key === "test_persistence");
+  const testMetafield = metafields.find((m: any) => m.key === "test_persistence");
 
   return (
     <Page>
@@ -150,6 +152,7 @@ export default function TestMetafields() {
                   value={testValue}
                   onChange={setTestValue}
                   placeholder="Enter test value"
+                  autoComplete="off"
                 />
                 <Button
                   onClick={() => {
@@ -164,15 +167,15 @@ export default function TestMetafields() {
                 </Button>
               </FormLayout>
               
-              {fetcher.data?.success && (
+              {(fetcher.data as any)?.success && (
                 <Text variant="bodyMd" as="p" tone="success">
-                  ✅ Success: {fetcher.data.message} - Value: {fetcher.data.savedValue}
+                  ✅ Success: {(fetcher.data as any).message} - Value: {(fetcher.data as any).savedValue}
                 </Text>
               )}
               
-              {fetcher.data?.error && (
+              {(fetcher.data as any)?.error && (
                 <Text variant="bodyMd" as="p" tone="critical">
-                  ❌ Error: {fetcher.data.error}
+                  ❌ Error: {(fetcher.data as any).error}
                 </Text>
               )}
               

@@ -74,7 +74,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function BillingConfirmation() {
-  const data = useLoaderData<typeof loader>() as any;
+  const data = useLoaderData<any>() as any;
   const success = !!data?.success;
   const subscription = data?.subscription ?? null;
   const error = data?.error ?? null;

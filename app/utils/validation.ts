@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z, type ZodIssue } from 'zod';
 
 // Common validation schemas
 export const shopSchema = z.string().min(1, 'Shop domain is required');
@@ -49,9 +49,10 @@ export const webhookRedactSchema = z.object({
 export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown): T {
   try {
     return schema.parse(data);
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
-      const errorMessage = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+      const zodError = error as z.ZodError;
+      const errorMessage = zodError.issues.map((err: ZodIssue) => `${err.path.join('.')}: ${err.message}`).join(', ');
       throw new Error(`Validation failed: ${errorMessage}`);
     }
     throw error;
@@ -62,9 +63,10 @@ export function safeValidateInput<T>(schema: z.ZodSchema<T>, data: unknown): { s
   try {
     const result = schema.parse(data);
     return { success: true, data: result };
-  } catch (error) {
+  } catch (error: unknown) {
     if (error instanceof z.ZodError) {
-      const errorMessage = error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ');
+      const zodError = error as z.ZodError;
+      const errorMessage = zodError.issues.map((err: ZodIssue) => `${err.path.join('.')}: ${err.message}`).join(', ');
       return { success: false, error: `Validation failed: ${errorMessage}` };
     }
     return { success: false, error: 'Unknown validation error' };

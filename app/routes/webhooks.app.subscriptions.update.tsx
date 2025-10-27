@@ -26,6 +26,11 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             shop,
             payload,
             async () => {
+              if (!admin) {
+                console.error("Admin context not available for subscription sync");
+                return;
+              }
+              
               // Shop-ID ermitteln und Metafield syncen
               const shopResponse = await admin.graphql(`
                 query getShop { shop { id } }

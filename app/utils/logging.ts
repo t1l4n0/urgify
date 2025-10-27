@@ -27,11 +27,12 @@ function scrub(value: unknown): unknown {
 }
 
 export function log(level: LogLevel, message: string, context: LogContext = {}): void {
+  const scrubbedContext = scrub(context);
   const entry = {
     ts: new Date().toISOString(),
     level,
     msg: message,
-    ...scrub(context),
+    ...(typeof scrubbedContext === 'object' && scrubbedContext !== null ? scrubbedContext as Record<string, unknown> : {}),
   } as Record<string, unknown>;
   const line = JSON.stringify(entry);
   switch (level) {

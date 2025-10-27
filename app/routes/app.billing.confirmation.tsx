@@ -99,11 +99,12 @@ export default function BillingConfirmation() {
   };
 
   useEffect(() => {
-    if (fetcher.data) {
-      if (fetcher.data.success) {
+    if (fetcher.data && typeof fetcher.data === 'object') {
+      const data = fetcher.data as { success?: boolean; error?: string };
+      if (data.success) {
         setSyncStatus("✅ Metafield synced successfully! Theme blocks should now work.");
       } else {
-        setSyncStatus(`❌ Sync failed: ${fetcher.data.error || "Unknown error"}`);
+        setSyncStatus(`❌ Sync failed: ${data.error || "Unknown error"}`);
       }
     }
   }, [fetcher.data]);

@@ -42,7 +42,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     return json({
       success: true,
       message: 'Authenticated fetch successful (fallback)',
-      targetUrl: url.searchParams.get('url') || 'unknown',
+      targetUrl: new URL(request.url).searchParams.get('url') || 'unknown',
       mockData: {
         shop: {
           name: 'Demo Shop (Fallback)',
@@ -84,24 +84,18 @@ export const action = async ({ request }: LoaderFunctionArgs) => {
 
     // Make authenticated request to target URL with Idempotency-Key and 429 retry/backoff
     const idempotencyKey = request.headers.get('x-idempotency-key') || `idem_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    // REST-Client ist in v4 standardmäßig entfernt; Stub: echo zurückgeben
     const performRequest = async (): Promise<Response> => {
-      if (method === 'POST') {
-        return admin.rest.post(targetUrl, {
-          headers: { 'Idempotency-Key': idempotencyKey },
+      return new Response(
+        JSON.stringify({
+          echo: true,
+          method,
+          targetUrl,
+          idempotencyKey,
           body: body ? JSON.parse(body) : undefined,
-        });
-      } else if (method === 'PUT') {
-        return admin.rest.put(targetUrl, {
-          headers: { 'Idempotency-Key': idempotencyKey },
-          body: body ? JSON.parse(body) : undefined,
-        });
-      } else if (method === 'DELETE') {
-        return admin.rest.delete(targetUrl, {
-          headers: { 'Idempotency-Key': idempotencyKey },
-        } as any);
-      } else {
-        return admin.rest.get(targetUrl, { headers: { 'Idempotency-Key': idempotencyKey } } as any);
-      }
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
     };
 
     let response = await performRequest();

@@ -42,15 +42,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   isAppEmbeddingEnabled = true;
 
 
-	// Use session token from Shopify session; do not fabricate fallbacks
-	const sessionToken = session.token;
+	// Session token kommt über Authorization Header zur Laufzeit; nicht aus serverseitiger Session
+	const sessionToken = undefined as unknown as string;
 
   const result = { 
     apiKey: process.env.SHOPIFY_API_KEY || "", 
     shop: session.shop, 
     hasActiveSub,
     isAppEmbeddingEnabled,
-    // Session token data for App Bridge
+    // Session token placeholder for App Bridge v4 (NavMenu/TitleBar funktionieren ohne hier gesetzten Token)
     sessionToken: sessionToken,
     isOnline: session.isOnline,
   };

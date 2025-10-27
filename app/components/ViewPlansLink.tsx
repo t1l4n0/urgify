@@ -39,7 +39,7 @@ export function ViewPlansLink({ children = "💰 View Plans" }: { children?: Rea
 
   return (
     <Button url={href} target="_top">
-      {children}
+      {String(children)}
     </Button>
   );
 }

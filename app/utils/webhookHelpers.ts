@@ -9,7 +9,6 @@
  * - Dead-Letter-Queue
  */
 
-import shopify from "../shopify.server";
 import prisma from "../db.server";
 
 // ============================================================================
@@ -133,14 +132,6 @@ export function log(
   message: string, 
   extra?: Record<string, any>
 ): void {
-  const timestamp = new Date().toISOString();
-  const logEntry = {
-    timestamp,
-    level,
-    message,
-    ...extra
-  };
-  
   console[level](`[Webhook] ${message}`, extra ?? {});
 }
 
@@ -232,7 +223,7 @@ export async function replayDeadLetter(deadLetterId: string): Promise<void> {
 
   try {
     // Webhook erneut verarbeiten
-    const payload = JSON.parse(deadLetter.payload);
+    JSON.parse(deadLetter.payload);
     
     // Hier würde die ursprüngliche Verarbeitungslogik aufgerufen werden
     // Das ist abhängig vom Topic und muss individuell implementiert werden

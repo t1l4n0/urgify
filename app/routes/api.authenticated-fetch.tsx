@@ -67,7 +67,7 @@ export const action = async ({ request }: LoaderFunctionArgs) => {
     }
 
     // Authenticate the request using Shopify's session token
-    const { admin, session } = await authenticate.admin(request);
+    const { session } = await authenticate.admin(request);
     
     // Get the target URL and method from form data
     const formData = await request.formData();

@@ -6,15 +6,12 @@ import {
   Text,
   Button,
   Banner,
-  InlineStack,
-  BlockStack,
 } from "@shopify/polaris";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { toMessage } from "../lib/errors";
 import { Suspense, lazy } from "react";
 import { ViewPlansLink } from "../components/ViewPlansLink";
 import { authenticate } from "../shopify.server";
-import prisma from "../db.server";
 
 // App embedding is managed through the Theme Editor, not programmatically
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -95,7 +92,6 @@ export function ErrorBoundary() {
 
 export default function Index() {
   const data = useRouteLoaderData("routes/app") as any;
-  const shop = data?.shop as string ?? "";
   const hasActiveSub = Boolean(data?.hasActiveSub);
   const actionData = useActionData<typeof action>();
 

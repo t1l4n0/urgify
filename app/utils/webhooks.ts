@@ -415,7 +415,7 @@ export function validateWebhookPayload(payload: any): WebhookPayload | null {
 }
 
 export function getWebhookTopicFromUrl(url: string): string | null {
-  const match = url.match(/\/webhooks\/([^\/]+)/);
+  const match = url.match(/\/webhooks\/([^/]+)/);
   return match ? match[1] : null;
 }
 

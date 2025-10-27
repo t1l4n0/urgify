@@ -1,4 +1,4 @@
-import { AdminApiContext } from "@shopify/shopify-app-remix/server";
+import type { AdminApiContext } from "@shopify/shopify-app-remix/server";
 
 // GraphQL Query to check if app embedding is enabled in the current theme
 const CHECK_EMBED_STATUS_QUERY = `

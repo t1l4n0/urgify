@@ -1,5 +1,5 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
-import { useLoaderData, Link, useLocation } from "@remix-run/react";
+import { useLoaderData, Link, useFetcher } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
 import { BillingManager } from "../utils/billing";
 import {
@@ -16,7 +16,6 @@ import {
 import { useEffect, useState } from "react";
 import { toMessage } from "../lib/errors";
 import { ViewPlansLink } from "../components/ViewPlansLink";
-import { useFetcher } from "@remix-run/react";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -78,10 +77,8 @@ export default function BillingConfirmation() {
   const success = !!data?.success;
   const subscription = data?.subscription ?? null;
   const error = data?.error ?? null;
-  const shop = data?.shop ?? '';
   const [isLoading, setIsLoading] = useState(true);
   const [syncStatus, setSyncStatus] = useState<string>("");
-  const { search } = useLocation(); // enthält ?host=...&shop=...
   const fetcher = useFetcher();
 
   useEffect(() => {

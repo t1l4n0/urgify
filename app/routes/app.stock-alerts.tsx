@@ -71,20 +71,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   }
 
   // Check subscription status first
+  let hasActiveSubscription = false;
+  let isTrialActive = false;
+  
   try {
     const billingManager = new BillingManager(session.shop, admin);
     const subscriptionStatus = await billingManager.getSubscriptionStatus();
     
-    // If no active subscription or trial, redirect to pricing
-    if (!subscriptionStatus.hasActiveSubscription && !subscriptionStatus.isTrialActive) {
-      throw redirect("/app/pricing?reason=subscription_required");
-    }
+    hasActiveSubscription = subscriptionStatus.hasActiveSubscription;
+    isTrialActive = subscriptionStatus.isTrialActive;
   } catch (error) {
-    // If subscription check fails, redirect to pricing as well
     console.error("Error checking subscription status:", error);
-    throw redirect("/app/pricing?reason=subscription_required");
+    // Continue without subscription check
   }
-
+  
+  // Continue with fetching settings, but mark subscription status in data
+  
   try {
     // Fetch shop metafield for stock alert settings (single JSON metafield)
     const metafieldResponse = await admin.graphql(`
@@ -166,6 +168,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     return json({
       settings,
+      hasActiveSubscription,
+      isTrialActive,
       products: products
         .filter((product: any) => (product.totalInventory || 0) > 0) // Nur Produkte mit Bestand > 0
         .map((product: any) => ({
@@ -199,6 +203,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         show_only_below_threshold: true,
         custom_threshold: 5,
       },
+      hasActiveSubscription,
+      isTrialActive,
       products: [], 
       error: "Failed to fetch data" 
     }, { 

@@ -17,45 +17,14 @@ export default async function handleRequest(
   remixContext: EntryContext
 ) {
   addDocumentResponseHeaders(request, responseHeaders);
-  
+
   // Generate per-request correlation ID
   const requestId = request.headers.get("x-request-id") || (globalThis.crypto?.randomUUID?.() ? globalThis.crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
   responseHeaders.set("X-Request-Id", requestId);
-  
-  // Harden CSP for embedded Shopify Admin
-  const csp = [
-    "default-src 'self'",
-    // Allow inline scripts (Shopify admin bootstraps)
-    "script-src 'self' 'unsafe-inline' https://cdn.shopify.com https://admin.shopify.com https://*.shopifycloud.com",
-    // Mirror allowances for script elements explicitly
-    "script-src-elem 'self' 'unsafe-inline' https://cdn.shopify.com https://admin.shopify.com https://*.shopifycloud.com",
-    // Polaris styles and inline styles from Remix runtime
-    "style-src 'self' 'unsafe-inline' https://cdn.shopify.com",
-    "img-src 'self' data: https: blob:",
-    "font-src 'self' https://cdn.shopify.com",
-    // Allow Shopify Admin and metrics beacons
-    "connect-src 'self' https://*.shopify.com https://admin.shopify.com https://monorail-edge.shopifysvc.com https://*.shopifycloud.com",
-    // Embedded inside Shopify Admin
-    "frame-ancestors https://admin.shopify.com https://*.myshopify.com https://*.shopify.com",
-    // Allow iframes we might open to Shopify Admin
-    "frame-src https://admin.shopify.com https://*.myshopify.com https://*.shopify.com",
-    "object-src 'none'",
-    "base-uri 'self'",
-  ].join("; ");
-  responseHeaders.set("Content-Security-Policy", csp);
-  
-  // Security headers centralized here (Built for Shopify)
-  // Enforce HTTPS for one year across subdomains; eligible for preload
-  responseHeaders.set(
-    "Strict-Transport-Security",
-    "max-age=31536000; includeSubDomains; preload"
-  );
-  // Prevent MIME sniffing and restrict referrer
-  responseHeaders.set("X-Content-Type-Options", "nosniff");
-  responseHeaders.set("Referrer-Policy", "no-referrer");
-  
-  // Remove X-Frame-Options to allow embedding
-  responseHeaders.delete("X-Frame-Options");
+
+  // Rely on @shopify/shopify-app-remix to set correct security headers and CSP for embedded apps
+  // Do not override Content-Security-Policy here; an overly strict CSP prevents App Bridge from initializing
+  // Keep additional hardening minimal and compatible; Shopify's helper already removes X-Frame-Options
   
   const userAgent = request.headers.get("user-agent");
   const callbackName = isbot(userAgent ?? '')

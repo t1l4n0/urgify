@@ -51,7 +51,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export default function App() {
-  const { apiKey } = useLoaderData<typeof loader>();
+  const { apiKey, hasActiveSub } = useLoaderData<typeof loader>();
   const location = useLocation();
 
 
@@ -61,9 +61,8 @@ export default function App() {
       apiKey={apiKey}
     >
       <NavMenu>
-        <a href="/app" rel="home">Urgify</a>
-        <a href="/app/stock-alerts">Stock Alerts</a>
-        <a href="/app/pricing">Pricing</a>
+        <a href="/app" rel="home">Home</a>
+        {hasActiveSub && <a href="/app/stock-alerts">Stock Alerts</a>}
       </NavMenu>
       <ServerSessionTokenProvider initialToken={null}>
         <PolarisAppProvider i18n={enTranslations}>

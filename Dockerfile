@@ -38,6 +38,7 @@ COPY --from=builder /app/build ./build
 COPY --from=builder /app/app ./app
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/BUILD_ID ./BUILD_ID
+COPY --from=builder /app/server.js ./server.js
 
 # Eigentümerrechte setzen, bevor auf node gewechselt wird
 RUN chown -R node:node /app

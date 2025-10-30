@@ -1,0 +1,437 @@
+/* Urgify PopUp Styles */
+
+.urgify-popup-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 999999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.urgify-popup-container.urgify-popup-visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.urgify-popup-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.urgify-popup-content {
+  position: relative;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 1;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  transform: scale(0.9);
+  transition: transform 0.3s ease;
+  margin: 20px;
+}
+
+.urgify-popup-container.urgify-popup-visible .urgify-popup-content {
+  transform: scale(1);
+}
+
+.urgify-popup-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 32px;
+  line-height: 1;
+  cursor: pointer;
+  color: #666;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  z-index: 10;
+  padding: 0;
+}
+
+.urgify-popup-close:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+  color: #000;
+}
+
+.urgify-popup-image {
+  width: 100%;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.urgify-popup-image img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: cover;
+}
+
+.urgify-popup-title {
+  margin: 0 0 12px 0;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.urgify-popup-description {
+  margin: 0 0 24px 0;
+  line-height: 1.6;
+}
+
+.urgify-popup-cta {
+  display: inline-block;
+  padding: 12px 24px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  text-align: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  border: none;
+}
+
+.urgify-popup-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Position Classes */
+.urgify-popup--top-left .urgify-popup-content {
+  align-self: flex-start;
+  justify-self: flex-start;
+  margin: 20px;
+}
+
+.urgify-popup--top-center .urgify-popup-content {
+  align-self: flex-start;
+  margin-top: 20px;
+}
+
+.urgify-popup--top-right .urgify-popup-content {
+  align-self: flex-start;
+  justify-self: flex-end;
+  margin: 20px;
+}
+
+.urgify-popup--middle-left {
+  justify-content: flex-start;
+}
+
+.urgify-popup--middle-left .urgify-popup-content {
+  margin-left: 20px;
+}
+
+.urgify-popup--middle-center {
+  justify-content: center;
+  align-items: center;
+}
+
+.urgify-popup--middle-right {
+  justify-content: flex-end;
+}
+
+.urgify-popup--middle-right .urgify-popup-content {
+  margin-right: 20px;
+}
+
+.urgify-popup--bottom-left .urgify-popup-content {
+  align-self: flex-end;
+  justify-self: flex-start;
+  margin: 20px;
+}
+
+.urgify-popup--bottom-center .urgify-popup-content {
+  align-self: flex-end;
+  margin-bottom: 20px;
+}
+
+.urgify-popup--bottom-right .urgify-popup-content {
+  align-self: flex-end;
+  justify-self: flex-end;
+  margin: 20px;
+}
+
+/* Style Variants */
+
+/* Spectacular */
+.urgify-popup--style-spectacular .urgify-popup-content {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+}
+
+.urgify-popup--style-spectacular .urgify-popup-close {
+  color: #fff;
+}
+
+.urgify-popup--style-spectacular .urgify-popup-close:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+}
+
+.urgify-popup--style-spectacular .urgify-popup-cta {
+  background-color: #fff;
+  color: #667eea;
+}
+
+/* Brutalist */
+.urgify-popup--style-brutalist .urgify-popup-content {
+  background: #000;
+  color: #fff;
+  border: 6px solid #ff0000;
+  border-radius: 0;
+  box-shadow: 12px 12px 0 #ff0000;
+  font-family: 'Impact', 'Arial Black', sans-serif;
+}
+
+.urgify-popup--style-brutalist .urgify-popup-title {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  text-shadow: 3px 3px 0 #ff0000;
+}
+
+.urgify-popup--style-brutalist .urgify-popup-cta {
+  background-color: #ff0000;
+  color: #fff;
+  border: 4px solid #ffff00;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Glassmorphism */
+.urgify-popup--style-glassmorphism .urgify-popup-content {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #1a1a1a;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.urgify-popup--style-glassmorphism .urgify-popup-cta {
+  background-color: rgba(255, 255, 255, 0.3);
+  color: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+/* Neumorphism */
+.urgify-popup--style-neumorphism .urgify-popup-content {
+  background: #e0e0e0;
+  color: #333;
+  box-shadow: 
+    20px 20px 60px #bebebe,
+    -20px -20px 60px #ffffff;
+}
+
+.urgify-popup--style-neumorphism .urgify-popup-cta {
+  background-color: #e0e0e0;
+  color: #333;
+  box-shadow: 
+    5px 5px 10px #bebebe,
+    -5px -5px 10px #ffffff;
+}
+
+/* Minimal */
+.urgify-popup--style-minimal .urgify-popup-content {
+  background: #fff;
+  color: #333;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.urgify-popup--style-minimal .urgify-popup-cta {
+  background-color: #333;
+  color: #fff;
+}
+
+/* Custom styles are handled inline via Liquid */
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .urgify-popup-content {
+    width: 95%;
+    max-width: none;
+    padding: 24px;
+    margin: 10px;
+  }
+
+  .urgify-popup-title {
+    font-size: 20px;
+  }
+
+  .urgify-popup-description {
+    font-size: 14px;
+  }
+
+  .urgify-popup-cta {
+    width: 100%;
+    padding: 14px 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .urgify-popup-content {
+    padding: 20px;
+    border-radius: 12px;
+  }
+
+  .urgify-popup-title {
+    font-size: 18px;
+  }
+
+  .urgify-popup-description {
+    font-size: 13px;
+  }
+}
+
+/* Accessibility */
+.urgify-popup-container[aria-hidden="true"] {
+  display: none;
+}
+
+/* Animation keyframes */
+@keyframes popupFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes popupFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+/* Newsletter Form Styles */
+.urgify-popup-newsletter-container {
+  margin: 20px 0;
+}
+
+.urgify-popup-newsletter-form {
+  width: 100%;
+}
+
+.urgify-popup-newsletter-input-group {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.urgify-popup-newsletter-email {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.urgify-popup-newsletter-email:focus {
+  border-color: #007bff;
+}
+
+.urgify-popup-newsletter-submit {
+  padding: 12px 24px;
+  background-color: #007bff;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  white-space: nowrap;
+}
+
+.urgify-popup-newsletter-submit:hover:not(:disabled) {
+  background-color: #0056b3;
+  transform: translateY(-1px);
+}
+
+.urgify-popup-newsletter-submit:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Discount Code Display Styles */
+.urgify-popup-discount-container {
+  margin: 20px 0;
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.urgify-popup-discount-message {
+  margin: 0;
+}
+
+.urgify-popup-discount-message strong {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 18px;
+  color: #28a745;
+}
+
+.urgify-popup-discount-message p {
+  margin: 8px 0 0 0;
+  font-size: 16px;
+}
+
+.urgify-popup-discount-code {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #ffffff;
+  border: 2px dashed #007bff;
+  border-radius: 6px;
+  font-family: 'Courier New', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: #007bff;
+  letter-spacing: 1px;
+  margin-left: 8px;
+}
+
+/* Responsive adjustments for newsletter form */
+@media (max-width: 480px) {
+  .urgify-popup-newsletter-input-group {
+    flex-direction: column;
+  }
+  
+  .urgify-popup-newsletter-submit {
+    width: 100%;
+  }
+}
+

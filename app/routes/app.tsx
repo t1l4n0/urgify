@@ -63,12 +63,17 @@ export default function App() {
       <NavMenu>
         <a href="/app" rel="home">Home</a>
         {hasActiveSub && <a href="/app/stock-alerts">Stock Alerts</a>}
+        {hasActiveSub && <a href="/app/popup">PopUp</a>}
       </NavMenu>
       <ServerSessionTokenProvider initialToken={null}>
         <PolarisAppProvider i18n={enTranslations}>
           <Frame>
             <TitleBar
-              title={location.pathname === "/app/stock-alerts" ? "Stock Alerts" : "Urgify"}
+              title={
+                location.pathname === "/app/stock-alerts" ? "Stock Alerts" :
+                location.pathname === "/app/popup" ? "PopUp" :
+                "Urgify"
+              }
             />
             <Outlet />
           </Frame>

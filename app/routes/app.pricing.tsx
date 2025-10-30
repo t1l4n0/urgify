@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { useLoaderData, json, type LoaderFunctionArgs } from "@remix-run/react";
+import { useLoaderData } from "@remix-run/react";
+import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import { getAdminTargetFromHost } from "../lib/adminUtils";
 

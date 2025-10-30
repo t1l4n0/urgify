@@ -20,6 +20,14 @@ destination = "assets/urgify-stock-alert.js"
 source = "assets/urgify-stock-alert.css"
 destination = "assets/urgify-stock-alert.css"
 
+[[assets]]
+source = "assets/urgify-popup.js"
+destination = "assets/urgify-popup.js"
+
+[[assets]]
+source = "assets/urgify-popup.css"
+destination = "assets/urgify-popup.css"
+
 # Blocks definition
 [[blocks]]
 type = "liquid"
@@ -35,11 +43,6 @@ source = "blocks/limited-offer.liquid"
 type = "liquid"
 name = "Urgify – Scarcity Banner"
 source = "blocks/scarcity-banner.liquid"
-
-[[blocks]]
-type = "liquid"
-name = "Urgify – Urgency Notification"
-source = "blocks/urgency-notification.liquid"
 
 [[blocks]]
 type = "liquid"

@@ -1,0 +1,92 @@
+{% comment %}
+  Automatically renders the popup when enabled via Urgify settings.
+  Triggered based on settings (delay, exit intent, immediate).
+{% endcomment %}
+
+{% liquid
+  # Check subscription status first
+  assign subscription_active = shop.metafields.urgify.subscription_active.value | default: false
+  if subscription_active != true and subscription_active != 'true'
+    assign should_render = false
+  else
+    assign should_render = true
+  endif
+  
+  # Only proceed if subscription is active
+  if should_render
+    # Load popup config from JSON metafield
+    assign popup_config_raw = shop.metafields.urgify.popup_config.value
+    
+    # Check if config exists and is not empty
+    # JavaScript will parse JSON and check enabled status
+    if popup_config_raw != blank and popup_config_raw != empty
+      assign show_popup = true
+    else
+      assign show_popup = false
+    endif
+  endif
+%}
+
+{% unless should_render %}
+  {% comment %}No active subscription - do not render{% endcomment %}
+{% elsif show_popup %}
+  {{ 'urgify-popup.css' | asset_url | stylesheet_tag }}
+  
+  <script type="application/json" id="urgify-popup-config">{{ popup_config_raw | json }}</script>
+  
+  <div id="urgify-popup-container" 
+       class="urgify-popup-container"
+       data-popup-config="{{ popup_config_raw | json | escape }}"
+       style="display: none;"
+       aria-hidden="true"
+       role="dialog"
+       aria-labelledby="urgify-popup-title"
+       aria-modal="true"
+       data-debug="true"
+       data-subscription-active="{{ subscription_active }}">
+    
+    <div class="urgify-popup-overlay"></div>
+    
+    <div class="urgify-popup-content">
+      <button class="urgify-popup-close" aria-label="Close popup" type="button">×</button>
+      <div class="urgify-popup-body">
+        <div class="urgify-popup-image-container"></div>
+        <h3 class="urgify-popup-title" id="urgify-popup-title"></h3>
+        <div class="urgify-popup-description"></div>
+        <div class="urgify-popup-newsletter-container" style="display: none;">
+          {% form 'customer', class: 'urgify-popup-newsletter-form', id: 'urgify-popup-newsletter-form' %}
+            <div class="urgify-popup-newsletter-input-group">
+              <input 
+                type="email" 
+                name="contact[email]" 
+                class="urgify-popup-newsletter-email"
+                placeholder="Enter your email"
+                required
+                aria-label="Email address"
+              />
+              <button type="submit" class="urgify-popup-newsletter-submit">
+                Subscribe
+              </button>
+            </div>
+            <input type="hidden" name="contact[tags]" value="newsletter">
+          {% endform %}
+        </div>
+        <div class="urgify-popup-discount-container" style="display: none;">
+          <div class="urgify-popup-discount-message">
+            <strong>Thank you for subscribing!</strong>
+            <p>Use code: <span class="urgify-popup-discount-code"></span></p>
+          </div>
+        </div>
+        <a href="#" class="urgify-popup-cta"></a>
+      </div>
+    </div>
+  </div>
+  
+  <script src="{{ 'urgify-popup.js' | asset_url }}" defer></script>
+{% else %}
+  <!-- Urgify Popup Debug: Config missing or empty - popup_config metafield not set or empty -->
+  <script>
+    console.warn('Urgify Popup: Config not found or empty. Subscription active:', {{ subscription_active }});
+  </script>
+{% endunless %}
+

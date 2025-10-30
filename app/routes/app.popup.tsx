@@ -4,6 +4,7 @@ import { authenticate } from "../shopify.server";
 import { BillingManager } from "../utils/billing";
 import { z } from "zod";
 import { shouldRateLimit, checkShopifyRateLimit } from "../utils/rateLimiting";
+import { validateSessionToken } from "../utils/sessionToken";
 import {
   Frame,
   Card,
@@ -25,6 +26,14 @@ import { useState, useCallback, useEffect } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import popupPreviewStyles from "../styles/popup-preview.css?url";
 import { authenticatedFetch } from "../utils/authenticatedFetch";
+
+// CORS headers (lenient: allow any origin; request is same-origin in iframe)
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Authorization, Content-Type",
+  "Vary": "Origin",
+};
 
 export const links = () => [
   { rel: "stylesheet", href: popupPreviewStyles }
@@ -312,13 +321,38 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin, session } = await authenticate.admin(request);
+  // Handle CORS preflight
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        ...CORS_HEADERS,
+        "Access-Control-Max-Age": "600",
+      },
+    });
+  }
 
   if (request.method !== "POST") {
-    return json({ error: "Method not allowed" }, { status: 405 });
+    return json({ error: "Method not allowed" }, { status: 405, headers: { ...CORS_HEADERS } });
   }
 
   try {
+    // Validate session token first
+    const sessionToken = validateSessionToken(request);
+    // Debug: log whether Authorization header is present (no token value)
+    try {
+      const hasAuth = !!request.headers.get('Authorization');
+      console.log("/app/popup: has Authorization header:", hasAuth);
+    } catch {}
+    if (!sessionToken) {
+      return json(
+        { error: "Session token required" },
+        { status: 401, headers: { ...CORS_HEADERS } }
+      );
+    }
+
+    // Authenticate the request using Shopify's session token
+    const { admin, session } = await authenticate.admin(request);
     // Check rate limiting
     const rateLimitCheck = await shouldRateLimit(request, 'admin');
     if (rateLimitCheck.limited) {
@@ -327,6 +361,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         { 
           status: 429, 
           headers: { 
+            ...CORS_HEADERS,
             'Retry-After': rateLimitCheck.retryAfter?.toString() || '60' 
           } 
         }
@@ -341,6 +376,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         { 
           status: 429, 
           headers: { 
+            ...CORS_HEADERS,
             'Retry-After': shopifyRateLimit.retryAfter?.toString() || '60' 
           } 
         }
@@ -490,20 +526,41 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       throw new Error(`Failed to save metafields: ${userErrors[0]?.message || 'Unknown error'}`);
     }
 
-    return json({ success: true });
+    return json({ success: true }, { headers: { ...CORS_HEADERS } });
   } catch (error) {
     console.error("Error saving popup settings:", error);
+    
+    // Handle authentication errors
+    if (error instanceof Response && error.status === 401) {
+      // Mirror CORS headers on passthrough 401
+      const headers = new Headers(error.headers);
+      Object.entries(CORS_HEADERS).forEach(([k, v]) => headers.set(k, v));
+      return new Response(error.body, { status: 401, headers });
+    }
+    
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (
+      errorMessage.includes('Session token') ||
+      errorMessage.includes('unauthorized') ||
+      errorMessage.includes('authentication') ||
+      errorMessage.includes('Invalid session')
+    ) {
+      return json(
+        { error: "Authentication failed" },
+        { status: 401, headers: { ...CORS_HEADERS } }
+      );
+    }
     
     if (error instanceof z.ZodError) {
       const errorMessage = error.issues?.map((err: any) => `${err.path?.join('.')}: ${err.message}`).join(', ') || 'Validation failed';
       return json({
         error: `Validation failed: ${errorMessage}`
-      }, { status: 400 });
+      }, { status: 400, headers: { ...CORS_HEADERS } });
     }
     
     return json({
-      error: "Failed to save settings: " + (error as Error).message
-    }, { status: 500 });
+      error: "Failed to save settings: " + errorMessage
+    }, { status: 500, headers: { ...CORS_HEADERS } });
   }
 };
 
@@ -718,36 +775,27 @@ export default function PopupSettings() {
       setIsSaving(true);
       setToastMessage("Settings saved successfully!");
 
-      // Stelle sicher, dass wir ein Token haben, bevor wir speichern
+      // Hole IMMER ein frisches Token von App Bridge (verhindert abgelaufene Tokens)
+      if (!shopify) {
+        throw new Error('App Bridge not available. Please refresh the page.');
+      }
+      const appBridge = shopify as any;
+      if (typeof appBridge.idToken !== 'function') {
+        console.error('shopify.idToken is not a function:', shopify);
+        throw new Error('Session token method not available. Please refresh the page.');
+      }
       let token: string | null = null;
-      
-      // Versuche zuerst aus sessionStorage
-      token = sessionStorage.getItem('shopify_session_token');
-      
-      // Wenn kein Token vorhanden, hole es direkt von App Bridge
-      // In App Bridge v4 wurde getSessionToken() durch idToken() ersetzt
-      if (!token) {
-        if (!shopify) {
-          throw new Error('App Bridge not available. Please refresh the page.');
+      try {
+        token = await appBridge.idToken();
+        if (token) {
+          sessionStorage.setItem('shopify_session_token', token);
+        } else {
+          throw new Error('Session token was empty');
         }
-        
-        const appBridge = shopify as any;
-        if (typeof appBridge.idToken !== 'function') {
-          console.error('shopify.idToken is not a function:', shopify);
-          throw new Error('Session token method not available. Please refresh the page.');
-        }
-        
-        try {
-          token = await appBridge.idToken();
-          if (token) {
-            sessionStorage.setItem('shopify_session_token', token);
-          } else {
-            throw new Error('Session token was empty');
-          }
-        } catch (error) {
-          console.error('Failed to get session token from App Bridge:', error);
-          throw new Error('Failed to get session token. Please refresh the page and try again.');
-        }
+      } catch (error) {
+        console.error('Failed to get session token from App Bridge:', error);
+        // Fallback: nutze evtl. vorhandenes Token aus sessionStorage
+        token = sessionStorage.getItem('shopify_session_token');
       }
 
       if (!token) {

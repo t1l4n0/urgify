@@ -38,8 +38,27 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // Immer 200 OK innerhalb von 5s zurückgeben
     return json({ ok: true }, { status: 200 });
   } catch (err) {
+    // Prüfe ob es ein HMAC-Validierungsfehler ist
+    if (err instanceof Response && err.status === 401) {
+      // HMAC ungültig → HTTP 401 zurückgeben
+      return err;
+    }
+    
+    // Prüfe Error-Message nach HMAC-spezifischen Fehlern
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    if (
+      errorMessage.includes('HMAC') ||
+      errorMessage.includes('unauthorized') ||
+      errorMessage.includes('invalid signature') ||
+      errorMessage.includes('Invalid HMAC') ||
+      errorMessage.includes('authentication')
+    ) {
+      console.error("SHOP/REDACT: HMAC validation failed");
+      return json({ error: 'Invalid HMAC' }, { status: 401 });
+    }
+    
+    // Andere Fehler → HTTP 200 (um Retries zu vermeiden)
     console.error("SHOP/REDACT: webhook error:", err);
-    // Auch bei Fehler 200 zurückgeben, um Retries zu vermeiden
     return json({ ok: true }, { status: 200 });
   }
 };

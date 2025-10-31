@@ -2,13 +2,12 @@
 
 .urgify-popup-preview {
   position: relative;
-  max-width: 500px;
   width: 100%;
   overflow: hidden;
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  padding: 32px;
-  margin: 20px auto;
+  padding: 40px;
+  min-height: 400px;
 }
 
 /* Spectacular Style */
@@ -138,5 +137,197 @@
 .urgify-popup-preview p {
   margin: 0 0 24px 0;
   line-height: 1.6;
+}
+
+/* Ensure Layout is flex for ordering */
+div[class*="Layout"][class*="Polaris"] {
+  display: flex !important;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 0;
+}
+
+/* Base wrapper styles */
+.popup-preview-wrapper,
+.popup-form-wrapper {
+  position: relative;
+}
+
+/* Layout sections ordering - Mobile: Vorschau oben */
+.popup-preview-wrapper {
+  order: 1;
+  width: 100%;
+  flex: 0 0 100%;
+}
+
+.popup-form-wrapper {
+  order: 2;
+  width: 100%;
+  flex: 0 0 100%;
+}
+
+/* Desktop: Form links, Vorschau rechts */
+@media (min-width: 769px) {
+  .popup-preview-wrapper {
+    order: 2;
+    width: 50%;
+    flex: 0 0 50%;
+  }
+  
+  .popup-form-wrapper {
+    order: 1;
+    width: 50%;
+    flex: 0 0 50%;
+  }
+}
+
+/* Sticky preview container */
+.popup-preview-wrapper {
+  position: relative;
+}
+
+.popup-preview-sticky-container {
+  width: 100%;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  z-index: 10;
+  transition: top 0.1s ease-out;
+}
+
+/* Desktop: CSS Sticky - einfach und zuverlässig */
+@media (min-width: 769px) {
+  .popup-preview-wrapper {
+    display: block;
+    position: relative;
+    height: fit-content;
+    align-self: flex-start;
+  }
+  
+  .popup-preview-wrapper > div {
+    display: block;
+    position: relative;
+    height: 100%;
+  }
+  
+  /* Wichtig: Sticky funktioniert nur wenn Parent height hat */
+  .popup-preview-wrapper .Polaris-Layout__Section {
+    height: fit-content;
+    min-height: 0;
+  }
+  
+  .popup-preview-sticky-container {
+    position: -webkit-sticky !important; /* Safari Support */
+    position: sticky !important;
+    top: 80px !important;
+    width: 100% !important;
+    align-self: flex-start;
+  }
+}
+
+/* Ensure form fields take full width */
+.popup-form-wrapper .Polaris-TextField,
+.popup-form-wrapper .Polaris-Select,
+.popup-form-wrapper .Polaris-ChoiceList,
+.popup-form-wrapper input,
+.popup-form-wrapper select,
+.popup-form-wrapper textarea {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.popup-form-wrapper .Polaris-FormLayout {
+  width: 100%;
+}
+
+.popup-form-wrapper .Polaris-FormLayout__Item {
+  width: 100%;
+}
+
+/* Ensure InlineStack fields take full width */
+.popup-form-wrapper .Polaris-InlineStack {
+  width: 100%;
+}
+
+.popup-form-wrapper .Polaris-InlineStack > * {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Ensure Cards take full width on mobile */
+@media (max-width: 768px) {
+  .popup-form-wrapper .Polaris-Card,
+  .popup-preview-wrapper .Polaris-Card {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* Responsive adjustments - Vorschau oben auf mobil */
+@media (max-width: 768px) {
+  /* Ensure full width on mobile */
+  .popup-preview-wrapper {
+    order: 1;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+  
+  .popup-form-wrapper {
+    order: 2;
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+  
+  /* Full width for sections on mobile - wichtig für Polaris Layout.Section */
+  .popup-form-wrapper > div,
+  .popup-preview-wrapper > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+  
+  /* Polaris Layout.Section direkt ansprechen */
+  .popup-form-wrapper .Polaris-Layout__Section,
+  .popup-preview-wrapper .Polaris-Layout__Section {
+    width: 100% !important;
+    max-width: 100% !important;
+    flex: 1 1 100% !important;
+  }
+  
+  /* Polaris Card auf Mobile full width */
+  .popup-form-wrapper .Polaris-Card,
+  .popup-preview-wrapper .Polaris-Card {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
+  
+  .popup-preview-sticky-container {
+    position: relative !important;
+    top: 0 !important;
+    max-height: none;
+    overflow-y: visible;
+    width: 100% !important;
+    left: auto !important;
+  }
+  
+  .urgify-popup-preview {
+    padding: 16px;
+  }
+  
+  .urgify-popup-preview h3 {
+    font-size: 18px;
+  }
+  
+  .urgify-popup-preview p {
+    font-size: 14px;
+  }
+  
+  .urgify-popup-cta-preview {
+    padding: 10px 20px;
+    font-size: 14px;
+  }
 }
 

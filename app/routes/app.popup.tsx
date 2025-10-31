@@ -632,6 +632,7 @@ export default function PopupSettings() {
   const [toastActive, setToastActive] = useState(false);
   const [toastMessage, setToastMessage] = useState("Settings saved successfully!");
   const [isSaving, setIsSaving] = useState(false);
+  
 
   // Update local state when loader data changes
   useEffect(() => {
@@ -878,20 +879,13 @@ export default function PopupSettings() {
     };
 
     return (
-      <div style={{ 
-        padding: '20px', 
-        border: '1px solid #e1e3e5', 
-        borderRadius: '8px',
-        backgroundColor: '#f6f6f7',
-        marginTop: '10px'
-      }}>
-        <Text variant="headingSm" as="h3">
-          Preview:
+      <BlockStack gap="400">
+        <Text variant="headingMd" as="h2">
+          Preview
         </Text>
         <div style={{
           position: 'relative',
-          maxWidth: '500px',
-          margin: '20px auto',
+          width: '100%',
           borderRadius: '8px',
           overflow: 'hidden',
           backgroundColor: overlayColor,
@@ -930,7 +924,7 @@ export default function PopupSettings() {
             )}
           </div>
         </div>
-      </div>
+      </BlockStack>
     );
   };
 
@@ -946,16 +940,15 @@ export default function PopupSettings() {
     <Frame>
       <Page>
         <Layout>
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="400">
-                <Text variant="headingMd" as="h2">
-                  PopUp Settings
-                </Text>
-                
-                <PopupPreview />
-                
-                <FormLayout>
+          <div className="popup-form-wrapper">
+            <Layout.Section variant="oneHalf">
+              <Card>
+                <BlockStack gap="400">
+                  <Text variant="headingMd" as="h2">
+                    PopUp Settings
+                  </Text>
+                  
+                  <FormLayout>
                   <Checkbox
                     label="Enable PopUp"
                     checked={enabled}
@@ -1272,10 +1265,20 @@ export default function PopupSettings() {
                       </InlineStack>
                     </>
                   )}
-                </FormLayout>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
+                  </FormLayout>
+                </BlockStack>
+              </Card>
+            </Layout.Section>
+          </div>
+          <div className="popup-preview-wrapper">
+            <Layout.Section variant="oneHalf">
+              <div className="popup-preview-sticky-container">
+                <Card>
+                  <PopupPreview />
+                </Card>
+              </div>
+            </Layout.Section>
+          </div>
         </Layout>
         
         {isDirty && (

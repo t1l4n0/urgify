@@ -126,7 +126,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       },
     });
 
-    const stagedUploadData = await stagedUploadResponse.json();
+    const stagedUploadData = await stagedUploadResponse.json() as {
+      errors?: Array<{ message: string }>;
+      data?: {
+        stagedUploadsCreate?: {
+          userErrors?: Array<{ message: string }>;
+          stagedTargets?: Array<{ url: string; resourceUrl: string; parameters: Array<{ name: string; value: string }> }>;
+        };
+      };
+    };
     
     if (stagedUploadData.errors) {
       console.error("GraphQL errors:", stagedUploadData.errors);
@@ -204,7 +212,15 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       },
     });
 
-    const fileCreateData = await fileCreateResponse.json();
+    const fileCreateData = await fileCreateResponse.json() as {
+      errors?: Array<{ message: string }>;
+      data?: {
+        fileCreate?: {
+          userErrors?: Array<{ message: string }>;
+          files?: Array<{ id: string; fileStatus: string; image?: { url: string; width: number; height: number } }>;
+        };
+      };
+    };
     
     if (fileCreateData.errors) {
       console.error("GraphQL errors:", fileCreateData.errors);

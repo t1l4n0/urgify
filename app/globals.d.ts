@@ -22,6 +22,19 @@ declare global {
       }, HTMLElement>;
       's-paragraph': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
       's-box': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+      's-button': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
+        href?: string;
+        variant?: 'primary' | 'secondary' | 'tertiary';
+        target?: string;
+      }, HTMLElement>;
+      's-page': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
+        heading?: string;
+      }, HTMLElement>;
+      's-section': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+      's-banner': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
+        tone?: 'critical' | 'warning' | 'success' | 'info';
+        heading?: string;
+      }, HTMLElement>;
     }
   }
 }

@@ -2,22 +2,7 @@ import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-r
 import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
 import { BillingManager, BILLING_CONFIG, formatPrice } from "../utils/billing";
-import {
-  Page,
-  Layout,
-  Card,
-  Text,
-  Button,
-  Badge,
-  BlockStack,
-  InlineStack,
-  List,
-  Banner,
-  ProgressBar,
-  Modal,
-  FormLayout,
-  RadioButton,
-} from "@shopify/polaris";
+// Polaris Web Components - no imports needed, components are global
 import { useState, useCallback } from "react";
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
@@ -149,189 +134,216 @@ export default function BillingDashboard() {
   };
 
   return (
-    <Page title="Billing Dashboard" subtitle={`Shop: ${shop}`}>
-      <Layout>
-        <Layout.Section>
-          <BlockStack gap="500">
-            {/* Current Subscription Status */}
-            <Card>
-              <BlockStack gap="400">
-                <Text as="h2" variant="headingMd">Current Subscription</Text>
+    <s-page heading="Billing Dashboard">
+      <s-section>
+        <s-stack gap="base" direction="block">
+          {/* Current Subscription Status */}
+          <s-section heading="Current Subscription">
+            {subscriptionStatus.hasActiveSubscription && subscriptionStatus.subscription ? (
+              <s-stack gap="base" direction="block">
+                <s-stack gap="base" direction="inline" justifyContent="space-between">
+                  <s-paragraph type="strong">
+                    {subscriptionStatus.subscription.name}
+                  </s-paragraph>
+                  <s-badge tone={getStatusColor(subscriptionStatus.subscription.status) as any}>
+                    {getStatusText(subscriptionStatus.subscription.status)}
+                  </s-badge>
+                </s-stack>
                 
-                {subscriptionStatus.hasActiveSubscription && subscriptionStatus.subscription ? (
-                  <BlockStack gap="300">
-                    <InlineStack gap="400" align="space-between">
-                      <Text as="p" variant="bodyMd" fontWeight="semibold">
-                        {subscriptionStatus.subscription.name}
-                      </Text>
-                      <Badge tone={getStatusColor(subscriptionStatus.subscription.status) as any}>
-                        {getStatusText(subscriptionStatus.subscription.status)}
-                      </Badge>
-                    </InlineStack>
-                    
-                    <InlineStack gap="400" align="space-between">
-                      <Text as="p" variant="bodyMd">
-                        {formatPrice(subscriptionStatus.subscription.price, subscriptionStatus.subscription.currency)}
-                        /{subscriptionStatus.subscription.interval}
-                      </Text>
-                      <Text as="p" variant="bodyMd" tone="subdued">
-                        Next billing: {new Date(subscriptionStatus.subscription.currentPeriodEnd).toLocaleDateString()}
-                      </Text>
-                    </InlineStack>
+                <s-stack gap="base" direction="inline" justifyContent="space-between">
+                  <s-paragraph>
+                    {formatPrice(subscriptionStatus.subscription.price, subscriptionStatus.subscription.currency)}
+                    /{subscriptionStatus.subscription.interval}
+                  </s-paragraph>
+                  <s-paragraph color="subdued">
+                    Next billing: {new Date(subscriptionStatus.subscription.currentPeriodEnd).toLocaleDateString()}
+                  </s-paragraph>
+                </s-stack>
 
-                    {/* Trial Status */}
-                    {subscriptionStatus.isTrialActive && subscriptionStatus.daysUntilTrialEnds && (
-                      <BlockStack gap="200">
-                        <Text as="p" variant="bodyMd" tone="caution">
-                          Trial ends in {subscriptionStatus.daysUntilTrialEnds} days
-                        </Text>
-                        <ProgressBar 
-                          progress={Math.max(0, 100 - (subscriptionStatus.daysUntilTrialEnds / BILLING_CONFIG.TRIAL_DAYS) * 100)} 
-                          size="small" 
-                        />
-                      </BlockStack>
-                    )}
-
-                    {/* Cancel Button */}
-                    <Button 
-                      variant="tertiary" 
-                      tone="critical"
-                      onClick={() => setShowCancelModal(true)}
-                    >
-                      Cancel Subscription
-                    </Button>
-                  </BlockStack>
-                ) : (
-                  <BlockStack gap="300">
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      No active subscription
-                    </Text>
-                    
-                    {isEligibleForTrial && (
-                      <Banner tone="info">
-                        You're eligible for a {BILLING_CONFIG.TRIAL_DAYS}-day free trial!
-                      </Banner>
-                    )}
-                    
-                    <Button 
-                      variant="primary" 
-                      onClick={() => setShowPlanModal(true)}
-                    >
-                      Choose a Plan
-                    </Button>
-                  </BlockStack>
+                {/* Trial Status */}
+                {subscriptionStatus.isTrialActive && subscriptionStatus.daysUntilTrialEnds && (
+                  <s-stack gap="base" direction="block">
+                    <s-paragraph tone="caution">
+                      Trial ends in {subscriptionStatus.daysUntilTrialEnds} days
+                    </s-paragraph>
+                    {/* ProgressBar wird durch s-box mit CSS ersetzt */}
+                    <s-box 
+                      background="subdued" 
+                      padding="base"
+                      style={{
+                        width: `${Math.max(0, 100 - (subscriptionStatus.daysUntilTrialEnds / BILLING_CONFIG.TRIAL_DAYS) * 100)}%`,
+                        height: '8px',
+                        borderRadius: '4px',
+                        backgroundColor: 'var(--p-color-bg-success)'
+                      }}
+                    />
+                  </s-stack>
                 )}
-              </BlockStack>
-            </Card>
 
-            {/* Available Plans */}
-            <Card>
-              <BlockStack gap="400">
-                <Text as="h2" variant="headingMd">Available Plans</Text>
+                {/* Cancel Button */}
+                <s-button 
+                  variant="tertiary" 
+                  tone="critical"
+                  commandFor="cancel-subscription-modal"
+                  command="--show"
+                  onClick={() => setShowCancelModal(true)}
+                >
+                  Cancel Subscription
+                </s-button>
+              </s-stack>
+            ) : (
+              <s-stack gap="base" direction="block">
+                <s-paragraph color="subdued">
+                  No active subscription
+                </s-paragraph>
                 
-                <BlockStack gap="300">
-                  {Object.values(plans).map((plan) => (
-                    <Card key={plan.id}>
-                      <BlockStack gap="300">
-                        <InlineStack gap="400" align="space-between">
-                          <BlockStack gap="100">
-                            <Text as="h3" variant="headingSm">{plan.name}</Text>
-                            <Text as="h2" variant="headingLg">
-                              {formatPrice(plan.price, plan.currency)}
-                              <Text as="span" variant="bodyMd" tone="subdued">/{plan.interval}</Text>
-                            </Text>
-                          </BlockStack>
-                          
-                          {!subscriptionStatus.hasActiveSubscription && (
-                            <Button 
-                              variant="primary" 
-                              onClick={() => {
-                                setSelectedPlan(plan.id);
-                                setShowPlanModal(true);
-                              }}
-                            >
-                              Select Plan
-                            </Button>
-                          )}
-                        </InlineStack>
-                        
-                        <List>
-                          {plan.features.map((feature, index) => (
-                            <List.Item key={index}>{feature}</List.Item>
-                          ))}
-                        </List>
-                      </BlockStack>
-                    </Card>
-                  ))}
-                </BlockStack>
-              </BlockStack>
-            </Card>
-
-            {/* Error Banner */}
-            {(fetcher.data as any)?.error && (
-              <Banner tone="critical">
-                {(fetcher.data as any).error}
-              </Banner>
+                {isEligibleForTrial && (
+                  <s-banner tone="info" heading="Trial Available">
+                    You're eligible for a {BILLING_CONFIG.TRIAL_DAYS}-day free trial!
+                  </s-banner>
+                )}
+                
+                <s-button 
+                  variant="primary" 
+                  commandFor="plan-selection-modal"
+                  command="--show"
+                  onClick={() => setShowPlanModal(true)}
+                >
+                  Choose a Plan
+                </s-button>
+              </s-stack>
             )}
-          </BlockStack>
-        </Layout.Section>
-      </Layout>
+          </s-section>
+
+          {/* Available Plans */}
+          <s-section heading="Available Plans">
+            <s-stack gap="base" direction="block">
+              {Object.values(plans).map((plan) => (
+                <s-section key={plan.id} heading={plan.name}>
+                  <s-stack gap="base" direction="block">
+                    <s-stack gap="base" direction="inline" justifyContent="space-between">
+                      <s-stack gap="base" direction="block">
+                        <s-heading level="2">{plan.name}</s-heading>
+                        <s-heading level="1">
+                          {formatPrice(plan.price, plan.currency)}
+                          <s-text color="subdued">/{plan.interval}</s-text>
+                        </s-heading>
+                      </s-stack>
+                      
+                      {!subscriptionStatus.hasActiveSubscription && (
+                  <s-button 
+                  variant="primary" 
+                  commandFor="plan-selection-modal"
+                  command="--show"
+                  onClick={() => {
+                    setSelectedPlan(plan.id);
+                    setShowPlanModal(true);
+                  }}
+                >
+                  Select Plan
+                </s-button>
+                      )}
+                    </s-stack>
+                    
+                    <s-unordered-list>
+                      {plan.features.map((feature, index) => (
+                        <s-unordered-list-item key={index}>{feature}</s-unordered-list-item>
+                      ))}
+                    </s-unordered-list>
+                  </s-stack>
+                </s-section>
+              ))}
+            </s-stack>
+          </s-section>
+
+          {/* Error Banner */}
+          {(fetcher.data as any)?.error && (
+            <s-banner tone="critical" heading="Error">
+              {(fetcher.data as any).error}
+            </s-banner>
+          )}
+        </s-stack>
+      </s-section>
 
       {/* Plan Selection Modal */}
-      <Modal
-        open={showPlanModal}
-        onClose={() => setShowPlanModal(false)}
-        title="Select a Plan"
-        primaryAction={{
-          content: "Subscribe",
-          onAction: handleSubscribe,
-          disabled: !selectedPlan || fetcher.state === "submitting"
-        }}
-        secondaryActions={[
-          {
-            content: "Cancel",
-            onAction: () => setShowPlanModal(false)
-          }
-        ]}
-      >
-        <Modal.Section>
-          <FormLayout>
+      {showPlanModal && (
+        <s-modal 
+          id="plan-selection-modal"
+          heading="Select a Plan"
+        >
+          <s-choice-list
+            label="Select a Plan"
+            values={selectedPlan ? [selectedPlan] : []}
+            onChange={(e) => {
+              const values = (e.currentTarget as any).values || [];
+              if (values.length > 0) {
+                handlePlanSelect(values[0]);
+              }
+            }}
+          >
             {Object.values(plans).map((plan) => (
-              <RadioButton
-                key={plan.id}
-                label={`${plan.name} - ${formatPrice(plan.price, plan.currency)}/${plan.interval}`}
-                checked={selectedPlan === plan.id}
-                onChange={() => handlePlanSelect(plan.id)}
-              />
+              <s-choice key={plan.id} value={plan.id} selected={selectedPlan === plan.id}>
+                {plan.name} - {formatPrice(plan.price, plan.currency)}/{plan.interval}
+              </s-choice>
             ))}
-          </FormLayout>
-        </Modal.Section>
-      </Modal>
+          </s-choice-list>
+          <s-button 
+            variant="primary" 
+            onClick={async () => {
+              await handleSubscribe();
+              setShowPlanModal(false);
+            }}
+            disabled={!selectedPlan || fetcher.state === "submitting"}
+            slot="primary-action"
+            commandFor="plan-selection-modal"
+            command="--hide"
+          >
+            Subscribe
+          </s-button>
+          <s-button 
+            onClick={() => setShowPlanModal(false)}
+            slot="secondary-actions"
+            commandFor="plan-selection-modal"
+            command="--hide"
+          >
+            Cancel
+          </s-button>
+        </s-modal>
+      )}
 
       {/* Cancel Subscription Modal */}
-      <Modal
-        open={showCancelModal}
-        onClose={() => setShowCancelModal(false)}
-        title="Cancel Subscription"
-        primaryAction={{
-          content: "Yes, Cancel",
-          onAction: handleCancel,
-          destructive: true,
-          disabled: fetcher.state === "submitting"
-        }}
-        secondaryActions={[
-          {
-            content: "Keep Subscription",
-            onAction: () => setShowCancelModal(false)
-          }
-        ]}
-      >
-        <Modal.Section>
-          <Text as="p" variant="bodyMd">
+      {showCancelModal && (
+        <s-modal 
+          id="cancel-subscription-modal"
+          heading="Cancel Subscription"
+        >
+          <s-paragraph>
             Are you sure you want to cancel your subscription? You'll lose access to all premium features.
-          </Text>
-        </Modal.Section>
-      </Modal>
-    </Page>
+          </s-paragraph>
+          <s-button 
+            variant="primary" 
+            tone="critical"
+            onClick={async () => {
+              await handleCancel();
+              setShowCancelModal(false);
+            }}
+            disabled={fetcher.state === "submitting"}
+            slot="primary-action"
+            commandFor="cancel-subscription-modal"
+            command="--hide"
+          >
+            Yes, Cancel
+          </s-button>
+          <s-button 
+            onClick={() => setShowCancelModal(false)}
+            slot="secondary-actions"
+            commandFor="cancel-subscription-modal"
+            command="--hide"
+          >
+            Keep Subscription
+          </s-button>
+        </s-modal>
+      )}
+    </s-page>
   );
 }

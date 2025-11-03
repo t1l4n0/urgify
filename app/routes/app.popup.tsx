@@ -5,23 +5,7 @@ import { BillingManager } from "../utils/billing";
 import { z } from "zod";
 import { shouldRateLimit, checkShopifyRateLimit } from "../utils/rateLimiting";
 import { validateSessionToken } from "../utils/sessionToken";
-import {
-  Frame,
-  Card,
-  Page,
-  Layout,
-  Text,
-  BlockStack,
-  Select,
-  TextField,
-  FormLayout,
-  Checkbox,
-  Toast,
-  ContextualSaveBar,
-  InlineStack,
-  Button,
-  ChoiceList,
-} from "@shopify/polaris";
+// Polaris Web Components - no imports needed, components are global
 import { useState, useCallback, useEffect } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import popupPreviewStyles from "../styles/popup-preview.css?url";
@@ -265,7 +249,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       triggerType: rawSettings.trigger_type || rawSettings.triggerType || 'delay',
       delaySeconds: rawSettings.delay_seconds || rawSettings.delaySeconds || 3,
       cookieDays: rawSettings.cookie_days || rawSettings.cookieDays || 7,
-      enableNewsletter: rawSettings.enable_newsletter || rawSettings.enableNewsletter || false,
+      enableNewsletter: rawSettings.enable_newsletter === true || 
+                        rawSettings.enable_newsletter === 'true' || 
+                        rawSettings.enableNewsletter === true || 
+                        rawSettings.enableNewsletter === 'true' || 
+                        false,
       discountCodeId: rawSettings.discount_code_id || rawSettings.discountCodeId || '',
       discountCode: rawSettings.discount_code || rawSettings.discountCode || '',
     };
@@ -305,7 +293,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           triggerType: 'delay',
           delaySeconds: 3,
           cookieDays: 7,
-          enableNewsletter: false,
+          enableNewsletter: Boolean(false),
           discountCodeId: '',
           discountCode: '',
         },
@@ -632,6 +620,18 @@ export default function PopupSettings() {
   const [toastActive, setToastActive] = useState(false);
   const [toastMessage, setToastMessage] = useState("Settings saved successfully!");
   const [isSaving, setIsSaving] = useState(false);
+
+  // Auto-dismiss toast after 3 seconds
+  useEffect(() => {
+    if (toastActive) {
+      const timer = setTimeout(() => {
+        setToastActive(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastActive]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   
 
   // Update local state when loader data changes
@@ -680,6 +680,18 @@ export default function PopupSettings() {
     setEnableNewsletter(Boolean(settings.enableNewsletter || false));
     setDiscountCodeId(String(settings.discountCodeId || ''));
   }, [settings]);
+
+  // Control save bar visibility programmatically
+  useEffect(() => {
+    const saveBar = document.getElementById('popup-save-bar') as any;
+    if (saveBar) {
+      if (isDirty) {
+        saveBar.show();
+      } else {
+        saveBar.hide();
+      }
+    }
+  }, [isDirty]);
 
   const handleEnabledChange = useCallback((checked: boolean) => {
     setEnabled(checked);
@@ -736,6 +748,84 @@ export default function PopupSettings() {
       handleOpenResourcePicker(ctaUrlType);
     }
   }, [ctaUrlType, handleOpenResourcePicker]);
+
+  const handleImageUpload = useCallback(async (event: any) => {
+    const dropZone = event.currentTarget as any;
+    const files = dropZone.files || [];
+    const file = files[0];
+    
+    if (!file) {
+      return;
+    }
+
+    // Validate file type
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validImageTypes.includes(file.type)) {
+      setUploadError("Invalid file type. Only images are allowed.");
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      setUploadError("File size exceeds maximum limit of 10MB");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      // Get session token
+      const appBridge = shopify as any;
+      let token: string | null = null;
+      try {
+        token = await appBridge.idToken();
+        if (!token) {
+          token = sessionStorage.getItem('shopify_session_token');
+        }
+      } catch (error) {
+        token = sessionStorage.getItem('shopify_session_token');
+      }
+
+      if (!token) {
+        throw new Error('Session token not available. Please refresh the page.');
+      }
+
+      // Upload file
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await authenticatedFetch("/api/upload-image", {
+        method: "POST",
+        body: formData,
+        sessionToken: token,
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({} as any));
+        throw new Error(data?.error || `Upload failed (${response.status})`);
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.imageUrl) {
+        setImageUrl(data.imageUrl);
+        setIsDirty(true);
+        setUploadError(null);
+        setToastMessage("Image uploaded successfully!");
+        setToastActive(true);
+      } else {
+        throw new Error(data.error || "Upload failed");
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      const message = error instanceof Error ? error.message : "Failed to upload image";
+      setUploadError(message);
+    } finally {
+      setIsUploading(false);
+    }
+  }, [shopify]);
 
   const handleSaveSettings = useCallback(async () => {
     const selectedDiscount = discountCodes.find(dc => dc.id === discountCodeId);
@@ -831,6 +921,9 @@ export default function PopupSettings() {
 
   // Preview component
   const PopupPreview = () => {
+    // Debug: Log the enableNewsletter value
+    console.log('PopupPreview render - enableNewsletter:', enableNewsletter, typeof enableNewsletter);
+    
     const getPreviewStyles = () => {
       if (style === 'custom') {
         return {
@@ -879,23 +972,12 @@ export default function PopupSettings() {
     };
 
     return (
-      <BlockStack gap="400">
-        <Text variant="headingMd" as="h2">
-          Preview
-        </Text>
-        <div style={{
-          position: 'relative',
-          width: '100%',
-          borderRadius: '8px',
-          overflow: 'hidden',
-          backgroundColor: overlayColor,
-          padding: '20px',
-          minHeight: '200px',
-        }}>
-          <div 
-            className={`urgify-popup-preview urgify-popup-preview--${style}`}
-            style={getPreviewStyles()}
-          >
+      <s-stack gap="base" direction="block">
+        <s-heading>Preview</s-heading>
+        <div 
+          className={`urgify-popup-preview urgify-popup-preview--${style}`}
+          style={getPreviewStyles()}
+        >
             {imageUrl && (
               <img 
                 src={imageUrl} 
@@ -912,416 +994,527 @@ export default function PopupSettings() {
                 {description}
               </p>
             )}
-            {ctaText && (
-              <button 
-                type="button"
-                className="urgify-popup-cta-preview"
-                style={getCtaStyles()}
-                onClick={(e) => e.preventDefault()}
+            {Boolean(enableNewsletter) ? (
+              <div 
+                className="urgify-popup-newsletter-container" 
+                style={{ 
+                  display: 'block', 
+                  width: '100%',
+                  marginTop: '20px',
+                  visibility: 'visible',
+                  opacity: 1
+                }}
               >
-                {ctaText}
-              </button>
+                <div 
+                  className="urgify-popup-newsletter-input-group" 
+                  style={{ 
+                    display: 'flex', 
+                    gap: '12px', 
+                    width: '100%', 
+                    alignItems: 'center',
+                    visibility: 'visible',
+                    opacity: 1
+                  }}
+                >
+                  <input 
+                    type="email" 
+                    className="urgify-popup-newsletter-email"
+                    placeholder="Enter your email"
+                    disabled
+                    style={{ 
+                      flex: 1,
+                      padding: '12px 16px',
+                      border: '2px solid #e0e0e0',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      backgroundColor: '#fff',
+                      color: '#333',
+                      minWidth: 0
+                    }}
+                  />
+                  <button 
+                    type="button"
+                    className="urgify-popup-newsletter-submit"
+                    style={{ 
+                      ...getCtaStyles(), 
+                      flexShrink: 0,
+                      padding: '12px 24px',
+                      borderRadius: '8px',
+                      fontSize: '16px',
+                      fontWeight: 600,
+                      border: 'none',
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                      backgroundColor: style === 'custom' ? ctaBackgroundColor : '#007bff',
+                      color: style === 'custom' ? ctaTextColor : '#ffffff'
+                    }}
+                    onClick={(e) => e.preventDefault()}
+                    disabled
+                  >
+                    Subscribe
+                  </button>
+                </div>
+                {discountCodeId && (
+                  <div 
+                    className="urgify-popup-discount-container" 
+                    style={{ 
+                      marginTop: '12px', 
+                      padding: '12px', 
+                      backgroundColor: 'rgba(0, 123, 255, 0.1)', 
+                      borderRadius: '8px', 
+                      fontSize: '14px', 
+                      display: 'block',
+                      visibility: 'visible',
+                      opacity: 1
+                    }}
+                  >
+                    Discount code will be shown after signup
+                  </div>
+                )}
+              </div>
+            ) : (
+              ctaText && (
+                <button 
+                  type="button"
+                  className="urgify-popup-cta-preview"
+                  style={getCtaStyles()}
+                  onClick={(e) => e.preventDefault()}
+                >
+                  {ctaText}
+                </button>
+              )
             )}
           </div>
-        </div>
-      </BlockStack>
+      </s-stack>
     );
   };
 
-  const toastMarkup = toastActive ? (
-    <Toast
-      content={toastMessage}
-      duration={4000}
-      onDismiss={() => setToastActive(false)}
-    />
-  ) : null;
-
   return (
-    <Frame>
-      <Page>
-        <Layout>
-          <div className="popup-form-wrapper">
-            <Layout.Section variant="oneHalf">
-              <Card>
-                <BlockStack gap="400">
-                  <Text variant="headingMd" as="h2">
-                    PopUp Settings
-                  </Text>
-                  
-                  <FormLayout>
-                  <Checkbox
+    <s-page heading="PopUp Settings">
+      <s-grid gap="base" gridTemplateColumns="repeat(2, 1fr)">
+        <s-section heading="PopUp Settings">
+          <s-stack gap="base" direction="block">
+                  <s-checkbox
                     label="Enable PopUp"
                     checked={enabled}
-                    onChange={handleEnabledChange}
+                    onChange={(e) => handleEnabledChange(e.currentTarget.checked)}
                   />
                   
-                  <TextField
+                  <s-text-field
                     label="Title"
                     value={title}
-                    onChange={(value) => {
-                      setTitle(value);
+                    onChange={(e) => {
+                      setTitle(e.currentTarget.value);
                       setIsDirty(true);
                     }}
-                    autoComplete="off"
+                    autocomplete="off"
                   />
                   
-                  <TextField
+                  <s-text-area
                     label="Description"
                     value={description}
-                    onChange={(value) => {
-                      setDescription(value);
+                    onChange={(e) => {
+                      setDescription(e.currentTarget.value);
                       setIsDirty(true);
                     }}
-                    multiline={3}
-                    autoComplete="off"
+                    rows={3}
                   />
                   
-                  <Text variant="headingSm" as="h3">
-                    CTA Button or Newsletter Signup
-                  </Text>
-                  <Text as="p" variant="bodyMd" tone="subdued">
-                    Choose one: a CTA button with a link <Text as="span" fontWeight="bold">or</Text> a newsletter signup form. You can't use both.
-                  </Text>
+                  <s-heading level="2">CTA Button or Newsletter Signup</s-heading>
+                  <s-paragraph color="subdued">
+                    Choose one: a CTA button with a link <strong>or</strong> a newsletter signup form. You can't use both.
+                  </s-paragraph>
                   
-                  <ChoiceList
-                    title="Select type"
-                    choices={[
-                      {
-                        label: "CTA Button (Link)",
-                        value: "cta",
-                        helpText: "Shows a button with a configurable link",
-                      },
-                      {
-                        label: "Newsletter Signup (Email field)",
-                        value: "newsletter",
-                        helpText: "Shows an email input field for newsletter subscription",
-                      },
-                    ]}
-                    selected={enableNewsletter ? ["newsletter"] : ["cta"]}
-                    onChange={(value) => {
-                      const newValue = value[0] === "newsletter";
+                  <s-choice-list
+                    label="Select type"
+                    values={enableNewsletter ? ["newsletter"] : ["cta"]}
+                    onChange={(e) => {
+                      const values = (e.currentTarget as any).values || [];
+                      const newValue = Array.isArray(values) && values.length > 0 && values[0] === "newsletter";
+                      console.log('Newsletter selection changed:', { values, newValue, enableNewsletter });
                       setEnableNewsletter(newValue);
                       setIsDirty(true);
                     }}
-                  />
+                  >
+                    <s-choice value="cta" selected={!enableNewsletter}>
+                      CTA Button (Link)
+                      <s-text slot="details">Shows a button with a configurable link</s-text>
+                    </s-choice>
+                    <s-choice value="newsletter" selected={enableNewsletter}>
+                      Newsletter Signup (Email field)
+                      <s-text slot="details">Shows an email input field for newsletter subscription</s-text>
+                    </s-choice>
+                  </s-choice-list>
                   
                   {!enableNewsletter ? (
-                    <BlockStack gap="300">
-                      <TextField
+                    <s-stack gap="base" direction="block">
+                      <s-text-field
                         label="CTA Text"
                         value={ctaText}
-                        onChange={(value) => {
-                          setCtaText(value);
+                        onChange={(e) => {
+                          setCtaText(e.currentTarget.value);
                           setIsDirty(true);
                         }}
-                        autoComplete="off"
-                        helpText="Button text for the call-to-action"
+                        autocomplete="off"
+                        details="Button text for the call-to-action"
                       />
                       
-                      <Select
+                      <s-select
                         label="Link type"
-                        options={[
-                          { label: 'Collection', value: 'collection' },
-                          { label: 'Product', value: 'product' },
-                          { label: 'Page', value: 'page' },
-                          { label: 'Blog', value: 'blog' },
-                          { label: 'Blog post', value: 'article' },
-                          { label: 'Policy', value: 'policy' },
-                          { label: 'External link', value: 'external' },
-                        ]}
                         value={ctaUrlType}
-                        onChange={handleCtaUrlTypeChange}
-                      />
+                        onChange={(e) => handleCtaUrlTypeChange(e.currentTarget.value)}
+                      >
+                        <s-option value="collection">Collection</s-option>
+                        <s-option value="product">Product</s-option>
+                        <s-option value="page">Page</s-option>
+                        <s-option value="blog">Blog</s-option>
+                        <s-option value="article">Blog post</s-option>
+                        <s-option value="policy">Policy</s-option>
+                        <s-option value="external">External link</s-option>
+                      </s-select>
                       {ctaUrlType === 'external' && (
-                        <TextField
+                        <s-url-field
                           label="CTA URL"
                           value={ctaUrl}
-                          onChange={(value) => {
-                            setCtaUrl(value);
+                          onChange={(e) => {
+                            setCtaUrl(e.currentTarget.value);
                             setIsDirty(true);
                           }}
-                          autoComplete="off"
-                          helpText="Enter external URL (e.g., https://example.com)"
+                          autocomplete="off"
+                          details="Enter external URL (e.g., https://example.com)"
                         />
                       )}
                       {(ctaUrlType === 'product' || ctaUrlType === 'collection') && (
-                        <Button
+                        <s-button
                           onClick={handleBrowseButtonClick}
                           variant="secondary"
-                          size="medium"
                         >
                           Browse {ctaUrlType === 'product' ? 'products' : 'collections'}
-                        </Button>
+                        </s-button>
                       )}
-                    </BlockStack>
+                    </s-stack>
                   ) : null}
                   
                   {enableNewsletter && (
-                    <Select
+                    <s-select
                       label="Discount Code"
-                      options={[
-                        { label: "No discount", value: "" },
-                        ...discountCodes.map(dc => ({
-                          label: `${dc.title} (${dc.code})`,
-                          value: dc.id
-                        }))
-                      ]}
                       value={discountCodeId}
-                      onChange={(value) => {
-                        setDiscountCodeId(value);
+                      onChange={(e) => {
+                        setDiscountCodeId(e.currentTarget.value);
                         setIsDirty(true);
                       }}
-                      helpText="Select a discount code to show after newsletter signup"
-                    />
+                      details="Select a discount code to show after newsletter signup"
+                    >
+                      <s-option value="">No discount</s-option>
+                      {discountCodes.map(dc => (
+                        <s-option key={dc.id} value={dc.id}>
+                          {dc.title} ({dc.code})
+                        </s-option>
+                      ))}
+                    </s-select>
                   )}
                   
-                  <TextField
-                    label="Image URL"
-                    value={imageUrl}
-                    onChange={(value) => {
-                      setImageUrl(value);
-                      setIsDirty(true);
-                    }}
-                    autoComplete="off"
-                    helpText="URL of the image to display"
-                  />
+                  <s-drop-zone
+                    label="Upload Image"
+                    accept="image/*"
+                    accessibilityLabel="Upload an image file for the popup"
+                    onChange={handleImageUpload as any}
+                    onInput={handleImageUpload as any}
+                    disabled={isUploading}
+                    error={uploadError || undefined}
+                  >
+                    {imageUrl && (
+                      <div style={{ marginTop: '12px' }}>
+                        <s-image
+                          src={imageUrl}
+                          alt="Uploaded image preview"
+                          inlineSize="auto"
+                          borderRadius="base"
+                          style={{ maxWidth: '200px', maxHeight: '200px' }}
+                        />
+                        <s-button
+                          variant="tertiary"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setImageUrl('');
+                            setIsDirty(true);
+                            setUploadError(null);
+                          }}
+                          style={{ marginTop: '8px' }}
+                        >
+                          Remove Image
+                        </s-button>
+                      </div>
+                    )}
+                  </s-drop-zone>
                   
-                  <Select
+                  <s-select
                     label="Style"
-                    options={[
-                      { label: "Spectacular", value: "spectacular" },
-                      { label: "Brutalist", value: "brutalist" },
-                      { label: "Glassmorphism", value: "glassmorphism" },
-                      { label: "Neumorphism", value: "neumorphism" },
-                      { label: "Minimal", value: "minimal" },
-                      { label: "Custom", value: "custom" },
-                    ]}
                     value={style}
-                    onChange={(value) => {
-                      setStyle(value);
+                    onChange={(e) => {
+                      setStyle(e.currentTarget.value);
                       setIsDirty(true);
                     }}
-                  />
+                  >
+                    <s-option value="spectacular">Spectacular</s-option>
+                    <s-option value="brutalist">Brutalist</s-option>
+                    <s-option value="glassmorphism">Glassmorphism</s-option>
+                    <s-option value="neumorphism">Neumorphism</s-option>
+                    <s-option value="minimal">Minimal</s-option>
+                    <s-option value="custom">Custom</s-option>
+                  </s-select>
                   
-                  <Select
+                  <s-select
                     label="Placement"
-                    options={[
-                      { label: "All Pages", value: "all" },
-                      { label: "Homepage Only", value: "homepage" },
-                      { label: "Product Pages Only", value: "products" },
-                    ]}
                     value={placement}
-                    onChange={(value) => {
-                      setPlacement(value);
+                    onChange={(e) => {
+                      setPlacement(e.currentTarget.value);
                       setIsDirty(true);
                     }}
-                  />
+                  >
+                    <s-option value="all">All Pages</s-option>
+                    <s-option value="homepage">Homepage Only</s-option>
+                    <s-option value="products">Product Pages Only</s-option>
+                  </s-select>
                   
-                  <Select
+                  <s-select
                     label="Position"
-                    options={[
-                      { label: "Top Left", value: "top-left" },
-                      { label: "Top Center", value: "top-center" },
-                      { label: "Top Right", value: "top-right" },
-                      { label: "Middle Left", value: "middle-left" },
-                      { label: "Middle Center", value: "middle-center" },
-                      { label: "Middle Right", value: "middle-right" },
-                      { label: "Bottom Left", value: "bottom-left" },
-                      { label: "Bottom Center", value: "bottom-center" },
-                      { label: "Bottom Right", value: "bottom-right" },
-                    ]}
                     value={position}
-                    onChange={(value) => {
-                      setPosition(value);
+                    onChange={(e) => {
+                      setPosition(e.currentTarget.value);
                       setIsDirty(true);
                     }}
-                  />
+                  >
+                    <s-option value="top-left">Top Left</s-option>
+                    <s-option value="top-center">Top Center</s-option>
+                    <s-option value="top-right">Top Right</s-option>
+                    <s-option value="middle-left">Middle Left</s-option>
+                    <s-option value="middle-center">Middle Center</s-option>
+                    <s-option value="middle-right">Middle Right</s-option>
+                    <s-option value="bottom-left">Bottom Left</s-option>
+                    <s-option value="bottom-center">Bottom Center</s-option>
+                    <s-option value="bottom-right">Bottom Right</s-option>
+                  </s-select>
                   
-                  <Select
+                  <s-select
                     label="Trigger Type"
-                    options={[
-                      { label: "Immediate", value: "immediate" },
-                      { label: "After Delay", value: "delay" },
-                      { label: "Exit Intent", value: "exit_intent" },
-                      { label: "Always Show", value: "always" },
-                    ]}
                     value={triggerType}
-                    onChange={(value) => {
-                      setTriggerType(value);
+                    onChange={(e) => {
+                      setTriggerType(e.currentTarget.value);
                       setIsDirty(true);
                     }}
-                  />
+                  >
+                    <s-option value="immediate">Immediate</s-option>
+                    <s-option value="delay">After Delay</s-option>
+                    <s-option value="exit_intent">Exit Intent</s-option>
+                    <s-option value="always">Always Show</s-option>
+                  </s-select>
                   
                   {triggerType === 'delay' && (
-                    <TextField
+                    <s-number-field
                       label="Delay (seconds)"
                       value={delaySeconds}
-                      onChange={(value) => {
-                        setDelaySeconds(value);
+                      onChange={(e) => {
+                        setDelaySeconds(e.currentTarget.value);
                         setIsDirty(true);
                       }}
-                      type="number"
-                      autoComplete="off"
                     />
                   )}
                   
-                  <TextField
+                  <s-number-field
                     label="Cookie Duration (days)"
                     value={cookieDays}
-                    onChange={(value) => {
-                      setCookieDays(value);
+                    onChange={(e) => {
+                      setCookieDays(e.currentTarget.value);
                       setIsDirty(true);
                     }}
-                    type="number"
-                    autoComplete="off"
-                    helpText="Days to hide popup after dismissal"
+                    details="Days to hide popup after dismissal"
                   />
                   
                   {style === "custom" && (
                     <>
-                      <Text variant="headingSm" as="h3">Typography</Text>
-                      <InlineStack gap="400">
-                        <TextField
+                      <s-heading level="2">Typography</s-heading>
+                      <s-stack gap="base" direction="inline">
+                        <s-text-field
                           label="Title Font Size"
                           value={titleFontSize}
-                          onChange={(value) => {
-                            setTitleFontSize(value);
+                          onChange={(e) => {
+                            setTitleFontSize(e.currentTarget.value);
                             setIsDirty(true);
                           }}
-                          autoComplete="off"
-                          helpText="e.g., 24px, 1.5rem"
+                          autocomplete="off"
+                          details="e.g., 24px, 1.5rem"
                         />
-                        <TextField
+                        <s-text-field
                           label="Description Font Size"
                           value={descriptionFontSize}
-                          onChange={(value) => {
-                            setDescriptionFontSize(value);
+                          onChange={(e) => {
+                            setDescriptionFontSize(e.currentTarget.value);
                             setIsDirty(true);
                           }}
-                          autoComplete="off"
+                          autocomplete="off"
                         />
-                        <TextField
+                        <s-text-field
                           label="CTA Font Size"
                           value={ctaFontSize}
-                          onChange={(value) => {
-                            setCtaFontSize(value);
+                          onChange={(e) => {
+                            setCtaFontSize(e.currentTarget.value);
                             setIsDirty(true);
                           }}
-                          autoComplete="off"
+                          autocomplete="off"
                         />
-                      </InlineStack>
+                      </s-stack>
                       
-                      <Text variant="headingSm" as="h3">Colors</Text>
-                      <InlineStack gap="400">
-                        <TextField
+                      <s-heading level="2">Colors</s-heading>
+                      <s-stack gap="base" direction="inline">
+                        <s-color-field
                           label="Background Color"
                           value={backgroundColor}
-                          onChange={(value) => {
-                            setBackgroundColor(value);
+                          onChange={(e) => {
+                            setBackgroundColor(e.currentTarget.value);
                             setIsDirty(true);
                           }}
-                          autoComplete="off"
-                          helpText="e.g., #ffffff"
+                          autocomplete="off"
+                          details="e.g., #ffffff"
                         />
-                        <TextField
+                        <s-color-field
                           label="Text Color"
                           value={textColor}
-                          onChange={(value) => {
-                            setTextColor(value);
+                          onChange={(e) => {
+                            setTextColor(e.currentTarget.value);
                             setIsDirty(true);
                           }}
-                          autoComplete="off"
+                          autocomplete="off"
                         />
-                        <TextField
+                        <s-color-field
                           label="Overlay Color"
                           value={overlayColor}
-                          onChange={(value) => {
-                            setOverlayColor(value);
+                          onChange={(e) => {
+                            setOverlayColor(e.currentTarget.value);
                             setIsDirty(true);
                           }}
-                          autoComplete="off"
-                          helpText="e.g., rgba(0, 0, 0, 0.5)"
+                          autocomplete="off"
+                          alpha
+                          details="e.g., rgba(0, 0, 0, 0.5)"
                         />
-                      </InlineStack>
-                      <InlineStack gap="400">
-                        <TextField
+                      </s-stack>
+                      <s-stack gap="base" direction="inline">
+                        <s-color-field
                           label="CTA Background Color"
                           value={ctaBackgroundColor}
-                          onChange={(value) => {
-                            setCtaBackgroundColor(value);
+                          onChange={(e) => {
+                            setCtaBackgroundColor(e.currentTarget.value);
                             setIsDirty(true);
                           }}
-                          autoComplete="off"
+                          autocomplete="off"
                         />
-                        <TextField
+                        <s-color-field
                           label="CTA Text Color"
                           value={ctaTextColor}
-                          onChange={(value) => {
-                            setCtaTextColor(value);
+                          onChange={(e) => {
+                            setCtaTextColor(e.currentTarget.value);
                             setIsDirty(true);
                           }}
-                          autoComplete="off"
+                          autocomplete="off"
                         />
-                      </InlineStack>
+                      </s-stack>
                     </>
                   )}
-                  </FormLayout>
-                </BlockStack>
-              </Card>
-            </Layout.Section>
-          </div>
-          <div className="popup-preview-wrapper">
-            <Layout.Section variant="oneHalf">
-              <div className="popup-preview-sticky-container">
-                <Card>
-                  <PopupPreview />
-                </Card>
-              </div>
-            </Layout.Section>
-          </div>
-        </Layout>
-        
-        {isDirty && (
-          <ContextualSaveBar
-            message="Unsaved changes"
-            saveAction={{
-              onAction: handleSaveSettings,
-                loading: isSaving,
-              content: 'Save',
-            }}
-            discardAction={{
-              onAction: () => {
-                setEnabled(Boolean(settings.enabled));
-                setTitle(String(settings.title || ''));
-                setDescription(String(settings.description || ''));
-                setCtaText(String(settings.ctaText || 'Get Started'));
-                setCtaUrl(String(settings.ctaUrl || '/'));
-                setImageUrl(String(settings.imageUrl || ''));
-                setStyle(String(settings.style || 'spectacular'));
-                setTitleFontSize(String(settings.titleFontSize || '24px'));
-                setDescriptionFontSize(String(settings.descriptionFontSize || '16px'));
-                setCtaFontSize(String(settings.ctaFontSize || '16px'));
-                setBackgroundColor(String(settings.backgroundColor || '#ffffff'));
-                setTextColor(String(settings.textColor || '#000000'));
-                setCtaBackgroundColor(String(settings.ctaBackgroundColor || '#007bff'));
-                setCtaTextColor(String(settings.ctaTextColor || '#ffffff'));
-                setOverlayColor(String(settings.overlayColor || 'rgba(0, 0, 0, 0.5)'));
-                setPlacement(String(settings.placement || 'all'));
-                setPosition(String(settings.position || 'middle-center'));
-                setTriggerType(String(settings.triggerType || 'delay'));
-                setDelaySeconds(String(settings.delaySeconds || 3));
-                setCookieDays(String(settings.cookieDays || 7));
-                setIsDirty(false);
-              },
-              content: 'Discard',
-            }}
-            alignContentFlush
-          />
-        )}
-        
-      </Page>
-      {toastMarkup}
-    </Frame>
+                </s-stack>
+          </s-section>
+          
+          <s-section>
+            <div className="popup-preview-sticky-container">
+              <PopupPreview />
+            </div>
+          </s-section>
+      </s-grid>
+      
+      <ui-save-bar 
+        showing={isDirty}
+        id="popup-save-bar"
+      >
+        <button 
+          variant="primary" 
+          id="popup-save-button"
+          onClick={handleSaveSettings}
+          disabled={isSaving}
+          {...(isSaving ? { loading: true } : {})}
+        >
+          Save
+        </button>
+        <button 
+          id="popup-discard-button"
+          onClick={() => {
+            setEnabled(Boolean(settings.enabled));
+            setTitle(String(settings.title || ''));
+            setDescription(String(settings.description || ''));
+            setCtaText(String(settings.ctaText || 'Get Started'));
+            setCtaUrl(String(settings.ctaUrl || '/'));
+            setImageUrl(String(settings.imageUrl || ''));
+            setStyle(String(settings.style || 'spectacular'));
+            setTitleFontSize(String(settings.titleFontSize || '24px'));
+            setDescriptionFontSize(String(settings.descriptionFontSize || '16px'));
+            setCtaFontSize(String(settings.ctaFontSize || '16px'));
+            setBackgroundColor(String(settings.backgroundColor || '#ffffff'));
+            setTextColor(String(settings.textColor || '#000000'));
+            setCtaBackgroundColor(String(settings.ctaBackgroundColor || '#007bff'));
+            setCtaTextColor(String(settings.ctaTextColor || '#ffffff'));
+            setOverlayColor(String(settings.overlayColor || 'rgba(0, 0, 0, 0.5)'));
+            setPlacement(String(settings.placement || 'all'));
+            setPosition(String(settings.position || 'middle-center'));
+            setTriggerType(String(settings.triggerType || 'delay'));
+            setDelaySeconds(String(settings.delaySeconds || 3));
+            setCookieDays(String(settings.cookieDays || 7));
+            setIsDirty(false);
+          }}
+        >
+          Discard
+        </button>
+      </ui-save-bar>
+      
+      {toastActive && (
+        <div
+          className="urgify-toast-container"
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 10000,
+            animation: 'toastSlideIn 0.3s ease-out',
+          }}
+        >
+          <s-banner 
+            heading="Settings saved successfully!"
+            tone="success"
+            dismissible
+            onDismiss={() => setToastActive(false)}
+          >
+            {toastMessage !== "Settings saved successfully!" ? toastMessage : ""}
+          </s-banner>
+        </div>
+      )}
+      <style>{`
+        @keyframes toastSlideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+        .urgify-toast-container {
+          min-width: 300px;
+          max-width: 500px;
+        }
+        .urgify-toast-container s-banner {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+      `}</style>
+    </s-page>
   );
 }
 

@@ -27,7 +27,7 @@
   text-transform: uppercase;
   letter-spacing: 1px;
   animation: scarcityPulse 2s infinite;
-  box-shadow: 0 8px 25px rgba(231, 76, 60, 0.5);
+  box-shadow: none;
   position: relative;
   overflow: hidden;
   font-family: 'Arial Black', Arial, sans-serif;
@@ -59,7 +59,7 @@
   background: linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%);
   color: #ffffff;
   animation: criticalShake 0.5s infinite;
-  box-shadow: 0 10px 30px rgba(142, 68, 173, 0.6);
+  box-shadow: none;
   transform: scale(1.05);
 }
 
@@ -92,7 +92,7 @@
   text-transform: uppercase;
   letter-spacing: 1px;
   animation: var(--urgify-animation, scarcityPulse 2s infinite);
-  box-shadow: 0 8px 25px rgba(231, 76, 60, 0.5);
+  box-shadow: none;
   position: relative;
   overflow: hidden;
   font-family: 'Arial Black', Arial, sans-serif;
@@ -117,7 +117,7 @@
   background: var(--urgify-bg-critical, linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%));
   color: var(--urgify-text-critical, #ffffff);
   animation: var(--urgify-animation-critical, criticalShake 0.5s infinite);
-  box-shadow: 0 10px 30px rgba(142, 68, 173, 0.6);
+  box-shadow: none;
   transform: scale(1.05);
 }
 
@@ -139,11 +139,11 @@
 @keyframes scarcityPulse {
   0%, 100% {
     transform: scale(1);
-    box-shadow: 0 8px 25px rgba(231, 76, 60, 0.5);
+    box-shadow: none;
   }
   50% {
     transform: scale(1.03);
-    box-shadow: 0 12px 35px rgba(231, 76, 60, 0.7);
+    box-shadow: none;
   }
 }
 
@@ -189,16 +189,10 @@
 /* Spectacular Animations */
 @keyframes spectacularPulse {
   0%, 100% { 
-    box-shadow: 
-      0 25px 50px rgba(0, 0, 0, 0.3),
-      0 0 0 1px rgba(255, 255, 255, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    box-shadow: none;
   }
   50% { 
-    box-shadow: 
-      0 30px 60px rgba(220, 53, 69, 0.4),
-      0 0 0 1px rgba(255, 255, 255, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    box-shadow: none;
   }
 }
 
@@ -263,6 +257,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 .urgify-stock-alert__text {
@@ -277,10 +275,7 @@
   text-align: center !important;
   border-radius: 20px !important;
   overflow: hidden !important;
-  box-shadow: 
-    0 25px 50px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  box-shadow: none !important;
   background: linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%) !important;
   background-size: 200% 200% !important;
   border: none !important;
@@ -306,7 +301,7 @@
   font-size: 1.3rem !important;
   letter-spacing: 3px !important;
   text-shadow: 4px 4px 0px #ff0000 !important;
-  box-shadow: 8px 8px 0px #ff0000, 16px 16px 0px #ffff00, 24px 24px 0px #00ff00 !important;
+  box-shadow: none !important;
   font-family: 'Arial Black', Arial, sans-serif !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
@@ -322,15 +317,15 @@
 
 /* Glassmorphism Style - Exact Frontend Match */
 .urgify-stock-alert--glassmorphism {
-  background: rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  background: rgba(255, 255, 255, 0.85) !important;
+  backdrop-filter: blur(20px) saturate(180%) !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
   border-radius: 20px !important;
-  color: #000000 !important;
+  color: #1a1a1a !important;
   font-size: 1.1rem !important;
   letter-spacing: 1px !important;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.6) !important;
   font-family: 'Arial Black', Arial, sans-serif !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
@@ -352,7 +347,7 @@
   color: #2d3748 !important;
   font-size: 1.1rem !important;
   letter-spacing: 1px !important;
-  box-shadow: 20px 20px 60px #bebebe, -20px -20px 60px #ffffff, inset 0 0 0 rgba(255, 255, 255, 0.1) !important;
+  box-shadow: none !important;
   font-family: 'Arial Black', Arial, sans-serif !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
@@ -379,7 +374,9 @@
 div[class*="Layout"][class*="Polaris"] {
   flex-wrap: wrap !important;
   width: 100% !important;
+  max-width: 100% !important;
   gap: 0 !important;
+  overflow-x: hidden !important;
 }
 
 /* Base wrapper styles */
@@ -388,6 +385,9 @@ div[class*="Layout"][class*="Polaris"] {
   position: relative;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Layout sections ordering - Mobile: Vorschau oben */
@@ -429,10 +429,14 @@ div[class*="Layout"][class*="Polaris"] {
 
 .stock-alert-preview-sticky-container {
   width: 100%;
+  max-width: 100%;
   max-height: calc(100vh - 100px);
+  overflow-x: hidden !important;
   overflow-y: auto;
   z-index: 10;
   transition: top 0.1s ease-out;
+  box-sizing: border-box;
+  padding: 0 30px;
 }
 
 /* Desktop: CSS Sticky - einfach und zuverlässig */
@@ -456,6 +460,9 @@ div[class*="Layout"][class*="Polaris"] {
     min-height: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
   }
   
   .stock-alert-form-wrapper .Polaris-Layout__Section {
@@ -468,7 +475,11 @@ div[class*="Layout"][class*="Polaris"] {
     position: sticky !important;
     top: 80px !important;
     width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
     align-self: flex-start;
+    box-sizing: border-box;
+    padding: 0 30px !important;
   }
 }
 
@@ -546,8 +557,29 @@ div[class*="Layout"][class*="Polaris"] {
     position: relative !important;
     top: 0 !important;
     max-height: none;
+    overflow-x: hidden !important;
     overflow-y: visible;
     width: 100% !important;
+    max-width: 100% !important;
     left: auto !important;
+    box-sizing: border-box;
+    padding: 0 20px !important;
   }
+}
+
+/* Ensure all preview content stays within bounds */
+.stock-alert-preview-sticky-container > *,
+.stock-alert-preview-sticky-container s-stack,
+.stock-alert-preview-sticky-container s-section,
+.stock-alert-preview-sticky-container div[style*="position: relative"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: visible !important;
+  box-sizing: border-box !important;
+}
+
+/* Ensure stock alert button has room for animations */
+.stock-alert-preview-sticky-container .urgify-stock-alert {
+  overflow: visible !important;
 }

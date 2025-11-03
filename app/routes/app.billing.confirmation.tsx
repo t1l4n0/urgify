@@ -2,17 +2,7 @@ import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { useLoaderData, Link, useFetcher } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
 import { BillingManager } from "../utils/billing";
-import {
-  Page,
-  Layout,
-  Card,
-  Text,
-  Button,
-  Banner,
-  BlockStack,
-  InlineStack,
-  Spinner,
-} from "@shopify/polaris";
+// Polaris Web Components - no imports needed, components are global
 import { useEffect, useState } from "react";
 import { toMessage } from "../lib/errors";
 import { ViewPlansLink } from "../components/ViewPlansLink";
@@ -108,105 +98,91 @@ export default function BillingConfirmation() {
 
   if (isLoading) {
     return (
-      <Page title="Processing Subscription">
-        <Layout>
-          <Layout.Section>
-            <Card>
-              <BlockStack gap="400" align="center">
-                <Spinner size="large" />
-                <Text as="p" variant="bodyMd">Processing your subscription...</Text>
-              </BlockStack>
-            </Card>
-          </Layout.Section>
-        </Layout>
-      </Page>
+      <s-page heading="Processing Subscription">
+        <s-section>
+          <s-stack gap="base" direction="block" alignItems="center">
+            <s-spinner size="large" />
+            <s-paragraph>Processing your subscription...</s-paragraph>
+          </s-stack>
+        </s-section>
+      </s-page>
     );
   }
 
   return (
-    <Page title="Subscription Confirmation">
-      <Layout>
-        <Layout.Section>
-          <BlockStack gap="500">
-            {success ? (
-              <Card>
-                <BlockStack gap="400">
-                  <Banner tone="success">
-                    <Text as="h2" variant="headingMd">Subscription Activated Successfully!</Text>
-                  </Banner>
-                  
-                  <BlockStack gap="300">
-                    <Text as="p" variant="bodyMd">
-                      Your subscription to <strong>{subscription?.name}</strong> has been activated.
-                    </Text>
-                    
-                    <Text as="p" variant="bodyMd">
-                      You now have access to all premium features. You can manage your subscription 
-                      anytime from the billing dashboard.
-                    </Text>
+    <s-page heading="Subscription Confirmation">
+      <s-section>
+        <s-stack gap="base" direction="block">
+          {success ? (
+            <s-section>
+              <s-stack gap="base" direction="block">
+                <s-banner tone="success" heading="Subscription Activated Successfully!">
+                  <s-paragraph>
+                    Your subscription to <strong>{subscription?.name}</strong> has been activated.
+                  </s-paragraph>
+                </s-banner>
+                
+                <s-paragraph>
+                  You now have access to all premium features. You can manage your subscription 
+                  anytime from the billing dashboard.
+                </s-paragraph>
 
-                    {syncStatus && (
-                      <Banner tone={syncStatus.includes("✅") ? "success" : "critical"}>
-                        <Text as="p" variant="bodyMd">{syncStatus}</Text>
-                      </Banner>
-                    )}
-                    
-                    <InlineStack gap="300">
-                        <ViewPlansLink>
-                          View Pricing Plans
-                        </ViewPlansLink>
-                      
-                      <Button 
-                        onClick={handleSyncMetafield}
-                        loading={fetcher.state === "submitting"}
-                        disabled={fetcher.state === "submitting"}
-                      >
-                        Sync Theme Blocks
-                      </Button>
-                      
-                      <Link to="/app">
-                        <Button variant="secondary">
-                          Back to App
-                        </Button>
-                      </Link>
-                    </InlineStack>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-            ) : (
-              <Card>
-                <BlockStack gap="400">
-                  <Banner tone="critical">
-                    <Text as="h2" variant="headingMd">Subscription Failed</Text>
-                  </Banner>
+                {syncStatus && (
+                  <s-banner tone={syncStatus.includes("✅") ? "success" : "critical"}>
+                    <s-paragraph>{syncStatus}</s-paragraph>
+                  </s-banner>
+                )}
+                
+                <s-stack gap="base" direction="inline">
+                  <ViewPlansLink>
+                    View Pricing Plans
+                  </ViewPlansLink>
                   
-                  <BlockStack gap="300">
-                    <Text as="p" variant="bodyMd">
-                      {error ? toMessage(error) : "There was an error processing your subscription."}
-                    </Text>
-                    
-                    <Text as="p" variant="bodyMd">
-                      Please try again or contact support if the problem persists.
-                    </Text>
-                    
-                    <InlineStack gap="300">
-                        <ViewPlansLink>
-                          View Pricing Plans
-                        </ViewPlansLink>
-                      
-                      <Link to="/app">
-                        <Button variant="secondary">
-                          Back to App
-                        </Button>
-                      </Link>
-                    </InlineStack>
-                  </BlockStack>
-                </BlockStack>
-              </Card>
-            )}
-          </BlockStack>
-        </Layout.Section>
-      </Layout>
-    </Page>
+                  <s-button 
+                    onClick={handleSyncMetafield}
+                    loading={fetcher.state === "submitting"}
+                    disabled={fetcher.state === "submitting"}
+                  >
+                    Sync Theme Blocks
+                  </s-button>
+                  
+                  <Link to="/app">
+                    <s-button variant="secondary">
+                      Back to App
+                    </s-button>
+                  </Link>
+                </s-stack>
+              </s-stack>
+            </s-section>
+          ) : (
+            <s-section>
+              <s-stack gap="base" direction="block">
+                <s-banner tone="critical" heading="Subscription Failed">
+                  <s-paragraph>
+                    {error ? toMessage(error) : "There was an error processing your subscription."}
+                  </s-paragraph>
+                </s-banner>
+                
+                <s-paragraph>
+                  Please try again or contact support if the problem persists.
+                </s-paragraph>
+                
+                <s-stack gap="base" direction="inline">
+                  <ViewPlansLink>
+                    View Pricing Plans
+                  </ViewPlansLink>
+                  
+                  <Link to="/app">
+                    <s-button variant="secondary">
+                      Back to App
+                    </s-button>
+                  </Link>
+                </s-stack>
+              </s-stack>
+            </s-section>
+          )}
+        </s-stack>
+      </s-section>
+    </s-page>
   );
 }

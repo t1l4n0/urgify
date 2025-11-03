@@ -1,28 +1,14 @@
 import { useState } from "react";
 import type { ActionFunctionArgs, LoaderFunctionArgs } from "@remix-run/node";
 import { Form, useActionData, useLoaderData } from "@remix-run/react";
-import {
-  AppProvider as PolarisAppProvider,
-  Button,
-  Card,
-  FormLayout,
-  Page,
-  Text,
-  TextField,
-} from "@shopify/polaris";
-import polarisTranslations from "@shopify/polaris/locales/en.json" with { type: "json" };
-import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
-
 import { login } from "../../shopify.server";
 
 import { loginErrorMessage } from "./error.server";
 
-export const links = () => [{ rel: "stylesheet", href: polarisStyles }];
-
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const errors = loginErrorMessage(await login(request));
 
-  return { errors, polarisTranslations };
+  return { errors };
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
@@ -40,29 +26,25 @@ export default function Auth() {
   const { errors } = actionData || loaderData;
 
   return (
-    <PolarisAppProvider i18n={loaderData.polarisTranslations}>
-      <Page>
-        <Card>
-          <Form method="post">
-            <FormLayout>
-              <Text variant="headingMd" as="h2">
-                Log in
-              </Text>
-              <TextField
-                type="text"
-                name="shop"
-                label="Shop domain"
-                helpText="example.myshopify.com"
-                value={shop}
-                onChange={setShop}
-                autoComplete="on"
-                error={errors.shop}
-              />
-              <Button submit>Log in</Button>
-            </FormLayout>
-          </Form>
-        </Card>
-      </Page>
-    </PolarisAppProvider>
+    <s-page heading="Log in">
+      <s-section>
+        <form method="post">
+          <s-stack gap="base" direction="block">
+            <s-heading>Log in</s-heading>
+            <s-text-field
+              type="text"
+              name="shop"
+              label="Shop domain"
+              details="example.myshopify.com"
+              value={shop}
+              onChange={(e) => setShop(e.currentTarget.value)}
+              autocomplete="on"
+              error={errors.shop}
+            />
+            <s-button type="submit" variant="primary">Log in</s-button>
+          </s-stack>
+        </form>
+      </s-section>
+    </s-page>
   );
 }

@@ -1,5 +1,4 @@
 import { useLocation } from "@remix-run/react";
-import { Button } from "@shopify/polaris";
 
 function b64UrlDecode(input: string) {
   const s = input.replace(/-/g, "+").replace(/_/g, "/");
@@ -38,8 +37,8 @@ export function ViewPlansLink({ children = "💰 View Plans" }: { children?: Rea
   const href = buildPlansHref(search, "urgify");
 
   return (
-    <Button url={href} target="_top">
+    <s-button href={href} target="_top" variant="primary">
       {String(children)}
-    </Button>
+    </s-button>
   );
 }

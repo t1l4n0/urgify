@@ -72,5 +72,8 @@
     "minimatch": "9.0.5",
     "vite": "^7.1.9"
   },
-  "author": "t1l4n0"
+  "author": "t1l4n0",
+  "peerDependencies": {
+    "@shopify/polaris": "^13.9.5"
+  }
 }

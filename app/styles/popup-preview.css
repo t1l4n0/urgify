@@ -3,17 +3,20 @@
 .urgify-popup-preview {
   position: relative;
   width: 100%;
+  max-width: 100%;
   overflow: hidden;
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: none;
   padding: 40px;
+  box-sizing: border-box;
+  min-width: 0;
 }
 
 /* Spectacular Style */
 .urgify-popup-preview--spectacular {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #fff;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
 }
 
 .urgify-popup-preview--spectacular .urgify-popup-cta-preview {
@@ -234,13 +237,18 @@
 div[class*="Layout"][class*="Polaris"] {
   flex-wrap: wrap;
   width: 100%;
+  max-width: 100%;
   gap: 0;
+  overflow-x: hidden !important;
 }
 
 /* Base wrapper styles */
 .popup-preview-wrapper,
 .popup-form-wrapper {
   position: relative;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 /* Layout sections ordering - Mobile: Vorschau oben */
@@ -278,10 +286,13 @@ div[class*="Layout"][class*="Polaris"] {
 
 .popup-preview-sticky-container {
   width: 100%;
+  max-width: 100%;
   max-height: calc(100vh - 100px);
+  overflow-x: hidden !important;
   overflow-y: auto;
   z-index: 10;
   transition: top 0.1s ease-out;
+  box-sizing: border-box;
 }
 
 /* Desktop: CSS Sticky - einfach und zuverlässig */
@@ -303,6 +314,11 @@ div[class*="Layout"][class*="Polaris"] {
   .popup-preview-wrapper .Polaris-Layout__Section {
     height: fit-content;
     min-height: 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
   }
   
   .popup-preview-sticky-container {
@@ -310,7 +326,10 @@ div[class*="Layout"][class*="Polaris"] {
     position: sticky !important;
     top: 80px !important;
     width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
     align-self: flex-start;
+    box-sizing: border-box;
   }
 }
 
@@ -398,9 +417,12 @@ div[class*="Layout"][class*="Polaris"] {
     position: relative !important;
     top: 0 !important;
     max-height: none;
+    overflow-x: hidden !important;
     overflow-y: visible;
     width: 100% !important;
+    max-width: 100% !important;
     left: auto !important;
+    box-sizing: border-box;
   }
   
   .urgify-popup-preview {
@@ -419,5 +441,17 @@ div[class*="Layout"][class*="Polaris"] {
     padding: 10px 20px;
     font-size: 14px;
   }
+}
+
+/* Ensure all preview content stays within bounds */
+.popup-preview-sticky-container > *,
+.popup-preview-sticky-container s-stack,
+.popup-preview-sticky-container s-section,
+.popup-preview-sticky-container div[style*="position: relative"] {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: hidden !important;
+  box-sizing: border-box !important;
 }
 

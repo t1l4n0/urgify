@@ -1,12 +1,4 @@
 import { useRouteLoaderData, useActionData, useRouteError, isRouteErrorResponse } from "@remix-run/react";
-import {
-  Page,
-  Layout,
-  Card,
-  Text,
-  Button,
-  Banner,
-} from "@shopify/polaris";
 import { json, type ActionFunctionArgs, type LoaderFunctionArgs } from "@remix-run/node";
 import { toMessage } from "../lib/errors";
 import { Suspense, lazy } from "react";
@@ -78,15 +70,13 @@ export function ErrorBoundary() {
   }
 
   return (
-    <Page title={title}>
-      <Layout>
-        <Layout.Section>
-          <Banner tone="critical">
-            <p>An error occurred: {message}</p>
-          </Banner>
-        </Layout.Section>
-      </Layout>
-    </Page>
+    <s-page heading={title}>
+      <s-section>
+        <s-banner tone="critical" heading="Error">
+          <s-paragraph>An error occurred: {message}</s-paragraph>
+        </s-banner>
+      </s-section>
+    </s-page>
   );
 }
 
@@ -96,131 +86,119 @@ export default function Index() {
   const actionData = useActionData<typeof action>();
 
   return (
-    <Page title="Urgify – Urgency Marketing Suite">
-      <Layout>
-        <Layout.Section>
-          <Banner
-            title={hasActiveSub ? 'Subscription active' : 'No active subscription'}
-            tone={hasActiveSub ? 'success' : 'warning'}
+    <s-page heading="Urgify – Urgency Marketing Suite">
+      <s-banner
+        heading={hasActiveSub ? 'Subscription active' : 'No active subscription'}
+        tone={hasActiveSub ? 'success' : 'warning'}
+      >
+        <s-paragraph>
+          {hasActiveSub
+            ? 'You can use all app features: countdown timers, limited-time offers, smart stock alerts, scarcity banners, and complete customization options.'
+            : 'A subscription is required to use all features.'}
+        </s-paragraph>
+        {!hasActiveSub && (
+          <div slot="secondary-actions" style={{ marginTop: '12px' }}>
+            <ViewPlansLink />
+          </div>
+        )}
+      </s-banner>
+
+      {/* Success/Error Messages */}
+      {actionData?.error && (
+        <s-section>
+          <s-banner tone="critical" heading="Error">
+            <s-paragraph>{toMessage(actionData.error)}</s-paragraph>
+          </s-banner>
+        </s-section>
+      )}
+      
+      {actionData?.success && (
+        <s-section>
+          <s-banner tone="success" heading="Success">
+            <s-paragraph>Operation completed successfully</s-paragraph>
+          </s-banner>
+        </s-section>
+      )}
+
+      <s-section heading="Welcome to Urgify">
+        <s-stack gap="base">
+          <s-paragraph>
+            Urgify provides urgency marketing tools for Shopify stores. 
+            Add countdown timers, limited-time offers, stock alerts, and scarcity banners to your product pages.
+          </s-paragraph>
+
+          <Suspense fallback={<div aria-busy="true">Loading features…</div>}>
+            {(() => {
+              const LazyFeatures = lazy(() => import("../components/Features"));
+              return <LazyFeatures />;
+            })()}
+          </Suspense>
+        </s-stack>
+      </s-section>
+
+      <s-section heading="Setup guide">
+        <s-stack gap="base">
+          <s-paragraph>
+            Follow these steps to set up Urgify blocks in your theme and start creating urgency experiences for your customers.
+          </s-paragraph>
+          <s-ordered-list>
+            <s-ordered-list-item>
+              <s-paragraph><strong>Open the Theme Editor:</strong> Online Store → Themes → Customize.</s-paragraph>
+            </s-ordered-list-item>
+            <s-ordered-list-item>
+              <s-paragraph><strong>Add Urgify blocks:</strong> Add "Urgify Countdown", "Urgify Limited Offer", "Urgify Scarcity Banner", or "Urgify Stock Alert" to your sections.</s-paragraph>
+            </s-ordered-list-item>
+            <s-ordered-list-item>
+              <s-paragraph><strong>Configure settings:</strong> Set target dates, messages, and thresholds for your urgency elements.</s-paragraph>
+            </s-ordered-list-item>
+            <s-ordered-list-item>
+              <s-paragraph><strong>Choose styles:</strong> Select from various styles: Spectacular, Brutalist, Glassmorphism, and more.</s-paragraph>
+            </s-ordered-list-item>
+            <s-ordered-list-item>
+              <s-paragraph><strong>Customize appearance:</strong> Adjust colors, fonts, and layout to match your theme.</s-paragraph>
+            </s-ordered-list-item>
+            <s-ordered-list-item>
+              <s-paragraph><strong>Save & test:</strong> Save and test on your storefront.</s-paragraph>
+            </s-ordered-list-item>
+          </s-ordered-list>
+          
+          {hasActiveSub && (
+            <s-button
+              variant="primary"
+              accessibilityLabel="Open the Shopify Theme Editor in a new tab"
+              onClick={() => {
+                window.open('https://admin.shopify.com/themes/current/editor', '_blank');
+              }}
+            >
+              🎨 Go to Theme Editor
+            </s-button>
+          )}
+        </s-stack>
+      </s-section>
+
+      <s-section heading="Enjoying Urgify?">
+        <s-stack gap="base" alignItems="center">
+          <s-paragraph>
+            If Urgify helps you create effective urgency experiences, please consider leaving a review.
+          </s-paragraph>
+          <s-button 
+            variant="primary" 
+            tone="success"
+            accessibilityLabel="Leave a review for Urgify"
+            onClick={() => {
+              // Shopify App Bridge v4 Review API, fails gracefully if unavailable
+              if (typeof window !== 'undefined' && (window as any).shopify?.reviews?.request) {
+                (window as any).shopify.reviews.request().catch(() => {});
+              }
+            }}
           >
-            <p>
-              {hasActiveSub
-                ? 'You can use all app features: countdown timers, limited-time offers, smart stock alerts, scarcity banners, and complete customization options.'
-                : 'A subscription is required to use all features.'}
-            </p>
-            {!hasActiveSub && (
-              <div style={{ marginTop: '12px' }}>
-                <ViewPlansLink />
-              </div>
-            )}
-          </Banner>
-        </Layout.Section>
-
-        
-        
-        {/* Success/Error Messages */}
-        {actionData?.error && (
-          <Layout.Section>
-            <Banner tone="critical">
-              <p>{toMessage(actionData.error)}</p>
-            </Banner>
-          </Layout.Section>
-        )}
-        
-        {actionData?.success && (
-          <Layout.Section>
-            <Banner tone="success">
-              <p>Operation completed successfully</p>
-            </Banner>
-          </Layout.Section>
-        )}
-
-
-
-        <Layout.Section>
-          <Card>
-            <div style={{ padding: "1rem" }}>
-              <Text as="h3" variant="headingMd">Welcome to Urgify</Text>
-              <div style={{ marginTop: "1rem" }}>
-                <Text as="p" variant="bodyMd">
-                  Urgify provides urgency marketing tools for Shopify stores. 
-                  Add countdown timers, limited-time offers, stock alerts, and scarcity banners to your product pages.
-                </Text>
-              </div>
-
-              <Suspense fallback={<div aria-busy="true">Loading features…</div>}>
-                {(() => {
-                  const LazyFeatures = lazy(() => import("../components/Features"));
-                  return <LazyFeatures />;
-                })()}
-              </Suspense>
-            </div>
-          </Card>
-        </Layout.Section>
-
-        <Layout.Section>
-          <Card>
-            <div style={{ padding: "1rem" }}>
-              <Text as="h3" variant="headingMd">Setup guide</Text>
-              <ol style={{ marginLeft: '1.5rem' }}>
-                <li><Text as="span" variant="bodyMd"><strong>Open the Theme Editor:</strong> Online Store → Themes → Customize.</Text></li>
-                <li><Text as="span" variant="bodyMd"><strong>Add Urgify blocks:</strong> Add "Urgify Countdown", "Urgify Limited Offer", "Urgify Scarcity Banner", or "Urgify Stock Alert" to your sections.</Text></li>
-                <li><Text as="span" variant="bodyMd"><strong>Configure settings:</strong> Set target dates, messages, and thresholds for your urgency elements.</Text></li>
-                <li><Text as="span" variant="bodyMd"><strong>Choose styles:</strong> Select from various styles: Spectacular, Brutalist, Glassmorphism, and more.</Text></li>
-                <li><Text as="span" variant="bodyMd"><strong>Customize appearance:</strong> Adjust colors, fonts, and layout to match your theme.</Text></li>
-                <li><Text as="span" variant="bodyMd"><strong>Save & test:</strong> Save and test on your storefront.</Text></li>
-              </ol>
-              
-              {hasActiveSub && (
-                <div style={{ marginTop: "2rem", textAlign: "left" }}>
-                  <Button
-                    variant="primary"
-                    accessibilityLabel="Open the Shopify Theme Editor in a new tab"
-                    onClick={() => {
-                      window.open('https://admin.shopify.com/themes/current/editor', '_blank');
-                    }}
-                  >
-                    🎨 Go to Theme Editor
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Card>
-        </Layout.Section>
-
-        <Layout.Section>
-          <Card>
-            <div style={{ padding: "1rem", textAlign: "center" }}>
-              <Text as="h3" variant="headingMd">Enjoying Urgify?</Text>
-              <div style={{ marginBottom: "1rem" }}>
-                <Text as="p" variant="bodyMd">
-                  If Urgify helps you create effective urgency experiences, please consider leaving a review.
-                </Text>
-              </div>
-              <Button 
-                variant="primary" 
-                tone="success"
-                accessibilityLabel="Leave a review for Urgify"
-                onClick={() => {
-                  // Shopify App Bridge v4 Review API, fails gracefully if unavailable
-                  if (typeof window !== 'undefined' && (window as any).shopify?.reviews?.request) {
-                    (window as any).shopify.reviews.request().catch(() => {});
-                  }
-                }}
-              >
-                ⭐ Leave a Review
-              </Button>
-              <div style={{ marginTop: "0.5rem", color: "#6d7175" }}>
-                <Text as="p" variant="bodySm">
-                  Your feedback helps other merchants discover Urgify
-                </Text>
-              </div>
-            </div>
-          </Card>
-        </Layout.Section>
-
-        
-      </Layout>
-    </Page>
+            ⭐ Leave a Review
+          </s-button>
+          <s-paragraph tone="subdued" color="subdued">
+            Your feedback helps other merchants discover Urgify
+          </s-paragraph>
+        </s-stack>
+      </s-section>
+    </s-page>
   );
 }

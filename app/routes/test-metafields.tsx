@@ -1,7 +1,7 @@
 import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
 import { useLoaderData, useFetcher } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
-import { Card, Page, Layout, Text, Button, BlockStack, FormLayout, TextField } from "@shopify/polaris";
+// Polaris Web Components - no imports needed, components are global
 import { useState } from "react";
 import { toMessage } from "../lib/errors";
 
@@ -127,75 +127,72 @@ export default function TestMetafields() {
   const testMetafield = metafields.find((m: any) => m.key === "test_persistence");
 
   return (
-    <Page>
-      <Layout>
-        <Layout.Section>
-          <Card>
-            <BlockStack gap="400">
-              <Text variant="headingMd" as="h2">
-                Metafields Persistence Test
-              </Text>
-              
-              {error && (
-                <Text variant="bodyMd" as="p" tone="critical">
-                  Error: {error}
-                </Text>
-              )}
-              
-              <Text variant="bodyMd" as="p">
-                Found {metafields.length} metafields in urgify namespace
-              </Text>
-              
-              <FormLayout>
-                <TextField
-                  label="Test Value"
-                  value={testValue}
-                  onChange={setTestValue}
-                  placeholder="Enter test value"
-                  autoComplete="off"
-                />
-                <Button
-                  onClick={() => {
-                    fetcher.submit(
-                      { testValue },
-                      { method: "POST" }
-                    );
-                  }}
-                  loading={fetcher.state === "submitting"}
-                >
-                  Save Test Metafield
-                </Button>
-              </FormLayout>
-              
-              {(fetcher.data as any)?.success && (
-                <Text variant="bodyMd" as="p" tone="success">
-                  ✅ Success: {(fetcher.data as any).message} - Value: {(fetcher.data as any).savedValue}
-                </Text>
-              )}
-              
-              {(fetcher.data as any)?.error && (
-                <Text variant="bodyMd" as="p" tone="critical">
-                  ❌ Error: {(fetcher.data as any).error}
-                </Text>
-              )}
-              
-              <div>
-                <Text variant="headingSm" as="h3">Current Test Metafield:</Text>
-                <pre style={{ background: '#f6f6f7', padding: '16px', borderRadius: '4px', overflow: 'auto' }}>
-                  {testMetafield ? JSON.stringify(testMetafield, null, 2) : "No test metafield found"}
-                </pre>
-              </div>
-              
-              <div>
-                <Text variant="headingSm" as="h3">All Urgify Metafields:</Text>
-                <pre style={{ background: '#f6f6f7', padding: '16px', borderRadius: '4px', overflow: 'auto', maxHeight: '400px' }}>
-                  {JSON.stringify(metafields, null, 2)}
-                </pre>
-              </div>
-            </BlockStack>
-          </Card>
-        </Layout.Section>
-      </Layout>
-    </Page>
+    <s-page heading="Metafields Persistence Test">
+      <s-section>
+        <s-stack gap="base" direction="block">
+          <s-heading>Metafields Persistence Test</s-heading>
+          
+          {error && (
+            <s-banner tone="critical" heading="Error">
+              {error}
+            </s-banner>
+          )}
+          
+          <s-paragraph>
+            Found {metafields.length} metafields in urgify namespace
+          </s-paragraph>
+          
+          <s-stack gap="base" direction="block">
+            <s-text-field
+              label="Test Value"
+              value={testValue}
+              onChange={(e) => setTestValue(e.currentTarget.value)}
+              placeholder="Enter test value"
+              autocomplete="off"
+            />
+            <s-button
+              onClick={() => {
+                fetcher.submit(
+                  { testValue },
+                  { method: "POST" }
+                );
+              }}
+              loading={fetcher.state === "submitting"}
+              variant="primary"
+            >
+              Save Test Metafield
+            </s-button>
+          </s-stack>
+          
+          {(fetcher.data as any)?.success && (
+            <s-banner tone="success">
+              ✅ Success: {(fetcher.data as any).message} - Value: {(fetcher.data as any).savedValue}
+            </s-banner>
+          )}
+          
+          {(fetcher.data as any)?.error && (
+            <s-banner tone="critical" heading="Error">
+              ❌ Error: {(fetcher.data as any).error}
+            </s-banner>
+          )}
+          
+          <s-section heading="Current Test Metafield">
+            <s-box padding="base" background="subdued" borderRadius="base">
+              <pre style={{ margin: 0, overflow: 'auto' }}>
+                {testMetafield ? JSON.stringify(testMetafield, null, 2) : "No test metafield found"}
+              </pre>
+            </s-box>
+          </s-section>
+          
+          <s-section heading="All Urgify Metafields">
+            <s-box padding="base" background="subdued" borderRadius="base" style={{ maxHeight: '400px', overflow: 'auto' }}>
+              <pre style={{ margin: 0 }}>
+                {JSON.stringify(metafields, null, 2)}
+              </pre>
+            </s-box>
+          </s-section>
+        </s-stack>
+      </s-section>
+    </s-page>
   );
 }

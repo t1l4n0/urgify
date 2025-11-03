@@ -4,23 +4,7 @@ import { authenticate } from "../shopify.server";
 import { BillingManager } from "../utils/billing";
 import { z } from "zod";
 import { shouldRateLimit, checkShopifyRateLimit } from "../utils/rateLimiting";
-import {
-  Frame,
-  Card,
-  Page,
-  Layout,
-  Text,
-  List,
-  Badge,
-  BlockStack,
-  InlineStack,
-  Select,
-  TextField,
-  FormLayout,
-  Checkbox,
-  Toast,
-  ContextualSaveBar,
-} from "@shopify/polaris";
+// Polaris Web Components - no imports needed, components are global
 import { useState, useCallback, useEffect, useRef } from "react";
 import stockAlertStyles from "../styles/stock-alert-preview.css?url";
 
@@ -524,6 +508,16 @@ export default function StockAlertsSimple() {
   const [toastActive, setToastActive] = useState(false);
   const shownRef = useRef(false);        // Gate gegen erneutes Öffnen
 
+  // Auto-dismiss toast after 3 seconds
+  useEffect(() => {
+    if (toastActive) {
+      const timer = setTimeout(() => {
+        setToastActive(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastActive]);
+
   // Sobald der Loader neue Daten liefert, lokale Felder aktualisieren:
   useEffect(() => {
     setGlobalThreshold(String(settings.global_threshold || 5));
@@ -540,6 +534,18 @@ export default function StockAlertsSimple() {
     setShowOnlyBelowThreshold(Boolean(settings.show_only_below_threshold));
     setCustomThreshold(String(settings.custom_threshold || "5"));
   }, [settings]);
+
+  // Control save bar visibility programmatically
+  useEffect(() => {
+    const saveBar = document.getElementById('stock-alert-save-bar') as any;
+    if (saveBar) {
+      if (isDirty) {
+        saveBar.show();
+      } else {
+        saveBar.hide();
+      }
+    }
+  }, [isDirty]);
 
   const safeProducts = Array.isArray(products) ? products : [];
   const lowStockProducts = safeProducts.filter((product: any) => {
@@ -599,9 +605,9 @@ export default function StockAlertsSimple() {
     const safeInventory = Number(inventory) || 0;
     const globalThresh = parseInt(globalThreshold) || 5;
     if (safeInventory <= globalThresh) {
-      return <Badge tone="warning">{`Below threshold (${safeInventory})`}</Badge>;
+      return <s-badge tone="warning">{`Below threshold (${safeInventory})`}</s-badge>;
     }
-    return <Badge tone="success">{`OK (${safeInventory})`}</Badge>;
+    return <s-badge tone="success">{`OK (${safeInventory})`}</s-badge>;
   };
 
   // Preview component for stock alert
@@ -631,224 +637,252 @@ export default function StockAlertsSimple() {
       };
     };
 
+    const isAbove = stockCounterPosition === 'above';
+
     return (
-      <div style={{ 
-        padding: '20px', 
-        border: '1px solid #e1e3e5', 
-        borderRadius: '8px',
-        backgroundColor: '#f6f6f7',
-        marginTop: '10px'
-      }}>
-        <Text variant="headingSm" as="h3">
-          Preview:
-        </Text>
-        <div 
-          className={`urgify-stock-alert urgify-stock-alert--${stockAlertStyle}`}
-          style={getPreviewStyle()}
-        >
-          <span className="urgify-stock-alert__text">
-            {previewMessage}
-          </span>
+      <s-stack gap="base" direction="block">
+        <s-heading>Preview</s-heading>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'stretch' }}>
+          {isAbove && (
+            <div 
+              className={`urgify-stock-alert urgify-stock-alert--${stockAlertStyle}`}
+              style={getPreviewStyle()}
+            >
+              <span className="urgify-stock-alert__text">
+                {previewMessage}
+              </span>
+            </div>
+          )}
+          
+          <button
+            style={{
+              padding: '12px 24px',
+              backgroundColor: '#000000',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '4px',
+              fontSize: '16px',
+              fontWeight: '600',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              width: '100%',
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}
+          >
+            Add to Cart
+          </button>
+          
+          {!isAbove && (
+            <div 
+              className={`urgify-stock-alert urgify-stock-alert--${stockAlertStyle}`}
+              style={getPreviewStyle()}
+            >
+              <span className="urgify-stock-alert__text">
+                {previewMessage}
+              </span>
+            </div>
+          )}
         </div>
-      </div>
+      </s-stack>
     );
   };
 
-  // Remove error handling since error is not in loader data anymore
-
-  const toastMarkup = toastActive ? (
-    <Toast
-      content="Settings saved successfully!"
-      duration={3000}
-      onDismiss={() => setToastActive(false)}
-    />
-  ) : null;
-
   return (
-    <Frame>
-      <Page>
-        <Layout>
-        <Layout.Section>
-          <Card>
-            <BlockStack gap="400">
-              <Text variant="headingMd" as="h2">
-                Stock Alert Settings
-              </Text>
-              
-              <StockAlertPreview />
-              
-              <FormLayout>
-                <Checkbox
-                  label="Enable Stock Alerts"
-                  checked={isEnabled}
-                  onChange={handleEnabledChange}
-                />
-                
-                <TextField
-                  label="Stock Alert Threshold"
-                  value={globalThreshold}
-                  onChange={handleGlobalThresholdChange}
-                  type="number"
-                  autoComplete="off"
-                  helpText="Show alert when inventory is below this number"
-                />
-                
-                <TextField
-                  label="Stock Alert Message"
-                  value={lowStockMessage}
-                  onChange={(value) => {
-                    setLowStockMessage(value);
-                    setIsDirty(true);
-                  }}
-                  autoComplete="off"
-                  helpText="Use {{qty}} as placeholder for quantity"
-                />
-                
-                <Select
-                  label="Animation"
-                  options={[
-                    { label: "None", value: "none" },
-                    { label: "Pulse", value: "pulse" },
-                    { label: "Shake", value: "shake" },
-                    { label: "Bounce", value: "bounce" },
-                  ]}
-                  value={stockCounterAnimation}
-                  onChange={(value) => {
-                    setStockCounterAnimation(value);
-                    setIsDirty(true);
-                  }}
-                />
-                
-                <Select
-                  label="Position"
-                  options={[
-                    { label: "Above Add to Cart", value: "above" },
-                    { label: "Below Add to Cart", value: "below" },
-                  ]}
-                  value={stockCounterPosition}
-                  onChange={(value) => {
-                    setStockCounterPosition(value);
-                    setIsDirty(true);
-                  }}
-                />
-                
-                <Select
-                  label="Stock Alert Style"
-                  options={[
-                    { label: "Spectacular", value: "spectacular" },
-                    { label: "Brutalist Bold", value: "brutalist" },
-                    { label: "Glassmorphism", value: "glassmorphism" },
-                    { label: "Neumorphism", value: "neumorphism" },
-                    { label: "Custom", value: "custom" },
-                  ]}
-                  value={stockAlertStyle}
-                  onChange={(value) => {
-                    setStockAlertStyle(value);
-                    setIsDirty(true);
-                  }}
-                />
-                
-                {stockAlertStyle === "custom" && (
-                  <>
-                    <TextField
-                      label="Font Size"
-                      value={fontSize}
-                      onChange={(value) => {
-                        setFontSize(value);
-                        setIsDirty(true);
-                      }}
-                      autoComplete="off"
-                      helpText="e.g., 18px, 1.2rem"
+    <s-page heading="Stock Alert Settings">
+      <s-grid gap="base" gridTemplateColumns="repeat(2, 1fr)">
+        <s-section heading="Stock Alert Settings">
+          <s-stack gap="base" direction="block">
+                    <s-checkbox
+                      label="Enable Stock Alerts"
+                      checked={isEnabled}
+                      onChange={(e) => handleEnabledChange(e.currentTarget.checked)}
                     />
                     
-                    <TextField
-                      label="Text Color"
-                      value={textColor}
-                      onChange={(value) => {
-                        setTextColor(value);
-                        setIsDirty(true);
+                    <s-number-field
+                      label="Stock Alert Threshold"
+                      value={globalThreshold}
+                      onChange={(e) => {
+                        handleGlobalThresholdChange(e.currentTarget.value);
                       }}
-                      autoComplete="off"
-                      helpText="e.g., #ffffff, red"
+                      details="Show alert when inventory is below this number"
                     />
                     
-                    <TextField
-                      label="Background Color"
-                      value={backgroundColor}
-                      onChange={(value) => {
-                        setBackgroundColor(value);
+                    <s-paragraph>
+                      <strong>Products Below Threshold ({lowStockProducts.length})</strong>
+                    </s-paragraph>
+                    
+                    <s-text-field
+                      label="Stock Alert Message"
+                      value={lowStockMessage}
+                      onChange={(e) => {
+                        setLowStockMessage(e.currentTarget.value);
                         setIsDirty(true);
                       }}
-                      autoComplete="off"
-                      helpText="e.g., #e74c3c, red"
+                      autocomplete="off"
+                      details="Use {{qty}} as placeholder for quantity"
                     />
-                  </>
-                )}
-              </FormLayout>
-            </BlockStack>
-          </Card>
-        </Layout.Section>
+                    
+                    <s-select
+                      label="Animation"
+                      value={stockCounterAnimation}
+                      onChange={(e) => {
+                        setStockCounterAnimation(e.currentTarget.value);
+                        setIsDirty(true);
+                      }}
+                    >
+                      <s-option value="none">None</s-option>
+                      <s-option value="pulse">Pulse</s-option>
+                      <s-option value="shake">Shake</s-option>
+                      <s-option value="bounce">Bounce</s-option>
+                    </s-select>
+                    
+                    <s-select
+                      label="Position"
+                      value={stockCounterPosition}
+                      onChange={(e) => {
+                        setStockCounterPosition(e.currentTarget.value);
+                        setIsDirty(true);
+                      }}
+                    >
+                      <s-option value="above">Above Add to Cart</s-option>
+                      <s-option value="below">Below Add to Cart</s-option>
+                    </s-select>
+                    
+                    <s-select
+                      label="Stock Alert Style"
+                      value={stockAlertStyle}
+                      onChange={(e) => {
+                        setStockAlertStyle(e.currentTarget.value);
+                        setIsDirty(true);
+                      }}
+                    >
+                      <s-option value="spectacular">Spectacular</s-option>
+                      <s-option value="brutalist">Brutalist Bold</s-option>
+                      <s-option value="glassmorphism">Glassmorphism</s-option>
+                      <s-option value="neumorphism">Neumorphism</s-option>
+                      <s-option value="custom">Custom</s-option>
+                    </s-select>
+                    
+                    {stockAlertStyle === "custom" && (
+                      <>
+                        <s-text-field
+                          label="Font Size"
+                          value={fontSize}
+                          onChange={(e) => {
+                            setFontSize(e.currentTarget.value);
+                            setIsDirty(true);
+                          }}
+                          autocomplete="off"
+                          details="e.g., 18px, 1.2rem"
+                        />
+                        
+                        <s-color-field
+                          label="Text Color"
+                          value={textColor}
+                          onChange={(e) => {
+                            setTextColor(e.currentTarget.value);
+                            setIsDirty(true);
+                          }}
+                          autocomplete="off"
+                          details="e.g., #ffffff, red"
+                        />
+                        
+                        <s-color-field
+                          label="Background Color"
+                          value={backgroundColor}
+                          onChange={(e) => {
+                            setBackgroundColor(e.currentTarget.value);
+                            setIsDirty(true);
+                          }}
+                          autocomplete="off"
+                          details="e.g., #e74c3c, red"
+                        />
+                      </>
+                    )}
+          </s-stack>
+        </s-section>
         
-        <Layout.Section>
-          <Card>
-            <BlockStack gap="400">
-              <Text variant="headingMd" as="h2">
-                Products Below Threshold ({lowStockProducts.length})
-              </Text>
-              
-              {lowStockProducts.length === 0 ? (
-                <Text as="p">No products below the threshold of {globalThreshold}</Text>
-              ) : (
-                <List>
-                  {lowStockProducts.map((product: any) => (
-                    <List.Item key={product.id}>
-                      <InlineStack gap="200" align="space-between">
-                        <Text as="span">{product.title}</Text>
-                        {getStockBadge(product.totalInventory)}
-                      </InlineStack>
-                    </List.Item>
-                  ))}
-                </List>
-              )}
-            </BlockStack>
-          </Card>
-        </Layout.Section>
-      </Layout>
+        <s-section>
+          <div className="stock-alert-preview-sticky-container">
+            <StockAlertPreview />
+          </div>
+        </s-section>
+      </s-grid>
       
-      {isDirty && (
-        <ContextualSaveBar
-          message="Unsaved changes"
-          saveAction={{
-            onAction: handleSaveSettings,
-            loading: fetcher.state === 'submitting',
-            content: 'Save',
+      <ui-save-bar showing={isDirty} id="stock-alert-save-bar">
+        <button 
+          variant="primary" 
+          id="stock-alert-save-button"
+          onClick={handleSaveSettings}
+          disabled={fetcher.state === 'submitting'}
+          {...(fetcher.state === 'submitting' ? { loading: true } : {})}
+        >
+          Save
+        </button>
+        <button 
+          id="stock-alert-discard-button"
+          onClick={() => {
+            setGlobalThreshold(String(settings.global_threshold || 5));
+            setLowStockMessage(String(settings.low_stock_message || "Only {{qty}} left in stock!"));
+            setIsEnabled(Boolean(settings.stock_alert_enabled));
+            setFontSize(String(settings.font_size || "18px"));
+            setTextColor(String(settings.text_color || "#ffffff"));
+            setBackgroundColor(String(settings.background_color || "#e74c3c"));
+            setStockCounterAnimation(String(settings.stock_counter_animation || "pulse"));
+            setStockCounterPosition(String(settings.stock_counter_position || "above"));
+            setStockAlertStyle(String(settings.stock_alert_style || "spectacular"));
+            setShowForAllProducts(Boolean(settings.show_for_all_products));
+            setShowBasedOnInventory(Boolean(settings.show_based_on_inventory));
+            setShowOnlyBelowThreshold(Boolean(settings.show_only_below_threshold));
+            setCustomThreshold(String(settings.custom_threshold || "5"));
+            setIsDirty(false);
           }}
-          discardAction={{
-            onAction: () => {
-              // Reset to original values
-              setGlobalThreshold(String(settings.global_threshold || 5));
-              setLowStockMessage(String(settings.low_stock_message || "Only {{qty}} left in stock!"));
-              setIsEnabled(Boolean(settings.stock_alert_enabled));
-              setFontSize(String(settings.font_size || "18px"));
-              setTextColor(String(settings.text_color || "#ffffff"));
-              setBackgroundColor(String(settings.background_color || "#e74c3c"));
-              setStockCounterAnimation(String(settings.stock_counter_animation || "pulse"));
-              setStockCounterPosition(String(settings.stock_counter_position || "above"));
-              setStockAlertStyle(String(settings.stock_alert_style || "spectacular"));
-              setShowForAllProducts(Boolean(settings.show_for_all_products));
-              setShowBasedOnInventory(Boolean(settings.show_based_on_inventory));
-              setShowOnlyBelowThreshold(Boolean(settings.show_only_below_threshold));
-              setCustomThreshold(String(settings.custom_threshold || "5"));
-              setIsDirty(false);
-            },
-            content: 'Discard',
+        >
+          Discard
+        </button>
+      </ui-save-bar>
+      
+      {toastActive && (
+        <div
+          className="urgify-toast-container"
+          style={{
+            position: 'fixed',
+            bottom: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 10000,
+            animation: 'toastSlideIn 0.3s ease-out',
           }}
-          alignContentFlush
-        />
+        >
+          <s-banner 
+            heading="Settings saved successfully!"
+            tone="success"
+            dismissible
+            onDismiss={() => setToastActive(false)}
+          >
+          </s-banner>
+        </div>
       )}
-      
-      </Page>
-      {toastMarkup}
-    </Frame>
+      <style>{`
+        @keyframes toastSlideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+        .urgify-toast-container {
+          min-width: 300px;
+          max-width: 500px;
+        }
+        .urgify-toast-container s-banner {
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+      `}</style>
+    </s-page>
   );
 }

@@ -1,12 +1,8 @@
-import enPolaris from "@shopify/polaris/locales/en.json" with { type: "json" };
-import dePolaris from "@shopify/polaris/locales/de.json" with { type: "json" };
 import en from "./en.json";
 import de from "./de.json";
 
-export const POLARIS_LOCALES = {
-  en: enPolaris,
-  de: dePolaris,
-};
+// Polaris Web Components don't require locale files anymore
+// The components automatically use the browser's locale
 
 export const APP_LOCALES = {
   en,

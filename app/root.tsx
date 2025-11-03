@@ -19,6 +19,7 @@ export default function App() {
         <link rel="preconnect" href="https://cdn.shopify.com" />
         <link rel="stylesheet" href="https://cdn.shopify.com/static/fonts/inter/v4/styles.css" />
         <link rel="stylesheet" href={stockAlertPreviewStyles} />
+        <script src="https://cdn.shopify.com/shopifycloud/polaris.js"></script>
         <Meta />
         <Links />
       </head>

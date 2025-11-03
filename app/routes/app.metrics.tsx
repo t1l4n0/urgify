@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json, useLoaderData, useRouteError, useRouteLoaderData } from "@remix-run/react";
+import { json, useRouteError } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { authenticate } from "../shopify.server";
 

@@ -1234,7 +1234,7 @@ export default function PopupSettings() {
                         />
                         <s-button
                           variant="tertiary"
-                          onClick={(e) => {
+                          onClick={(e: React.MouseEvent<HTMLElement>) => {
                             e.preventDefault();
                             setImageUrl('');
                             setIsDirty(true);

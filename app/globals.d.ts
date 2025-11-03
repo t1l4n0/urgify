@@ -30,11 +30,15 @@ declare global {
       's-page': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
         heading?: string;
       }, HTMLElement>;
-      's-section': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+      's-section': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
+        heading?: string;
+      }, HTMLElement>;
       's-banner': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
         tone?: 'critical' | 'warning' | 'success' | 'info';
         heading?: string;
       }, HTMLElement>;
+      's-ordered-list': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+      's-ordered-list-item': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
     }
   }
 }

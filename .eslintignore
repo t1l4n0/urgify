@@ -6,3 +6,4 @@ shopify-app-remix
 .shopify
 extensions/urgify-theme/assets/urgify.js
 extensions/urgify-theme/assets/urgify.min.js
+extensions/urgify-theme/assets/urgify-stock-alert.min.js

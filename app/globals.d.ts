@@ -9,6 +9,21 @@ declare global {
       };
     };
   }
+
+  // Shopify Web Components types
+  namespace JSX {
+    interface IntrinsicElements {
+      's-stack': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
+        gap?: 'tight' | 'base' | 'loose';
+        direction?: 'row' | 'column';
+      }, HTMLElement>;
+      's-heading': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
+        level?: '1' | '2' | '3' | '4' | '5' | '6';
+      }, HTMLElement>;
+      's-paragraph': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+      's-box': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+    }
+  }
 }
 
 // Strict typing for Shopify Reviews API

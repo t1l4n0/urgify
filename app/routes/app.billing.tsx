@@ -69,7 +69,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function BillingDashboard() {
-  const { subscriptionStatus, isEligibleForTrial, plans, shop } = useLoaderData<typeof loader>();
+  const { subscriptionStatus, isEligibleForTrial, plans } = useLoaderData<typeof loader>();
   const fetcher = useFetcher();
   const revalidator = useRevalidator();
   

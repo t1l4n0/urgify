@@ -1,9 +1,8 @@
 import { useEffect, useState, useCallback } from "react";
 import type { LoaderFunctionArgs } from "@remix-run/node";
-import { json, useLoaderData, useRouteError } from "@remix-run/react";
+import { json, useLoaderData, useRouteError, useRouteLoaderData } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { authenticate } from "../shopify.server";
-import { useRouteLoaderData } from "@remix-run/react";
 
 interface WebVitalsMetric {
   id: string;
@@ -16,28 +15,12 @@ interface WebVitalsReport {
 }
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin } = await authenticate.admin(request);
+  await authenticate.admin(request);
   
-  // Get shop info for context
-  const response = await admin.graphql(`#graphql
-    query {
-      shop {
-        id
-        name
-      }
-    }
-  `);
-  const { data } = await response.json();
-
-  return json({
-    shop: data?.shop,
-  });
+  return json({});
 };
 
 export default function Metrics() {
-  const appData = useRouteLoaderData("routes/app") as any;
-  const apiKey = appData?.apiKey || "";
-  const { shop } = useLoaderData<typeof loader>();
   const [metrics, setMetrics] = useState<WebVitalsMetric[]>([]);
   const [isListening, setIsListening] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -994,7 +994,7 @@ export default function PopupSettings() {
                 {description}
               </p>
             )}
-            {Boolean(enableNewsletter) ? (
+            {enableNewsletter ? (
               <div 
                 className="urgify-popup-newsletter-container" 
                 style={{ 

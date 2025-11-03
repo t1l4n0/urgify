@@ -601,14 +601,6 @@ export default function StockAlertsSimple() {
     }
   }, [fetcher.state, fetcher.data, revalidator]);
 
-  const getStockBadge = (inventory: number) => {
-    const safeInventory = Number(inventory) || 0;
-    const globalThresh = parseInt(globalThreshold) || 5;
-    if (safeInventory <= globalThresh) {
-      return <s-badge tone="warning">{`Below threshold (${safeInventory})`}</s-badge>;
-    }
-    return <s-badge tone="success">{`OK (${safeInventory})`}</s-badge>;
-  };
 
   // Preview component for stock alert
   const StockAlertPreview = () => {

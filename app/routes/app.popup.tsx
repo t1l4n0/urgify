@@ -31,6 +31,8 @@ const popupSettingsSchema = z.object({
   ctaText: z.string().default(''),
   ctaUrl: z.string().default(''),
   imageUrl: z.string().default(''),
+  imageFit: z.string().default('cover'),
+  imageAlt: z.string().default(''),
   style: z.string().default('spectacular'),
   titleFontSize: z.string().default('24px'),
   descriptionFontSize: z.string().default('16px'),
@@ -43,8 +45,15 @@ const popupSettingsSchema = z.object({
   placement: z.string().default('all'),
   position: z.string().default('middle-center'),
   triggerType: z.string().default('delay'),
-  delaySeconds: z.string().default('3'),
-  cookieDays: z.string().default('7'),
+  delaySeconds: z.string().refine((val) => {
+    const num = parseInt(val, 10);
+    return !isNaN(num) && num >= 0;
+  }, { message: "Delay must be 0 or greater" }).default('3'),
+  cookieDays: z.string().refine((val) => {
+    const num = parseInt(val, 10);
+    return !isNaN(num) && num >= 1;
+  }, { message: "Cookie duration must be 1 or greater" }).default('7'),
+  ignoreCookie: z.string().default('false'),
   enableNewsletter: z.string().default('false'),
   discountCodeId: z.string().default(''),
   discountCode: z.string().default(''),
@@ -199,6 +208,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       cta_text: 'Get Started',
       cta_url: '/',
       image_url: '',
+      image_fit: 'cover',
+      image_alt: '',
       style: 'spectacular',
       title_font_size: '24px',
       description_font_size: '16px',
@@ -213,6 +224,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       trigger_type: 'delay',
       delay_seconds: 3,
       cookie_days: 7,
+      ignore_cookie: false,
       enable_newsletter: false,
       discount_code_id: '',
       discount_code: '',
@@ -228,13 +240,71 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
 
     // Convert to camelCase for React components
+    const ctaUrl = rawSettings.cta_url || rawSettings.ctaUrl || '/';
+    
+    // Fetch resource information if URL points to a product or collection
+    let selectedResource: { id: string; title: string; handle: string } | null = null;
+    if (ctaUrl.startsWith('/products/')) {
+      const handle = ctaUrl.replace('/products/', '').split('?')[0].split('#')[0];
+      try {
+        const productResponse = await admin.graphql(`
+          query getProduct($handle: String!) {
+            product(handle: $handle) {
+              id
+              title
+              handle
+            }
+          }
+        `, { variables: { handle } });
+        
+        const productData = await productResponse.json();
+        const product = productData.data?.product;
+        if (product) {
+          selectedResource = {
+            id: product.id,
+            title: product.title,
+            handle: product.handle,
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching product:', error);
+      }
+    } else if (ctaUrl.startsWith('/collections/')) {
+      const handle = ctaUrl.replace('/collections/', '').split('?')[0].split('#')[0];
+      try {
+        const collectionResponse = await admin.graphql(`
+          query getCollection($handle: String!) {
+            collection(handle: $handle) {
+              id
+              title
+              handle
+            }
+          }
+        `, { variables: { handle } });
+        
+        const collectionData = await collectionResponse.json();
+        const collection = collectionData.data?.collection;
+        if (collection) {
+          selectedResource = {
+            id: collection.id,
+            title: collection.title,
+            handle: collection.handle,
+          };
+        }
+      } catch (error) {
+        console.error('Error fetching collection:', error);
+      }
+    }
+    
     const settings = {
       enabled: rawSettings.enabled,
       title: rawSettings.title,
       description: rawSettings.description,
       ctaText: rawSettings.cta_text || rawSettings.ctaText || 'Get Started',
-      ctaUrl: rawSettings.cta_url || rawSettings.ctaUrl || '/',
+      ctaUrl,
       imageUrl: rawSettings.image_url || rawSettings.imageUrl || '',
+      imageFit: rawSettings.image_fit || rawSettings.imageFit || 'cover',
+      imageAlt: rawSettings.image_alt || rawSettings.imageAlt || '',
       style: rawSettings.style,
       titleFontSize: rawSettings.title_font_size || rawSettings.titleFontSize || '24px',
       descriptionFontSize: rawSettings.description_font_size || rawSettings.descriptionFontSize || '16px',
@@ -249,6 +319,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       triggerType: rawSettings.trigger_type || rawSettings.triggerType || 'delay',
       delaySeconds: rawSettings.delay_seconds || rawSettings.delaySeconds || 3,
       cookieDays: rawSettings.cookie_days || rawSettings.cookieDays || 7,
+      ignoreCookie: rawSettings.ignore_cookie === true || 
+                    rawSettings.ignoreCookie === true || 
+                    rawSettings.ignore_cookie === 'true' || 
+                    rawSettings.ignoreCookie === 'true' || 
+                    false,
       enableNewsletter: rawSettings.enable_newsletter === true || 
                         rawSettings.enable_newsletter === 'true' || 
                         rawSettings.enableNewsletter === true || 
@@ -260,6 +335,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
     return json({
       settings,
+      selectedResource,
       discountCodes,
       hasActiveSubscription,
       isTrialActive,
@@ -277,8 +353,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           title: 'Special Offer - Limited Time Only!',
           description: 'Don\'t miss out on our exclusive deal. Get 20% off your first order when you sign up today.',
           ctaText: 'Get Started',
-          ctaUrl: '/',
+          ctaUrl: 'https://',
           imageUrl: '',
+          imageFit: 'cover',
+          imageAlt: '',
           style: 'spectacular',
           titleFontSize: '24px',
           descriptionFontSize: '16px',
@@ -293,13 +371,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           triggerType: 'delay',
           delaySeconds: 3,
           cookieDays: 7,
+          ignoreCookie: Boolean(false),
           enableNewsletter: Boolean(false),
           discountCodeId: '',
           discountCode: '',
         },
+        selectedResource: null,
         discountCodes: [],
-      hasActiveSubscription,
-      isTrialActive,
+        hasActiveSubscription,
+        isTrialActive,
     }, { 
       headers: { 
         "Cache-Control": "no-store" 
@@ -386,6 +466,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       ctaText: getStr("ctaText", "Get Started"),
       ctaUrl: getStr("ctaUrl", "/"),
       imageUrl: getStr("imageUrl", ""),
+      imageFit: getStr("imageFit", "cover"),
+      imageAlt: getStr("imageAlt", ""),
       style: getStr("style", "spectacular"),
       titleFontSize: getStr("titleFontSize", "24px"),
       descriptionFontSize: getStr("descriptionFontSize", "16px"),
@@ -400,6 +482,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       triggerType: getStr("triggerType", "delay"),
       delaySeconds: getStr("delaySeconds", "3"),
       cookieDays: getStr("cookieDays", "7"),
+      ignoreCookie: getStr("ignoreCookie", "false"),
       enableNewsletter: getStr("enableNewsletter", "false"),
       discountCodeId: getStr("discountCodeId", ""),
       discountCode: getStr("discountCode", ""),
@@ -415,6 +498,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       ctaText,
       ctaUrl,
       imageUrl,
+      imageFit,
+      imageAlt,
       style,
       titleFontSize,
       descriptionFontSize,
@@ -429,6 +514,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       triggerType,
       delaySeconds,
       cookieDays,
+      ignoreCookie,
       enableNewsletter,
       discountCodeId,
       discountCode,
@@ -458,6 +544,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       cta_text: ctaText,
       cta_url: ctaUrl,
       image_url: imageUrl,
+      image_fit: imageFit,
+      image_alt: imageAlt,
       style,
       title_font_size: titleFontSize,
       description_font_size: descriptionFontSize,
@@ -470,8 +558,9 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       placement,
       position,
       trigger_type: triggerType,
-      delay_seconds: parseInt(delaySeconds) || 3,
-      cookie_days: parseInt(cookieDays) || 7,
+      delay_seconds: Math.max(0, parseInt(delaySeconds) || 3),
+      cookie_days: Math.max(1, parseInt(cookieDays) || 7),
+      ignore_cookie: ignoreCookie === "true",
       enable_newsletter: enableNewsletter === "true",
       discount_code_id: discountCodeId,
       discount_code: discountCode,
@@ -553,7 +642,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 };
 
 export default function PopupSettings() {
-  const { settings, discountCodes } = useLoaderData<typeof loader>();
+  const { settings, discountCodes, selectedResource: loadedResource } = useLoaderData<typeof loader>();
   const revalidator = useRevalidator();
   const shopify = useAppBridge();
   // Priming: Stelle sicher, dass ein Session-Token vorhanden ist, sobald die Seite geladen ist
@@ -596,9 +685,12 @@ export default function PopupSettings() {
   const [title, setTitle] = useState(String(settings.title || ''));
   const [description, setDescription] = useState(String(settings.description || ''));
   const [ctaText, setCtaText] = useState(String(settings.ctaText || 'Get Started'));
-  const [ctaUrl, setCtaUrl] = useState(String(settings.ctaUrl || '/'));
-  const [ctaUrlType, setCtaUrlType] = useState<'product' | 'collection' | 'page' | 'blog' | 'article' | 'policy' | 'external'>('external');
+  const [ctaUrl, setCtaUrl] = useState(String(settings.ctaUrl || 'https://'));
+  const [ctaUrlType, setCtaUrlType] = useState<'product' | 'collection' | 'external'>('external');
+  const [selectedResource, setSelectedResource] = useState<{ id: string; title: string; handle: string } | null>(null);
   const [imageUrl, setImageUrl] = useState(String(settings.imageUrl || ''));
+  const [imageFit, setImageFit] = useState<string>(String(settings.imageFit || 'cover'));
+  const [imageAlt, setImageAlt] = useState<string>(String(settings.imageAlt || ''));
   const [style, setStyle] = useState(String(settings.style || 'spectacular'));
   const [titleFontSize, setTitleFontSize] = useState(String(settings.titleFontSize || '24px'));
   const [descriptionFontSize, setDescriptionFontSize] = useState(String(settings.descriptionFontSize || '16px'));
@@ -613,6 +705,7 @@ export default function PopupSettings() {
   const [triggerType, setTriggerType] = useState(String(settings.triggerType || 'delay'));
   const [delaySeconds, setDelaySeconds] = useState(String(settings.delaySeconds || 3));
   const [cookieDays, setCookieDays] = useState(String(settings.cookieDays || 7));
+  const [ignoreCookie, setIgnoreCookie] = useState(Boolean(settings.ignoreCookie || false));
   const [enableNewsletter, setEnableNewsletter] = useState(Boolean(settings.enableNewsletter || false));
   const [discountCodeId, setDiscountCodeId] = useState(String(settings.discountCodeId || ''));
   
@@ -640,7 +733,7 @@ export default function PopupSettings() {
     setTitle(String(settings.title || ''));
     setDescription(String(settings.description || ''));
     setCtaText(String(settings.ctaText || 'Get Started'));
-    const url = String(settings.ctaUrl || '/');
+    const url = String(settings.ctaUrl || 'https://');
     setCtaUrl(url);
     
     // Automatisch den Link-Typ basierend auf der URL erkennen
@@ -648,14 +741,6 @@ export default function PopupSettings() {
       setCtaUrlType('product');
     } else if (url.startsWith('/collections/')) {
       setCtaUrlType('collection');
-    } else if (url.startsWith('/pages/')) {
-      setCtaUrlType('page');
-    } else if (url.startsWith('/blogs/') && url.split('/').length > 3) {
-      setCtaUrlType('article');
-    } else if (url.startsWith('/blogs/')) {
-      setCtaUrlType('blog');
-    } else if (url.startsWith('/policies/')) {
-      setCtaUrlType('policy');
     } else if (url.startsWith('http://') || url.startsWith('https://')) {
       setCtaUrlType('external');
     } else {
@@ -663,6 +748,8 @@ export default function PopupSettings() {
     }
     
     setImageUrl(String(settings.imageUrl || ''));
+    setImageFit(String(settings.imageFit || 'cover'));
+    setImageAlt(String(settings.imageAlt || ''));
     setStyle(String(settings.style || 'spectacular'));
     setTitleFontSize(String(settings.titleFontSize || '24px'));
     setDescriptionFontSize(String(settings.descriptionFontSize || '16px'));
@@ -677,9 +764,17 @@ export default function PopupSettings() {
     setTriggerType(String(settings.triggerType || 'delay'));
     setDelaySeconds(String(settings.delaySeconds || 3));
     setCookieDays(String(settings.cookieDays || 7));
+    setIgnoreCookie(Boolean(settings.ignoreCookie || false));
     setEnableNewsletter(Boolean(settings.enableNewsletter || false));
     setDiscountCodeId(String(settings.discountCodeId || ''));
-  }, [settings]);
+    
+    // Set selected resource if loaded from server
+    if (loadedResource) {
+      setSelectedResource(loadedResource);
+    } else {
+      setSelectedResource(null);
+    }
+  }, [settings, loadedResource]);
 
   // Control save bar visibility programmatically
   useEffect(() => {
@@ -812,6 +907,16 @@ export default function PopupSettings() {
             url = `/collections/${resource.handle}`;
           }
           setCtaUrl(url);
+          
+          // Speichere die ausgewählte Ressource für die Anzeige
+          if ('id' in resource && 'title' in resource) {
+            setSelectedResource({
+              id: String(resource.id),
+              title: String(resource.title || ''),
+              handle: String(resource.handle || ''),
+            });
+          }
+          
           setIsDirty(true);
         }
       }
@@ -825,20 +930,21 @@ export default function PopupSettings() {
     setCtaUrlType(newType);
     setIsDirty(true);
     
-    // Wenn ein Typ ausgewählt wird, der einen Resource Picker unterstützt, öffnen wir diesen
-    if (newType === 'product' || newType === 'collection') {
-      handleOpenResourcePicker(newType);
-    } else if (newType === 'external') {
-      // Bei externen Links URL-Feld leeren, falls es eine Shopify-URL ist
-      if (ctaUrl.startsWith('/products/') || ctaUrl.startsWith('/collections/') || 
-          ctaUrl.startsWith('/pages/') || ctaUrl.startsWith('/blogs/') || 
-          ctaUrl.startsWith('/policies/')) {
-        setCtaUrl('');
+    // Wenn ein Typ ausgewählt wird, der keinen Resource Picker unterstützt, Ressource zurücksetzen
+    if (newType !== 'product' && newType !== 'collection') {
+      setSelectedResource(null);
+      // Bei externen Links URL-Feld auf https:// setzen, falls es eine Shopify-URL ist oder leer
+      if (newType === 'external') {
+        if (ctaUrl.startsWith('/products/') || ctaUrl.startsWith('/collections/') || 
+            ctaUrl.startsWith('/pages/') || ctaUrl.startsWith('/blogs/') || 
+            ctaUrl.startsWith('/policies/') || !ctaUrl.startsWith('http://') && !ctaUrl.startsWith('https://')) {
+          setCtaUrl('https://');
+        }
       }
     }
-  }, [ctaUrl, handleOpenResourcePicker]);
+  }, [ctaUrl]);
   
-  const handleBrowseButtonClick = useCallback(() => {
+  const handleResourceFieldClick = useCallback(() => {
     if (ctaUrlType === 'product' || ctaUrlType === 'collection') {
       handleOpenResourcePicker(ctaUrlType);
     }
@@ -933,6 +1039,8 @@ export default function PopupSettings() {
       ctaText,
       ctaUrl,
       imageUrl,
+      imageFit: imageFit.toString(),
+      imageAlt,
       style,
       titleFontSize,
       descriptionFontSize,
@@ -947,6 +1055,7 @@ export default function PopupSettings() {
       triggerType,
       delaySeconds,
       cookieDays,
+      ignoreCookie: ignoreCookie.toString(),
       enableNewsletter: enableNewsletter.toString(),
       discountCodeId,
       discountCode,
@@ -1012,7 +1121,7 @@ export default function PopupSettings() {
     } finally {
       setIsSaving(false);
     }
-  }, [discountCodes, discountCodeId, enableNewsletter, backgroundColor, ctaBackgroundColor, ctaFontSize, ctaText, ctaTextColor, ctaUrl, delaySeconds, description, descriptionFontSize, enabled, imageUrl, overlayColor, placement, position, triggerType, revalidator, shopify, style, textColor, title, titleFontSize, cookieDays]);
+  }, [discountCodes, discountCodeId, enableNewsletter, backgroundColor, ctaBackgroundColor, ctaFontSize, ctaText, ctaTextColor, ctaUrl, delaySeconds, description, descriptionFontSize, enabled, imageUrl, imageFit, imageAlt, overlayColor, placement, position, triggerType, revalidator, shopify, style, textColor, title, titleFontSize, cookieDays, ignoreCookie]);
 
   // Preview component
   const PopupPreview = () => {
@@ -1073,12 +1182,45 @@ export default function PopupSettings() {
         <s-heading>Preview</s-heading>
         <div 
           className={`urgify-popup-preview urgify-popup-preview--${style}`}
-          style={getPreviewStyles()}
+          style={{ ...getPreviewStyles(), position: 'relative' }}
         >
+            <button 
+              className="urgify-popup-close-preview"
+              type="button"
+              aria-label="Close popup"
+              style={{
+                position: 'absolute',
+                top: '12px',
+                right: '12px',
+                background: style === 'spectacular' || style === 'brutalist' 
+                  ? 'rgba(255, 255, 255, 0.2)' 
+                  : style === 'glassmorphism'
+                  ? 'rgba(255, 255, 255, 0.3)'
+                  : 'rgba(255, 255, 255, 0.9)',
+                border: 'none',
+                fontSize: '32px',
+                lineHeight: 1,
+                cursor: 'default',
+                color: style === 'spectacular' || style === 'brutalist' ? '#fff' : '#666',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                padding: 0,
+                zIndex: 20,
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+                pointerEvents: 'none',
+              }}
+            >
+              ×
+            </button>
             {imageUrl && (
               <img 
                 src={imageUrl} 
-                alt="Preview" 
+                alt={imageAlt || 'Preview'}
+                style={{ objectFit: imageFit === 'contain' ? 'contain' : 'cover' }}
               />
             )}
             {title && (
@@ -1270,12 +1412,79 @@ export default function PopupSettings() {
                       >
                         <s-option value="collection">Collection</s-option>
                         <s-option value="product">Product</s-option>
-                        <s-option value="page">Page</s-option>
-                        <s-option value="blog">Blog</s-option>
-                        <s-option value="article">Blog post</s-option>
-                        <s-option value="policy">Policy</s-option>
                         <s-option value="external">External link</s-option>
                       </s-select>
+                      
+                      {(ctaUrlType === 'product' || ctaUrlType === 'collection') && (
+                        <div>
+                          <s-label for="resource-reference-field">
+                            {ctaUrlType === 'product' ? 'Product' : 'Collection'}
+                          </s-label>
+                          <div
+                            id="resource-reference-field"
+                            onClick={handleResourceFieldClick}
+                            style={{
+                              border: '1px solid #d1d5db',
+                              borderRadius: '6px',
+                              padding: '8px 12px',
+                              cursor: 'pointer',
+                              backgroundColor: '#ffffff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              minHeight: '36px',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.borderColor = '#6366f1';
+                              e.currentTarget.style.backgroundColor = '#f9fafb';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.borderColor = '#d1d5db';
+                              e.currentTarget.style.backgroundColor = '#ffffff';
+                            }}
+                          >
+                            <span style={{ 
+                              color: selectedResource ? '#000000' : '#6b7280',
+                              fontSize: '14px',
+                              flex: 1,
+                            }}>
+                              {selectedResource ? selectedResource.title : `Select a ${ctaUrlType}`}
+                            </span>
+                            <svg 
+                              width="16" 
+                              height="16" 
+                              viewBox="0 0 16 16" 
+                              fill="none" 
+                              xmlns="http://www.w3.org/2000/svg"
+                              style={{ color: '#6b7280', flexShrink: 0, marginLeft: '8px' }}
+                            >
+                              <path 
+                                d="M6 12L10 8L6 4" 
+                                stroke="currentColor" 
+                                strokeWidth="2" 
+                                strokeLinecap="round" 
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </div>
+                          {selectedResource && (
+                            <s-button
+                              variant="tertiary"
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedResource(null);
+                                setCtaUrl('/');
+                                setIsDirty(true);
+                              }}
+                              style={{ marginTop: '8px' }}
+                            >
+                              Remove {ctaUrlType}
+                            </s-button>
+                          )}
+                        </div>
+                      )}
+                      
                       {ctaUrlType === 'external' && (
                         <s-url-field
                           label="CTA URL"
@@ -1287,14 +1496,6 @@ export default function PopupSettings() {
                           autocomplete="off"
                           details="Enter external URL (e.g., https://example.com)"
                         />
-                      )}
-                      {(ctaUrlType === 'product' || ctaUrlType === 'collection') && (
-                        <s-button
-                          onClick={handleBrowseButtonClick}
-                          variant="secondary"
-                        >
-                          Browse {ctaUrlType === 'product' ? 'products' : 'collections'}
-                        </s-button>
                       )}
                     </s-stack>
                   ) : null}
@@ -1351,6 +1552,34 @@ export default function PopupSettings() {
                       </div>
                     )}
                   </s-drop-zone>
+                  
+                  {imageUrl && (
+                    <>
+                      <s-select
+                        label="Image Position"
+                        value={imageFit}
+                        onChange={(e) => {
+                          setImageFit(e.currentTarget.value);
+                          setIsDirty(true);
+                        }}
+                        details="Fill: Image fills the area (may be cropped). Contain: Image is fully displayed (may have empty areas)."
+                      >
+                        <s-option value="cover">Fill</s-option>
+                        <s-option value="contain">Contain</s-option>
+                      </s-select>
+                      
+                      <s-text-field
+                        label="Alt Text"
+                        value={imageAlt}
+                        onChange={(e) => {
+                          setImageAlt(e.currentTarget.value);
+                          setIsDirty(true);
+                        }}
+                        autocomplete="off"
+                        details="Description of the image for accessibility and SEO. Used when the image cannot be loaded."
+                      />
+                    </>
+                  )}
                   
                   <s-select
                     label="Style"
@@ -1418,8 +1647,13 @@ export default function PopupSettings() {
                     <s-number-field
                       label="Delay (seconds)"
                       value={delaySeconds}
+                      min={0}
                       onChange={(e) => {
-                        setDelaySeconds(e.currentTarget.value);
+                        const value = e.currentTarget.value;
+                        const numValue = parseInt(value, 10);
+                        // Ensure value is not negative
+                        const safeValue = isNaN(numValue) || numValue < 0 ? '0' : value;
+                        setDelaySeconds(safeValue);
                         setIsDirty(true);
                       }}
                     />
@@ -1428,11 +1662,27 @@ export default function PopupSettings() {
                   <s-number-field
                     label="Cookie Duration (days)"
                     value={cookieDays}
+                    min={1}
                     onChange={(e) => {
-                      setCookieDays(e.currentTarget.value);
+                      const value = e.currentTarget.value;
+                      const numValue = parseInt(value, 10);
+                      // Ensure value is at least 1
+                      const safeValue = isNaN(numValue) || numValue < 1 ? '1' : value;
+                      setCookieDays(safeValue);
                       setIsDirty(true);
                     }}
                     details="Days to hide popup after dismissal"
+                    disabled={ignoreCookie}
+                  />
+                  
+                  <s-checkbox
+                    label="Always show popup (ignore cookie)"
+                    checked={ignoreCookie}
+                    onChange={(e) => {
+                      setIgnoreCookie(e.currentTarget.checked);
+                      setIsDirty(true);
+                    }}
+                    details="If enabled, the popup will always be shown, regardless of cookie duration. This overrides the cookie duration setting."
                   />
                   
                   {style === "custom" && (
@@ -1553,8 +1803,10 @@ export default function PopupSettings() {
             setTitle(String(settings.title || ''));
             setDescription(String(settings.description || ''));
             setCtaText(String(settings.ctaText || 'Get Started'));
-            setCtaUrl(String(settings.ctaUrl || '/'));
+            setCtaUrl(String(settings.ctaUrl || 'https://'));
             setImageUrl(String(settings.imageUrl || ''));
+            setImageFit(String(settings.imageFit || 'cover'));
+            setImageAlt(String(settings.imageAlt || ''));
             setStyle(String(settings.style || 'spectacular'));
             setTitleFontSize(String(settings.titleFontSize || '24px'));
             setDescriptionFontSize(String(settings.descriptionFontSize || '16px'));
@@ -1569,6 +1821,7 @@ export default function PopupSettings() {
             setTriggerType(String(settings.triggerType || 'delay'));
             setDelaySeconds(String(settings.delaySeconds || 3));
             setCookieDays(String(settings.cookieDays || 7));
+            setIgnoreCookie(Boolean(settings.ignoreCookie || false));
             setIsDirty(false);
           }}
         >

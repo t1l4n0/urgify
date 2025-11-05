@@ -369,201 +369,167 @@
   font-size: var(--urgify-font-size, 18px);
 }
 
-/* Layout Styles - Similar to Popup Preview */
-/* Ensure Layout is flex for ordering - NOTE: DO NOT add display: flex !important here */
+/* Ensure Layout works correctly */
 div[class*="Layout"][class*="Polaris"] {
-  flex-wrap: wrap !important;
   width: 100% !important;
   max-width: 100% !important;
-  gap: 0 !important;
   overflow-x: hidden !important;
 }
 
-/* Base wrapper styles */
-.stock-alert-preview-wrapper,
-.stock-alert-form-wrapper {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  max-width: 100%;
-  overflow-x: hidden;
-}
-
-/* Layout sections ordering - Mobile: Vorschau oben */
-.stock-alert-preview-wrapper {
-  order: 1 !important;
-  width: 100% !important;
-  flex: 0 0 100% !important;
-  max-width: 100% !important;
-}
-
-.stock-alert-form-wrapper {
-  order: 2 !important;
-  width: 100% !important;
-  flex: 0 0 100% !important;
-  max-width: 100% !important;
-}
-
-/* Desktop: Form links, Vorschau rechts */
-@media (min-width: 769px) {
-  .stock-alert-preview-wrapper {
-    order: 2 !important;
-    width: 50% !important;
-    flex: 0 0 50% !important;
-    max-width: 50% !important;
-  }
-  
-  .stock-alert-form-wrapper {
-    order: 1 !important;
-    width: 50% !important;
-    flex: 0 0 50% !important;
-    max-width: 50% !important;
-  }
-}
-
-/* Sticky preview container */
-.stock-alert-preview-wrapper {
-  position: relative;
-}
-
+/* Preview container - sticky with content starting at top */
 .stock-alert-preview-sticky-container {
   width: 100%;
   max-width: 100%;
   max-height: calc(100vh - 100px);
   overflow-x: hidden !important;
   overflow-y: auto;
-  z-index: 10;
-  transition: top 0.1s ease-out;
   box-sizing: border-box;
-  padding: 0 30px;
+  position: -webkit-sticky;
+  position: sticky;
+  top: 80px;
+  align-self: flex-start;
+  padding: 0 24px;
+  margin: 0;
 }
 
-/* Desktop: CSS Sticky - einfach und zuverlässig */
-@media (min-width: 769px) {
-  .stock-alert-preview-wrapper {
-    display: block !important;
-    position: relative !important;
-    height: fit-content !important;
-    align-self: flex-start !important;
-  }
-  
-  .stock-alert-preview-wrapper > div {
-    display: block !important;
-    position: relative !important;
-    height: 100% !important;
-  }
-  
-  /* Wichtig: Sticky funktioniert nur wenn Parent height hat */
-  .stock-alert-preview-wrapper .Polaris-Layout__Section {
-    height: fit-content !important;
-    min-height: 0 !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    min-width: 0 !important;
-    overflow-x: hidden !important;
-    box-sizing: border-box !important;
-  }
-  
-  .stock-alert-form-wrapper .Polaris-Layout__Section {
-    width: 100% !important;
-    max-width: 100% !important;
-  }
-  
-  .stock-alert-preview-sticky-container {
-    position: -webkit-sticky !important; /* Safari Support */
-    position: sticky !important;
-    top: 80px !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-    align-self: flex-start;
-    box-sizing: border-box;
-    padding: 0 30px !important;
-  }
+/* Ensure preview content starts at the very top - remove all top spacing */
+.stock-alert-preview-sticky-container {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
-/* Ensure form fields take full width */
-.stock-alert-form-wrapper .Polaris-TextField,
-.stock-alert-form-wrapper .Polaris-Select,
-.stock-alert-form-wrapper .Polaris-ChoiceList,
-.stock-alert-form-wrapper input,
-.stock-alert-form-wrapper select,
-.stock-alert-form-wrapper textarea {
-  width: 100% !important;
-  max-width: 100% !important;
+/* Remove padding from parent section containing preview */
+s-section:has(.stock-alert-preview-sticky-container) {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
-.stock-alert-form-wrapper .Polaris-FormLayout {
-  width: 100%;
+/* Remove all padding from Polaris Card/Section inside preview */
+s-section:has(.stock-alert-preview-sticky-container) s-section,
+s-section:has(.stock-alert-preview-sticky-container) .Polaris-Card,
+s-section:has(.stock-alert-preview-sticky-container) .Polaris-Layout__Section {
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
 }
 
-.stock-alert-form-wrapper .Polaris-FormLayout__Item {
-  width: 100%;
+.stock-alert-preview-sticky-container > * {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
-/* Ensure Cards take full width on mobile */
+.stock-alert-preview-sticky-container s-section {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+.stock-alert-preview-sticky-container s-stack {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  gap: var(--p-space-4) !important;
+}
+
+.stock-alert-preview-sticky-container s-heading {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  margin-bottom: var(--p-space-4) !important;
+}
+
+/* Ensure preview content div has no top margin */
+.stock-alert-preview-sticky-container > div {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
+/* More horizontal padding for stock alert to prevent clipping */
+.stock-alert-preview-sticky-container .urgify-stock-alert {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+/* Responsive adjustments */
 @media (max-width: 768px) {
-  .stock-alert-form-wrapper .Polaris-Card,
-  .stock-alert-preview-wrapper .Polaris-Card {
-    width: 100%;
-    max-width: 100%;
-  }
-}
-
-/* Responsive adjustments - Vorschau oben auf mobil */
-@media (max-width: 768px) {
-  /* Ensure full width on mobile */
-  .stock-alert-preview-wrapper {
-    order: 1;
-    width: 100% !important;
-    max-width: 100% !important;
-    flex: 1 1 100% !important;
+  /* Grid layout: single column on mobile - target by class */
+  .stock-alerts-grid,
+  s-grid.stock-alerts-grid,
+  s-grid[class*="stock-alerts-grid"],
+  s-page .stock-alerts-grid,
+  s-page s-grid.stock-alerts-grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    grid-auto-flow: row !important;
   }
   
-  .stock-alert-form-wrapper {
-    order: 2;
-    width: 100% !important;
-    max-width: 100% !important;
-    flex: 1 1 100% !important;
+  /* Force all grids to single column on mobile - override inline styles */
+  s-page s-grid,
+  s-grid,
+  s-grid[gridTemplateColumns],
+  s-grid[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
   }
   
-  /* Full width for sections on mobile - wichtig für Polaris Layout.Section */
-  .stock-alert-form-wrapper > div,
-  .stock-alert-preview-wrapper > div {
-    width: 100% !important;
-    max-width: 100% !important;
-    flex: 1 1 100% !important;
+  /* Override any inline styles that might be set */
+  .stock-alerts-grid[style*="grid-template-columns"],
+  s-grid.stock-alerts-grid[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
   }
   
-  /* Polaris Layout.Section direkt ansprechen */
-  .stock-alert-form-wrapper .Polaris-Layout__Section,
-  .stock-alert-preview-wrapper .Polaris-Layout__Section {
-    width: 100% !important;
-    max-width: 100% !important;
-    flex: 1 1 100% !important;
+  /* Make preview section appear first (above settings) on mobile */
+  /* Target the section containing the preview container */
+  .stock-alerts-grid > s-section:last-child,
+  .stock-alerts-grid > s-section:nth-child(2),
+  s-grid.stock-alerts-grid > s-section:last-child,
+  s-grid.stock-alerts-grid > s-section:nth-child(2),
+  s-page .stock-alerts-grid > s-section:last-child,
+  s-page .stock-alerts-grid > s-section:nth-child(2),
+  s-page s-grid.stock-alerts-grid > s-section:last-child,
+  s-page s-grid.stock-alerts-grid > s-section:nth-child(2),
+  s-section:has(.stock-alert-preview-sticky-container) {
+    order: -1 !important;
+    grid-column: 1 !important;
+    grid-row: 1 !important;
   }
   
-  /* Polaris Card auf Mobile full width */
-  .stock-alert-form-wrapper .Polaris-Card,
-  .stock-alert-preview-wrapper .Polaris-Card {
+  /* Ensure settings section appears second */
+  .stock-alerts-grid > s-section:first-child,
+  s-grid.stock-alerts-grid > s-section:first-child,
+  s-page .stock-alerts-grid > s-section:first-child,
+  s-page s-grid.stock-alerts-grid > s-section:first-child {
+    order: 0 !important;
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+  }
+  
+  /* Ensure grid items stack vertically and take full width */
+  .stock-alerts-grid > s-section,
+  s-grid.stock-alerts-grid > s-section,
+  s-page .stock-alerts-grid > s-section,
+  s-page s-grid.stock-alerts-grid > s-section,
+  s-page s-grid > s-section {
     width: 100% !important;
     max-width: 100% !important;
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+    grid-column: 1 !important;
+    display: block !important;
   }
   
   .stock-alert-preview-sticky-container {
     position: relative !important;
     top: 0 !important;
     max-height: none;
-    overflow-x: hidden !important;
-    overflow-y: visible;
-    width: 100% !important;
-    max-width: 100% !important;
-    left: auto !important;
-    box-sizing: border-box;
-    padding: 0 20px !important;
+    padding: 0 16px;
+  }
+  
+  .stock-alert-preview-sticky-container .urgify-stock-alert {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
   }
 }
 

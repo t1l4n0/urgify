@@ -146,37 +146,43 @@ export function analyzeBundleSize(buildOutput: string): BundleMetrics {
 export function trackCoreWebVitals() {
   if (typeof window === 'undefined') return;
 
-  // Track Largest Contentful Paint (LCP)
-  if ('PerformanceObserver' in window) {
-    const lcpObserver = new PerformanceObserver((list) => {
-      const entries = list.getEntries();
-      const lastEntry = entries[entries.length - 1];
-      console.log('📊 LCP:', lastEntry.startTime);
-    });
-    lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
-
-    // Track First Input Delay (FID)
-    const fidObserver = new PerformanceObserver((list) => {
-      const entries = list.getEntries();
-      entries.forEach((entry: any) => {
-        console.log('📊 FID:', entry.processingStart - entry.startTime);
-      });
-    });
-    fidObserver.observe({ entryTypes: ['first-input'] });
-
-    // Track Cumulative Layout Shift (CLS)
-    let clsValue = 0;
-    const clsObserver = new PerformanceObserver((list) => {
-      const entries = list.getEntries();
-      entries.forEach((entry: any) => {
-        if (!entry.hadRecentInput) {
-          clsValue += entry.value;
+    // Track Largest Contentful Paint (LCP)
+    if ('PerformanceObserver' in window) {
+      const lcpObserver = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        const lastEntry = entries[entries.length - 1];
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📊 LCP:', lastEntry.startTime);
         }
       });
-      console.log('📊 CLS:', clsValue);
-    });
-    clsObserver.observe({ entryTypes: ['layout-shift'] });
-  }
+      lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+
+      // Track First Input Delay (FID)
+      const fidObserver = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        entries.forEach((entry: any) => {
+          if (process.env.NODE_ENV === 'development') {
+            console.log('📊 FID:', entry.processingStart - entry.startTime);
+          }
+        });
+      });
+      fidObserver.observe({ entryTypes: ['first-input'] });
+
+      // Track Cumulative Layout Shift (CLS)
+      let clsValue = 0;
+      const clsObserver = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        entries.forEach((entry: any) => {
+          if (!entry.hadRecentInput) {
+            clsValue += entry.value;
+          }
+        });
+        if (process.env.NODE_ENV === 'development') {
+          console.log('📊 CLS:', clsValue);
+        }
+      });
+      clsObserver.observe({ entryTypes: ['layout-shift'] });
+    }
 }
 
 // Performance middleware for Remix

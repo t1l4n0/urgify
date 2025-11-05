@@ -547,6 +547,101 @@ export default function StockAlertsSimple() {
     }
   }, [isDirty]);
 
+  // Responsive state for grid columns
+  const [isMobile, setIsMobile] = useState(false);
+  const stockAttemptsRef = useRef(0);
+  
+  // Check screen size on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Responsive grid layout for mobile - CSS handles most of it, this is a fallback
+  useEffect(() => {
+    stockAttemptsRef.current = 0; // Reset on change
+    
+    const updateGridLayout = () => {
+      const grid = document.querySelector('.stock-alerts-grid') as HTMLElement;
+      if (!grid || !grid.style) return;
+      
+      if (isMobile) {
+        // Force single column via style
+        grid.style.setProperty('grid-template-columns', '1fr', 'important');
+        grid.style.setProperty('display', 'grid', 'important');
+        
+        // Remove the attribute that might be setting it
+        grid.removeAttribute('gridTemplateColumns');
+        
+        // Make preview section appear first
+        const sections = grid.querySelectorAll('s-section');
+        if (sections.length >= 2) {
+          // Find the preview section (contains the preview container)
+          const previewSection = Array.from(sections).find((section: Element) => {
+            return section.querySelector('.stock-alert-preview-sticky-container');
+          }) as HTMLElement;
+          
+          if (previewSection && previewSection.style) {
+            previewSection.style.setProperty('order', '-1', 'important');
+            previewSection.style.setProperty('grid-column', '1', 'important');
+            previewSection.style.setProperty('grid-row', '1', 'important');
+          }
+          
+          // Ensure settings section appears second
+          const settingsSection = Array.from(sections).find((section: Element) => {
+            return !section.querySelector('.stock-alert-preview-sticky-container');
+          }) as HTMLElement;
+          
+          if (settingsSection && settingsSection.style) {
+            settingsSection.style.setProperty('order', '0', 'important');
+            settingsSection.style.setProperty('grid-column', '1', 'important');
+            settingsSection.style.setProperty('grid-row', '2', 'important');
+          }
+          
+          // Ensure all sections take full width
+          sections.forEach((section: any) => {
+            if (section.style) {
+              section.style.setProperty('width', '100%', 'important');
+              section.style.setProperty('max-width', '100%', 'important');
+            }
+          });
+        }
+      } else {
+        // Desktop: reset to default
+        grid.style.setProperty('grid-template-columns', 'repeat(2, 1fr)', 'important');
+        const sections = grid.querySelectorAll('s-section');
+        sections.forEach((section: any) => {
+          if (section.style) {
+            section.style.removeProperty('order');
+            section.style.removeProperty('grid-row');
+          }
+        });
+      }
+    };
+
+    // Use requestAnimationFrame for better timing
+    requestAnimationFrame(() => {
+      setTimeout(updateGridLayout, 50);
+    });
+    
+    // Run a few times initially to catch late-rendering Web Components
+    const maxAttempts = 10;
+    const interval = setInterval(() => {
+      updateGridLayout();
+      stockAttemptsRef.current++;
+      if (stockAttemptsRef.current >= maxAttempts) {
+        clearInterval(interval);
+      }
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, [isMobile]);
+
   const safeProducts = Array.isArray(products) ? products : [];
   const lowStockProducts = safeProducts.filter((product: any) => {
     const inventory = product?.totalInventory || 0;
@@ -682,7 +777,11 @@ export default function StockAlertsSimple() {
 
   return (
     <s-page heading="Stock Alert Settings">
-      <s-grid gap="base" gridTemplateColumns="repeat(2, 1fr)">
+      <s-grid 
+        gap="base" 
+        gridTemplateColumns={isMobile ? "1fr" : "repeat(2, 1fr)"}
+        className="stock-alerts-grid"
+      >
         <s-section heading="Stock Alert Settings">
           <s-stack gap="base" direction="block">
                     <s-checkbox
@@ -802,7 +901,7 @@ export default function StockAlertsSimple() {
         </s-section>
       </s-grid>
       
-      <ui-save-bar showing={isDirty} id="stock-alert-save-bar">
+      <ui-save-bar id="stock-alert-save-bar">
         <button 
           variant="primary" 
           id="stock-alert-save-button"

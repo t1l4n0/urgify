@@ -133,7 +133,10 @@ export class BillingManager {
       const { data } = await response.json();
       const subscriptions = data?.currentAppInstallation?.activeSubscriptions || [];
       
+      console.log('[BillingManager] Raw subscriptions data:', JSON.stringify(subscriptions, null, 2));
+      
       if (subscriptions.length === 0) {
+        console.log('[BillingManager] No subscriptions found');
         return {
           hasActiveSubscription: false,
           subscription: null,
@@ -143,12 +146,34 @@ export class BillingManager {
         };
       }
 
-      const activeSubscription = subscriptions.find((sub: any) => 
-        (sub.status === 'ACTIVE' && new Date(sub.currentPeriodEnd) > new Date()) ||
-        (sub.status === 'TRIAL' && new Date(sub.currentPeriodEnd) > new Date())
-      );
+      // Check all subscriptions and log their status
+      subscriptions.forEach((sub: any) => {
+        const statusUpper = sub.status?.toUpperCase();
+        const periodEnd = new Date(sub.currentPeriodEnd);
+        const now = new Date();
+        const isActive = (statusUpper === 'ACTIVE' || statusUpper === 'TRIAL') && periodEnd > now;
+        console.log(`[BillingManager] Subscription ${sub.id}:`, {
+          status: sub.status,
+          statusUpper,
+          currentPeriodEnd: sub.currentPeriodEnd,
+          periodEnd: periodEnd.toISOString(),
+          now: now.toISOString(),
+          isActive,
+        });
+      });
+
+      // Case-insensitive status check and also check if period hasn't ended
+      const activeSubscription = subscriptions.find((sub: any) => {
+        const statusUpper = sub.status?.toUpperCase();
+        const periodEnd = new Date(sub.currentPeriodEnd);
+        const now = new Date();
+        const isValidStatus = statusUpper === 'ACTIVE' || statusUpper === 'TRIAL';
+        const isNotExpired = periodEnd > now;
+        return isValidStatus && isNotExpired;
+      });
 
       if (!activeSubscription) {
+        console.log('[BillingManager] No active subscription found');
         return {
           hasActiveSubscription: false,
           subscription: null,
@@ -157,6 +182,13 @@ export class BillingManager {
           daysUntilSubscriptionEnds: null,
         };
       }
+
+      console.log('[BillingManager] Found active subscription:', {
+        id: activeSubscription.id,
+        name: activeSubscription.name,
+        status: activeSubscription.status,
+        currentPeriodEnd: activeSubscription.currentPeriodEnd,
+      });
 
       const subscription: Subscription = {
         id: activeSubscription.id,
@@ -170,7 +202,8 @@ export class BillingManager {
         interval: activeSubscription.lineItems?.[0]?.plan?.pricingDetails?.interval || 'monthly',
       };
 
-      const isTrialActive = activeSubscription.status === 'TRIAL' && 
+      const statusUpper = activeSubscription.status?.toUpperCase();
+      const isTrialActive = statusUpper === 'TRIAL' && 
         new Date(activeSubscription.currentPeriodEnd) > new Date();
       
       const daysUntilTrialEnds = isTrialActive ? 

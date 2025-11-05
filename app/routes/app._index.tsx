@@ -93,7 +93,7 @@ export default function Index() {
       >
         <s-paragraph>
           {hasActiveSub
-            ? 'You can use all app features: countdown timers, limited-time offers, smart stock alerts, scarcity banners, and complete customization options.'
+            ? 'You can use all app features: countdown timers, limited-time offers, smart stock alerts, scarcity banners, smart popups, and complete customization options.'
             : 'A subscription is required to use all features.'}
         </s-paragraph>
         {!hasActiveSub && (
@@ -124,7 +124,7 @@ export default function Index() {
         <s-stack gap="base">
           <s-paragraph>
             Urgify provides urgency marketing tools for Shopify stores. 
-            Add countdown timers, limited-time offers, stock alerts, and scarcity banners to your product pages.
+            Add countdown timers, limited-time offers, stock alerts, scarcity banners, and smart popups to your product pages.
           </s-paragraph>
 
           <Suspense fallback={<div aria-busy="true">Loading features…</div>}>
@@ -141,26 +141,35 @@ export default function Index() {
           <s-paragraph>
             Follow these steps to set up Urgify blocks in your theme and start creating urgency experiences for your customers.
           </s-paragraph>
-          <s-ordered-list>
-            <s-ordered-list-item>
-              <s-paragraph><strong>Open the Theme Editor:</strong> Online Store → Themes → Customize.</s-paragraph>
-            </s-ordered-list-item>
-            <s-ordered-list-item>
-              <s-paragraph><strong>Add Urgify blocks:</strong> Add "Urgify Countdown", "Urgify Limited Offer", "Urgify Scarcity Banner", or "Urgify Stock Alert" to your sections.</s-paragraph>
-            </s-ordered-list-item>
-            <s-ordered-list-item>
-              <s-paragraph><strong>Configure settings:</strong> Set target dates, messages, and thresholds for your urgency elements.</s-paragraph>
-            </s-ordered-list-item>
-            <s-ordered-list-item>
-              <s-paragraph><strong>Choose styles:</strong> Select from various styles: Spectacular, Brutalist, Glassmorphism, and more.</s-paragraph>
-            </s-ordered-list-item>
-            <s-ordered-list-item>
-              <s-paragraph><strong>Customize appearance:</strong> Adjust colors, fonts, and layout to match your theme.</s-paragraph>
-            </s-ordered-list-item>
-            <s-ordered-list-item>
-              <s-paragraph><strong>Save & test:</strong> Save and test on your storefront.</s-paragraph>
-            </s-ordered-list-item>
-          </s-ordered-list>
+          
+          <s-paragraph>
+            <strong>Step 1: Enable Urgify Core</strong><br />
+            Before adding any Urgify blocks, you need to enable the core Urgify functionality. Go to <strong>Online Store → Themes</strong> in your Shopify admin, click <strong>"Customize"</strong> on your active theme, scroll down to <strong>"App embeds"</strong> or <strong>"Theme app extensions"</strong> in the left sidebar, find and enable the <strong>"Urgify"</strong> app embed (this activates all Urgify functions), and click <strong>"Save"</strong> in the top right corner.
+          </s-paragraph>
+
+          <s-paragraph>
+            <strong>Step 2: Add Urgify Blocks to Your Pages</strong><br />
+            Now you can add specific Urgify blocks to your product pages, collection pages, or homepage. While in the Theme Editor, navigate to a <strong>Product page</strong> (or any page where you want to add urgency elements), click <strong>"Add block"</strong> or <strong>"Add section"</strong> in the left sidebar, search for and select one of these Urgify blocks: <strong>Urgify – Countdown</strong> (displays a countdown timer for time-limited offers), <strong>Urgify – Limited Offer</strong> (shows limited-time deals with expiration countdown), or <strong>Urgify – Scarcity Banner</strong> (displays low stock alerts based on inventory levels), and drag the block to your desired position on the page (e.g., above the "Add to cart" button, below product images, or in the product description area).
+          </s-paragraph>
+
+          <s-paragraph>
+            <strong>Step 3: Configure Your Urgify Blocks</strong><br />
+            Each block has specific settings you can customize. For <strong>Countdown Timer</strong>, set the target date and time, choose a display format (days/hours/minutes/seconds), and customize the message text. For <strong>Limited Offer</strong>, configure the offer expiration date, discount percentage, and promotional text. For <strong>Scarcity Banner</strong>, set the inventory threshold (e.g., show when stock is below 10 items), customize the warning message, and choose when to display it.
+          </s-paragraph>
+
+          <s-paragraph>
+            <strong>Step 4: Style Your Blocks</strong><br />
+            Make your urgency elements match your brand. Choose from pre-built styles: <strong>Spectacular</strong> (bold gradients), <strong>Brutalist</strong> (minimalist), <strong>Glassmorphism</strong> (modern glass effect), and more. Customize colors by setting background colors, text colors, and accent colors to match your theme. Adjust typography by choosing font sizes, weights, and alignments (left, center, right). Fine-tune spacing by controlling padding and margins for optimal placement.
+          </s-paragraph>
+
+          <s-paragraph>
+            <strong>Step 5: Test and Publish</strong><br />
+            Click <strong>"Save"</strong> after configuring each block. Use the <strong>"Preview"</strong> button to see how your blocks look on different devices (desktop, tablet, mobile). Visit your storefront to verify the blocks are displaying correctly and countdown timers are working. Once satisfied, click <strong>"Publish"</strong> to make your changes live.
+          </s-paragraph>
+
+          <s-paragraph>
+            <strong>Pro Tips:</strong> Countdown timers work best above the "Add to cart" button or near the product price. Stock alerts automatically appear when inventory falls below your threshold (no manual block needed). You can add multiple Urgify blocks to the same page for different urgency messages. Some blocks can be set to show only on specific product types or collections.
+          </s-paragraph>
           
           {hasActiveSub && (
             <s-button

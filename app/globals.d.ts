@@ -194,6 +194,13 @@ declare global {
         showing?: boolean;
         id?: string;
       }, HTMLElement>;
+      'ui-title-bar': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
+        title?: string;
+      }, HTMLElement>;
+      'ui-nav-menu': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+      'ui-nav-menu-item': React.DetailedHTMLProps<React.AnchorHTMLAttributes<HTMLAnchorElement> & {
+        rel?: string;
+      }, HTMLAnchorElement>;
     }
   }
 }

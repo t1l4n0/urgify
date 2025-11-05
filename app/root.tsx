@@ -16,10 +16,20 @@ export default function App() {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
+        {/* App Bridge API Key - Required for app-bridge.js initialization */}
+        <meta name="shopify-api-key" content={process.env.SHOPIFY_API_KEY || ""} />
+        {/* App Bridge - MUST be the first script tag (Shopify best practice) */}
+        {/* Load synchronously without async/defer to ensure proper initialization */}
+        <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+        {/* Polaris JavaScript - Required for Web Components initialization */}
+        {/* Load synchronously after App Bridge, before React renders */}
+        {/* Without this script, Polaris Web Components won't be upgraded and appear as plain text */}
+        <script src="https://cdn.shopify.com/shopifycloud/polaris.js"></script>
         <link rel="preconnect" href="https://cdn.shopify.com" />
+        {/* Polaris CSS - Required for styling Web Components */}
+        <link rel="stylesheet" href="https://cdn.shopify.com/shopifycloud/polaris.css" />
         <link rel="stylesheet" href="https://cdn.shopify.com/static/fonts/inter/v4/styles.css" />
         <link rel="stylesheet" href={stockAlertPreviewStyles} />
-        <script src="https://cdn.shopify.com/shopifycloud/polaris.js"></script>
         <Meta />
         <Links />
       </head>

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { shouldRateLimit, checkShopifyRateLimit } from "../utils/rateLimiting";
 import { validateSessionToken } from "../utils/sessionToken";
 // Polaris Web Components - no imports needed, components are global
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import popupPreviewStyles from "../styles/popup-preview.css?url";
 import { authenticatedFetch } from "../utils/authenticatedFetch";
@@ -693,6 +693,101 @@ export default function PopupSettings() {
     }
   }, [isDirty]);
 
+  // Responsive state for grid columns
+  const [isMobilePopup, setIsMobilePopup] = useState(false);
+  const popupAttemptsRef = useRef(0);
+  
+  // Check screen size on mount and resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobilePopup(window.innerWidth <= 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  // Responsive grid layout for mobile - CSS handles most of it, this is a fallback
+  useEffect(() => {
+    popupAttemptsRef.current = 0; // Reset on change
+    
+    const updateGridLayout = () => {
+      const grid = document.querySelector('.popup-settings-grid') as HTMLElement;
+      if (!grid || !grid.style) return;
+      
+      if (isMobilePopup) {
+        // Force single column via style
+        grid.style.setProperty('grid-template-columns', '1fr', 'important');
+        grid.style.setProperty('display', 'grid', 'important');
+        
+        // Remove the attribute that might be setting it
+        grid.removeAttribute('gridTemplateColumns');
+        
+        // Make preview section appear first
+        const sections = grid.querySelectorAll('s-section');
+        if (sections.length >= 2) {
+          // Find the preview section (contains the preview container)
+          const previewSection = Array.from(sections).find((section: Element) => {
+            return section.querySelector('.popup-preview-sticky-container');
+          }) as HTMLElement;
+          
+          if (previewSection && previewSection.style) {
+            previewSection.style.setProperty('order', '-1', 'important');
+            previewSection.style.setProperty('grid-column', '1', 'important');
+            previewSection.style.setProperty('grid-row', '1', 'important');
+          }
+          
+          // Ensure settings section appears second
+          const settingsSection = Array.from(sections).find((section: Element) => {
+            return !section.querySelector('.popup-preview-sticky-container');
+          }) as HTMLElement;
+          
+          if (settingsSection && settingsSection.style) {
+            settingsSection.style.setProperty('order', '0', 'important');
+            settingsSection.style.setProperty('grid-column', '1', 'important');
+            settingsSection.style.setProperty('grid-row', '2', 'important');
+          }
+          
+          // Ensure all sections take full width
+          sections.forEach((section: any) => {
+            if (section.style) {
+              section.style.setProperty('width', '100%', 'important');
+              section.style.setProperty('max-width', '100%', 'important');
+            }
+          });
+        }
+      } else {
+        // Desktop: reset to default
+        grid.style.setProperty('grid-template-columns', 'repeat(2, 1fr)', 'important');
+        const sections = grid.querySelectorAll('s-section');
+        sections.forEach((section: any) => {
+          if (section.style) {
+            section.style.removeProperty('order');
+            section.style.removeProperty('grid-row');
+          }
+        });
+      }
+    };
+
+    // Use requestAnimationFrame for better timing
+    requestAnimationFrame(() => {
+      setTimeout(updateGridLayout, 50);
+    });
+    
+    // Run a few times initially to catch late-rendering Web Components
+    const maxAttempts = 10;
+    const interval = setInterval(() => {
+      updateGridLayout();
+      popupAttemptsRef.current++;
+      if (popupAttemptsRef.current >= maxAttempts) {
+        clearInterval(interval);
+      }
+    }, 100);
+    
+    return () => clearInterval(interval);
+  }, [isMobilePopup]);
+
   const handleEnabledChange = useCallback((checked: boolean) => {
     setEnabled(checked);
     setIsDirty(true);
@@ -921,8 +1016,10 @@ export default function PopupSettings() {
 
   // Preview component
   const PopupPreview = () => {
-    // Debug: Log the enableNewsletter value
-    console.log('PopupPreview render - enableNewsletter:', enableNewsletter, typeof enableNewsletter);
+    // Debug: Log the enableNewsletter value (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log('PopupPreview render - enableNewsletter:', enableNewsletter, typeof enableNewsletter);
+    }
     
     const getPreviewStyles = () => {
       if (style === 'custom') {
@@ -1091,7 +1188,11 @@ export default function PopupSettings() {
 
   return (
     <s-page heading="PopUp Settings">
-      <s-grid gap="base" gridTemplateColumns="repeat(2, 1fr)">
+      <s-grid 
+        gap="base" 
+        gridTemplateColumns={isMobilePopup ? "1fr" : "repeat(2, 1fr)"}
+        className="popup-settings-grid"
+      >
         <s-section heading="PopUp Settings">
           <s-stack gap="base" direction="block">
                   <s-checkbox
@@ -1126,12 +1227,15 @@ export default function PopupSettings() {
                   </s-paragraph>
                   
                   <s-choice-list
+                    name="cta-or-newsletter"
                     label="Select type"
                     values={enableNewsletter ? ["newsletter"] : ["cta"]}
                     onChange={(e) => {
                       const values = (e.currentTarget as any).values || [];
                       const newValue = Array.isArray(values) && values.length > 0 && values[0] === "newsletter";
-                      console.log('Newsletter selection changed:', { values, newValue, enableNewsletter });
+                      if (process.env.NODE_ENV === 'development') {
+                        console.log('Newsletter selection changed:', { values, newValue, enableNewsletter });
+                      }
                       setEnableNewsletter(newValue);
                       setIsDirty(true);
                     }}
@@ -1431,7 +1535,6 @@ export default function PopupSettings() {
       </s-grid>
       
       <ui-save-bar 
-        showing={isDirty}
         id="popup-save-bar"
       >
         <button 

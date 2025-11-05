@@ -56,7 +56,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 
 export default function App() {
   const loaderData = useLoaderData<typeof loader>();
-  const { apiKey, hasActiveSub, locale } = loaderData;
+  const { apiKey } = loaderData;
   const location = useLocation();
 
   const pageTitle = 

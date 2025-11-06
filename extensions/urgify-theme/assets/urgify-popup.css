@@ -99,9 +99,29 @@
   width: 100%;
   margin-bottom: 20px;
   margin-top: 0;
+  margin-right: 0;
+  margin-left: 0;
+  padding-top: 0;
   border-radius: 8px;
   overflow: hidden;
   position: relative;
+}
+
+/* Ensure image doesn't overlap with close button */
+.urgify-popup-body {
+  position: relative;
+  padding-top: 0;
+}
+
+/* If image is the first element in body, ensure it doesn't overlap with close button */
+.urgify-popup-content > .urgify-popup-close {
+  top: 12px;
+  right: 12px;
+}
+
+/* Image can start at top - close button will overlay slightly which is fine */
+.urgify-popup-body .urgify-popup-image:first-of-type {
+  margin-top: 0;
 }
 
 .urgify-popup-image img {

@@ -1417,9 +1417,9 @@ export default function PopupSettings() {
                       
                       {(ctaUrlType === 'product' || ctaUrlType === 'collection') && (
                         <div>
-                          <s-label for="resource-reference-field">
+                          <label htmlFor="resource-reference-field" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
                             {ctaUrlType === 'product' ? 'Product' : 'Collection'}
-                          </s-label>
+                          </label>
                           <div
                             id="resource-reference-field"
                             onClick={handleResourceFieldClick}
@@ -1470,7 +1470,6 @@ export default function PopupSettings() {
                           {selectedResource && (
                             <s-button
                               variant="tertiary"
-                              size="small"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setSelectedResource(null);
@@ -1659,21 +1658,25 @@ export default function PopupSettings() {
                     />
                   )}
                   
-                  <s-number-field
-                    label="Cookie Duration (days)"
-                    value={cookieDays}
-                    min={1}
-                    onChange={(e) => {
-                      const value = e.currentTarget.value;
-                      const numValue = parseInt(value, 10);
-                      // Ensure value is at least 1
-                      const safeValue = isNaN(numValue) || numValue < 1 ? '1' : value;
-                      setCookieDays(safeValue);
-                      setIsDirty(true);
-                    }}
-                    details="Days to hide popup after dismissal"
-                    disabled={ignoreCookie}
-                  />
+                  <div style={{ opacity: ignoreCookie ? 0.5 : 1, pointerEvents: ignoreCookie ? 'none' : 'auto' }}>
+                    <s-number-field
+                      label="Cookie Duration (days)"
+                      value={cookieDays}
+                      min={1}
+                      onChange={(e) => {
+                        if (ignoreCookie) return;
+                        const value = e.currentTarget.value;
+                        const numValue = parseInt(value, 10);
+                        // Ensure value is at least 1
+                        const safeValue = isNaN(numValue) || numValue < 1 ? '1' : value;
+                        setCookieDays(safeValue);
+                        setIsDirty(true);
+                      }}
+                    />
+                  </div>
+                  <s-paragraph color="subdued" style={{ marginTop: '-8px', marginBottom: '16px' }}>
+                    Days to hide popup after dismissal
+                  </s-paragraph>
                   
                   <s-checkbox
                     label="Always show popup (ignore cookie)"
@@ -1682,8 +1685,10 @@ export default function PopupSettings() {
                       setIgnoreCookie(e.currentTarget.checked);
                       setIsDirty(true);
                     }}
-                    details="If enabled, the popup will always be shown, regardless of cookie duration. This overrides the cookie duration setting."
                   />
+                  <s-paragraph color="subdued" style={{ marginTop: '-8px', marginBottom: '16px' }}>
+                    If enabled, the popup will always be shown, regardless of cookie duration. This overrides the cookie duration setting.
+                  </s-paragraph>
                   
                   {style === "custom" && (
                     <>

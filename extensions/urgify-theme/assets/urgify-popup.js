@@ -246,6 +246,10 @@
         
         const imageWrapper = document.createElement('div');
         imageWrapper.className = 'urgify-popup-image';
+        // Minimal margin-top to avoid overlap with close button - just enough space so image doesn't go under the button
+        // Close button is at top: 12px with height 36px = ends at 48px, so we need at least 48px + small gap
+        // But to match preview, we use minimal spacing - the button will overlay slightly which is fine
+        imageWrapper.style.marginTop = '0';
         imageWrapper.appendChild(img);
         imageContainer.parentNode.insertBefore(imageWrapper, imageContainer);
         imageContainer.remove();

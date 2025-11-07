@@ -178,6 +178,7 @@
       
       const overlay = this.container.querySelector('.urgify-popup-overlay');
       const content = this.container.querySelector('.urgify-popup-content');
+      const bodyEl = this.container.querySelector('.urgify-popup-body');
       const imageContainer = this.container.querySelector('.urgify-popup-image-container');
       const titleEl = this.container.querySelector('.urgify-popup-title');
       const descriptionEl = this.container.querySelector('.urgify-popup-description');
@@ -188,7 +189,12 @@
         return;
       }
       
-      // Set position class
+      if (!bodyEl) {
+        console.error('Urgify Popup: Body element not found!');
+        return;
+      }
+      
+      // Set position class (popup position on screen)
       const position = this.config.position || 'middle-center';
       console.log('Urgify Popup: Setting position class', {
         position,
@@ -232,6 +238,62 @@
         }
       }
       
+      // Get image position (top, bottom, left, right)
+      const imagePosition = (this.config.image_position || 'top').toLowerCase();
+      console.log('Urgify Popup: Setting image position', {
+        imagePosition,
+        imagePositionClass: `image-position-${imagePosition}`
+      });
+      
+      // Remove any existing image position classes
+      const imagePositionClasses = [
+        'image-position-top', 'image-position-bottom',
+        'image-position-left', 'image-position-right'
+      ];
+      imagePositionClasses.forEach(cls => bodyEl.classList.remove(cls));
+      
+      // Add the image position class
+      bodyEl.classList.add(`image-position-${imagePosition}`);
+      
+      // For left/right positions, we need to wrap content (title, description, newsletter, cta) in a wrapper
+      // Do this BEFORE rendering the image so the wrapper is in the correct position
+      if (imagePosition === 'left' || imagePosition === 'right') {
+        // Check if wrapper already exists
+        let contentWrapper = bodyEl.querySelector('.urgify-popup-content-wrapper');
+        if (!contentWrapper) {
+          contentWrapper = document.createElement('div');
+          contentWrapper.className = 'urgify-popup-content-wrapper';
+          
+          // Move title, description, newsletter, discount, and cta into wrapper
+          const elementsToWrap = [
+            titleEl,
+            descriptionEl,
+            this.container.querySelector('.urgify-popup-newsletter-container'),
+            this.container.querySelector('.urgify-popup-discount-container'),
+            ctaEl
+          ].filter(el => el !== null);
+          
+          elementsToWrap.forEach(el => {
+            if (el && el.parentNode === bodyEl) {
+              contentWrapper.appendChild(el);
+            }
+          });
+          
+          // Insert wrapper at the beginning (image will be inserted before it)
+          bodyEl.insertBefore(contentWrapper, bodyEl.firstChild);
+        }
+      } else {
+        // For top/bottom positions, remove wrapper if it exists and move elements back to body
+        const contentWrapper = bodyEl.querySelector('.urgify-popup-content-wrapper');
+        if (contentWrapper) {
+          const elementsToUnwrap = Array.from(contentWrapper.children);
+          elementsToUnwrap.forEach(el => {
+            bodyEl.appendChild(el);
+          });
+          contentWrapper.remove();
+        }
+      }
+      
       // Render image
       if (imageContainer && this.config.image_url) {
         const img = document.createElement('img');
@@ -239,19 +301,30 @@
         img.alt = this.config.image_alt || this.config.title || '';
         img.loading = 'lazy';
         img.style.width = '100%';
-        img.style.maxHeight = '150px';
+        img.style.maxHeight = imagePosition === 'left' || imagePosition === 'right' ? 'auto' : '150px';
         img.style.objectFit = this.config.image_fit || 'cover';
         img.style.borderRadius = '8px';
-        img.style.marginBottom = '16px';
+        
+        // Remove inline margin styles - CSS will handle positioning
+        img.style.marginBottom = '';
+        img.style.marginTop = '';
         
         const imageWrapper = document.createElement('div');
         imageWrapper.className = 'urgify-popup-image';
-        // Minimal margin-top to avoid overlap with close button - just enough space so image doesn't go under the button
-        // Close button is at top: 12px with height 36px = ends at 48px, so we need at least 48px + small gap
-        // But to match preview, we use minimal spacing - the button will overlay slightly which is fine
-        imageWrapper.style.marginTop = '0';
         imageWrapper.appendChild(img);
-        imageContainer.parentNode.insertBefore(imageWrapper, imageContainer);
+        
+        // Insert image at the correct position based on imagePosition
+        if (imagePosition === 'bottom') {
+          // For bottom, append at the end
+          bodyEl.appendChild(imageWrapper);
+        } else if (imagePosition === 'left' || imagePosition === 'right') {
+          // For left/right, insert at the beginning (before wrapper)
+          bodyEl.insertBefore(imageWrapper, bodyEl.firstChild);
+        } else {
+          // For top (default), insert at the beginning
+          bodyEl.insertBefore(imageWrapper, bodyEl.firstChild);
+        }
+        
         imageContainer.remove();
       } else if (imageContainer) {
         imageContainer.remove();
@@ -304,9 +377,14 @@
         
         // Set up newsletter form handler
         if (newsletterForm) {
+          // Prevent default form submission completely
+          newsletterForm.setAttribute('onsubmit', 'return false;');
           newsletterForm.addEventListener('submit', (e) => {
             this.handleNewsletterSubmit(e);
-          });
+          }, { capture: true });
+          
+          // Also prevent any default action on the form
+          newsletterForm.action = 'javascript:void(0);';
         }
       } else {
         // Show CTA, hide newsletter (CTA and Newsletter are mutually exclusive)
@@ -343,6 +421,7 @@
     
     handleNewsletterSubmit(e) {
       e.preventDefault();
+      e.stopPropagation();
       const form = e.target;
       const formData = new FormData(form);
       const email = formData.get('contact[email]');
@@ -360,42 +439,60 @@
       console.log('Urgify Popup: Submitting newsletter form', { email, action: form.action || '/contact' });
       
       // Submit to Shopify customer form endpoint
+      // Use redirect: 'manual' to prevent page reload on redirect
       fetch(form.action || '/contact', {
         method: 'POST',
         body: formData,
         headers: {
           'X-Requested-With': 'XMLHttpRequest'
         },
-        redirect: 'follow' // Follow redirects (Shopify often returns 302 redirects on success)
+        redirect: 'manual' // Don't follow redirects - prevents page reload
       })
       .then(response => {
         console.log('Urgify Popup: Newsletter response', {
           status: response.status,
           ok: response.ok,
+          type: response.type,
           redirected: response.redirected,
           url: response.url
         });
         
         // Shopify's customer form endpoint returns:
-        // - 302 Redirect (successful subscription)
+        // - 302 Redirect (successful subscription) - with redirect: 'manual', this becomes type: 'opaqueredirect'
         // - 200 OK (sometimes)
         // - 422 Unprocessable Entity (validation errors)
         // - Other errors
         
-        // Consider 2xx and 3xx status codes as success
+        // With redirect: 'manual', redirects return response.type === 'opaqueredirect'
+        // Consider 2xx, 3xx status codes, and opaqueredirect as success
         // Shopify typically redirects (302) on successful subscription
         const isSuccess = (response.ok || 
                           (response.status >= 200 && response.status < 400) ||
+                          response.type === 'opaqueredirect' ||
                           response.redirected);
         
         if (isSuccess) {
           console.log('Urgify Popup: Newsletter subscription successful');
           
-          // Set cookie to prevent popup from showing again after successful subscription
-          this.setDismissedCookie();
+          // Don't set cookie here - let user manually close the popup
+          // Only set sessionStorage flag to prevent popup from reopening immediately after page reload
+          // (sessionStorage is cleared when browser is closed, so popup can show again in new session)
+          try {
+            sessionStorage.setItem('urgify_popup_submitted', 'true');
+          } catch (e) {
+            // sessionStorage not available, skip
+          }
           
-          // Show discount code if available
-          if (this.config.discount_code) {
+          // Show discount code if available (check both snake_case and camelCase)
+          const discountCode = this.config.discount_code || this.config.discountCode;
+          console.log('Urgify Popup: Checking discount code', {
+            discount_code: this.config.discount_code,
+            discountCode: this.config.discountCode,
+            resolved: discountCode,
+            hasDiscountCode: !!discountCode
+          });
+          
+          if (discountCode) {
             this.showDiscountCode();
             // Don't auto-close - let user see and use the discount code
           } else {
@@ -425,15 +522,33 @@
         if (newsletterContainer) {
           newsletterContainer.style.display = 'none';
         }
-        const descriptionEl = this.container.querySelector('.urgify-popup-description');
-        if (descriptionEl) {
-          descriptionEl.textContent = 'Thank you! Please check your email to confirm your subscription.';
+        
+        // Show discount code if available (even on error, as subscription might have worked)
+        const discountCode = this.config.discount_code || this.config.discountCode;
+        console.log('Urgify Popup: Checking discount code in error handler', {
+          discount_code: this.config.discount_code,
+          discountCode: this.config.discountCode,
+          resolved: discountCode,
+          hasDiscountCode: !!discountCode
+        });
+        
+        if (discountCode) {
+          this.showDiscountCode();
+        } else {
+          const descriptionEl = this.container.querySelector('.urgify-popup-description');
+          if (descriptionEl) {
+            descriptionEl.textContent = 'Thank you! Please check your email to confirm your subscription.';
+          }
         }
         
-        // Set cookie to prevent popup from showing again (confirmation email was sent)
-        this.setDismissedCookie();
+        // Don't set cookie here - let user manually close the popup
+        // Only set sessionStorage flag to prevent popup from reopening immediately after page reload
+        try {
+          sessionStorage.setItem('urgify_popup_submitted', 'true');
+        } catch (e) {
+          // sessionStorage not available, skip
+        }
         
-        // Don't auto-close - let user manually close the popup
         // The confirmation email indicates success
         console.log('Urgify Popup: Assuming success based on email delivery');
       })
@@ -452,24 +567,48 @@
       const discountCodeEl = this.container.querySelector('.urgify-popup-discount-code');
       const ctaEl = this.container.querySelector('.urgify-popup-cta');
       
+      // Get discount code (support both snake_case and camelCase)
+      const discountCode = this.config.discount_code || this.config.discountCode || '';
+      
+      console.log('Urgify Popup: showDiscountCode called', {
+        discount_code: this.config.discount_code,
+        discountCode: this.config.discountCode,
+        resolved: discountCode,
+        hasDiscountContainer: !!discountContainer,
+        hasDiscountCodeEl: !!discountCodeEl
+      });
+      
       if (newsletterContainer) {
         newsletterContainer.style.display = 'none';
       }
       
-      if (discountContainer && discountCodeEl && this.config.discount_code) {
-        discountCodeEl.textContent = this.config.discount_code;
+      if (discountContainer && discountCodeEl && discountCode) {
+        discountCodeEl.textContent = discountCode;
         discountContainer.style.display = 'block';
+        
+        console.log('Urgify Popup: Discount code displayed', {
+          code: discountCode,
+          containerDisplay: getComputedStyle(discountContainer).display
+        });
         
         // Don't show CTA when newsletter is enabled - they are mutually exclusive
         // Even after showing discount code, CTA should remain hidden if newsletter was the trigger
-        if (this.config.enable_newsletter && ctaEl) {
+        const enableNewsletter = this.config.enable_newsletter || this.config.enableNewsletter;
+        if (enableNewsletter && ctaEl) {
           ctaEl.style.display = 'none';
-        } else if (ctaEl && this.config.cta_text && this.config.cta_url) {
+        } else if (ctaEl && (this.config.cta_text || this.config.ctaText) && (this.config.cta_url || this.config.ctaUrl)) {
           // Only show CTA if newsletter is NOT enabled
-          ctaEl.textContent = this.config.cta_text;
-          ctaEl.href = this.config.cta_url;
+          ctaEl.textContent = this.config.cta_text || this.config.ctaText;
+          ctaEl.href = this.config.cta_url || this.config.ctaUrl;
           ctaEl.style.display = 'inline-block';
         }
+      } else {
+        console.warn('Urgify Popup: Cannot show discount code', {
+          hasDiscountContainer: !!discountContainer,
+          hasDiscountCodeEl: !!discountCodeEl,
+          hasDiscountCode: !!discountCode,
+          discountCode: discountCode
+        });
       }
     }
 
@@ -568,6 +707,10 @@
         });
         return;
       }
+      
+      // Don't check sessionStorage here - we want the popup to show again after page reload
+      // sessionStorage is only used to prevent immediate reopening within the same page load
+      // After page reload, the popup should show again (unless cookie is set from manual close)
       
       // Check cookie again before showing
       if (this.isDismissed()) {
@@ -672,6 +815,13 @@
 
       // Set cookie to prevent showing again
       this.setDismissedCookie();
+      
+      // Clear sessionStorage flag when user manually closes popup
+      try {
+        sessionStorage.removeItem('urgify_popup_submitted');
+      } catch (e) {
+        // sessionStorage not available, skip
+      }
     }
 
     isDismissed() {

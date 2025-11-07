@@ -33,6 +33,7 @@ const popupSettingsSchema = z.object({
   imageUrl: z.string().default(''),
   imageFit: z.string().default('cover'),
   imageAlt: z.string().default(''),
+  imagePosition: z.string().default('top'),
   style: z.string().default('spectacular'),
   titleFontSize: z.string().default('24px'),
   descriptionFontSize: z.string().default('16px'),
@@ -305,6 +306,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       imageUrl: rawSettings.image_url || rawSettings.imageUrl || '',
       imageFit: rawSettings.image_fit || rawSettings.imageFit || 'cover',
       imageAlt: rawSettings.image_alt || rawSettings.imageAlt || '',
+      imagePosition: rawSettings.image_position || rawSettings.imagePosition || 'top',
       style: rawSettings.style,
       titleFontSize: rawSettings.title_font_size || rawSettings.titleFontSize || '24px',
       descriptionFontSize: rawSettings.description_font_size || rawSettings.descriptionFontSize || '16px',
@@ -357,6 +359,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           imageUrl: '',
           imageFit: 'cover',
           imageAlt: '',
+          imagePosition: 'top',
           style: 'spectacular',
           titleFontSize: '24px',
           descriptionFontSize: '16px',
@@ -468,6 +471,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       imageUrl: getStr("imageUrl", ""),
       imageFit: getStr("imageFit", "cover"),
       imageAlt: getStr("imageAlt", ""),
+      imagePosition: getStr("imagePosition", "top"),
       style: getStr("style", "spectacular"),
       titleFontSize: getStr("titleFontSize", "24px"),
       descriptionFontSize: getStr("descriptionFontSize", "16px"),
@@ -500,6 +504,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       imageUrl,
       imageFit,
       imageAlt,
+      imagePosition,
       style,
       titleFontSize,
       descriptionFontSize,
@@ -546,6 +551,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       image_url: imageUrl,
       image_fit: imageFit,
       image_alt: imageAlt,
+      image_position: imagePosition,
       style,
       title_font_size: titleFontSize,
       description_font_size: descriptionFontSize,
@@ -691,6 +697,7 @@ export default function PopupSettings() {
   const [imageUrl, setImageUrl] = useState(String(settings.imageUrl || ''));
   const [imageFit, setImageFit] = useState<string>(String(settings.imageFit || 'cover'));
   const [imageAlt, setImageAlt] = useState<string>(String(settings.imageAlt || ''));
+  const [imagePosition, setImagePosition] = useState<string>(String(settings.imagePosition || 'top'));
   const [style, setStyle] = useState(String(settings.style || 'spectacular'));
   const [titleFontSize, setTitleFontSize] = useState(String(settings.titleFontSize || '24px'));
   const [descriptionFontSize, setDescriptionFontSize] = useState(String(settings.descriptionFontSize || '16px'));
@@ -726,6 +733,15 @@ export default function PopupSettings() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   
+  useEffect(() => {
+    if (triggerType === 'always' && !ignoreCookie) {
+      setIgnoreCookie(true);
+      setIsDirty(true);
+    }
+  }, [triggerType, ignoreCookie]);
+
+  const isAlwaysTrigger = triggerType === 'always';
+
 
   // Update local state when loader data changes
   useEffect(() => {
@@ -750,6 +766,7 @@ export default function PopupSettings() {
     setImageUrl(String(settings.imageUrl || ''));
     setImageFit(String(settings.imageFit || 'cover'));
     setImageAlt(String(settings.imageAlt || ''));
+    setImagePosition(String(settings.imagePosition || 'top'));
     setStyle(String(settings.style || 'spectacular'));
     setTitleFontSize(String(settings.titleFontSize || '24px'));
     setDescriptionFontSize(String(settings.descriptionFontSize || '16px'));
@@ -775,6 +792,25 @@ export default function PopupSettings() {
       setSelectedResource(null);
     }
   }, [settings, loadedResource]);
+
+  // Reset custom values when switching from custom to a predefined style
+  const previousStyleRef = useRef<string>(style);
+  
+  useEffect(() => {
+    // Wenn der Stil von "custom" zu einem anderen Stil geändert wird, 
+    // setze die Custom-Werte auf ihre Standardwerte zurück
+    if (previousStyleRef.current === 'custom' && style !== 'custom') {
+      setTitleFontSize('24px');
+      setDescriptionFontSize('16px');
+      setCtaFontSize('16px');
+      setBackgroundColor('#ffffff');
+      setTextColor('#000000');
+      setCtaBackgroundColor('#007bff');
+      setCtaTextColor('#ffffff');
+      setIsDirty(true);
+    }
+    previousStyleRef.current = style;
+  }, [style]);
 
   // Control save bar visibility programmatically
   useEffect(() => {
@@ -853,8 +889,8 @@ export default function PopupSettings() {
           });
         }
       } else {
-        // Desktop: reset to default
-        grid.style.setProperty('grid-template-columns', 'repeat(2, 1fr)', 'important');
+        // Desktop: reset to default (1/3 settings, 2/3 preview)
+        grid.style.setProperty('grid-template-columns', '1fr 2fr', 'important');
         const sections = grid.querySelectorAll('s-section');
         sections.forEach((section: any) => {
           if (section.style) {
@@ -1041,6 +1077,7 @@ export default function PopupSettings() {
       imageUrl,
       imageFit: imageFit.toString(),
       imageAlt,
+      imagePosition: imagePosition.toString(),
       style,
       titleFontSize,
       descriptionFontSize,
@@ -1121,7 +1158,7 @@ export default function PopupSettings() {
     } finally {
       setIsSaving(false);
     }
-  }, [discountCodes, discountCodeId, enableNewsletter, backgroundColor, ctaBackgroundColor, ctaFontSize, ctaText, ctaTextColor, ctaUrl, delaySeconds, description, descriptionFontSize, enabled, imageUrl, imageFit, imageAlt, overlayColor, placement, position, triggerType, revalidator, shopify, style, textColor, title, titleFontSize, cookieDays, ignoreCookie]);
+  }, [discountCodes, discountCodeId, enableNewsletter, backgroundColor, ctaBackgroundColor, ctaFontSize, ctaText, ctaTextColor, ctaUrl, delaySeconds, description, descriptionFontSize, enabled, imageUrl, imageFit, imageAlt, imagePosition, overlayColor, placement, position, triggerType, revalidator, shopify, style, textColor, title, titleFontSize, cookieDays, ignoreCookie]);
 
   // Preview component
   const PopupPreview = () => {
@@ -1148,9 +1185,7 @@ export default function PopupSettings() {
           fontSize: ctaFontSize,
         };
       }
-      return {
-        fontSize: ctaFontSize,
-      };
+      return {};
     };
 
     const getTitleStyles = () => {
@@ -1160,9 +1195,7 @@ export default function PopupSettings() {
           color: textColor,
         };
       }
-      return {
-        fontSize: titleFontSize,
-      };
+      return {};
     };
 
     const getDescriptionStyles = () => {
@@ -1172,18 +1205,84 @@ export default function PopupSettings() {
           color: textColor,
         };
       }
-      return {
-        fontSize: descriptionFontSize,
-      };
+      return {};
     };
+
+        // Determine layout based on image position
+        const isHorizontalLayout = imagePosition === 'left' || imagePosition === 'right';
+        const previewContainerStyle: React.CSSProperties = {
+          ...getPreviewStyles(),
+          position: 'relative',
+          display: isHorizontalLayout ? 'flex' : 'block',
+          flexDirection: imagePosition === 'right' ? 'row-reverse' : imagePosition === 'left' ? 'row' : 'column',
+          gap: isHorizontalLayout ? '0' : '0',
+          alignItems: isHorizontalLayout ? 'stretch' : 'stretch',
+          alignContent: isHorizontalLayout ? 'stretch' : 'normal',
+          margin: '0', // No negative margins
+          padding: '32px', // Keep padding
+          minHeight: 'auto',
+          maxHeight: 'none',
+          overflow: 'visible', // Changed to visible
+          width: '100%',
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+        };
+
+        const imageContainerStyle: React.CSSProperties = {
+          width: isHorizontalLayout ? '40%' : '100%',
+          maxWidth: isHorizontalLayout ? '200px' : 'none',
+          flexShrink: 0,
+          marginBottom: imagePosition === 'top' ? '20px' : imagePosition === 'bottom' ? '0' : '0',
+          marginTop: imagePosition === 'bottom' ? '20px' : '0',
+          marginLeft: isHorizontalLayout ? '0' : '0',
+          marginRight: isHorizontalLayout ? '0' : '0',
+          // Don't set order for horizontal layouts - let CSS handle it on mobile
+          // For desktop, order is handled by flexDirection (row/row-reverse)
+          order: isHorizontalLayout ? undefined : (imagePosition === 'bottom' ? 5 : 1),
+          height: isHorizontalLayout ? '100%' : 'auto',
+          minHeight: isHorizontalLayout ? '100%' : 'auto',
+          borderRadius: '8px', // All corners rounded since image doesn't extend to edge
+          overflow: 'hidden',
+          display: isHorizontalLayout ? 'flex' : 'block',
+          alignItems: isHorizontalLayout ? 'stretch' : 'normal',
+          alignSelf: isHorizontalLayout ? 'stretch' : 'auto',
+        };
+
+        const imageInnerStyle: React.CSSProperties = {
+          width: '100%',
+          height: isHorizontalLayout ? '100%' : 'auto',
+          minHeight: isHorizontalLayout ? '100%' : 'auto',
+          maxHeight: isHorizontalLayout ? 'none' : '150px',
+          objectFit: imageFit === 'contain' ? 'contain' : 'cover',
+          display: 'block',
+        };
+
+        const contentWrapperStyle: React.CSSProperties = isHorizontalLayout ? {
+          flex: '1 1 0%', // Use flex-basis 0% to prevent overflow
+          display: 'flex',
+          flexDirection: 'column',
+          minWidth: 0, // Prevent overflow in flex containers
+          maxWidth: '100%', // Ensure it doesn't exceed container
+          // Don't set order for horizontal layouts - let CSS handle it on mobile
+          order: undefined,
+          padding: imageUrl ? (imagePosition === 'left' ? '0 0 0 32px' : '0 32px 0 0') : '0', // Padding on side away from image, only if image exists
+          boxSizing: 'border-box',
+          overflow: 'hidden', // Prevent content from overflowing
+        } : {
+          order: imagePosition === 'bottom' ? 1 : 2,
+          maxWidth: '100%',
+          boxSizing: 'border-box',
+          width: '100%',
+        };
 
     return (
       <s-stack gap="base" direction="block">
         <s-heading>Preview</s-heading>
-        <div 
-          className={`urgify-popup-preview urgify-popup-preview--${style}`}
-          style={{ ...getPreviewStyles(), position: 'relative' }}
-        >
+        <div style={{ overflow: 'visible', position: 'relative', maxHeight: 'none', height: 'auto', width: '100%', maxWidth: '100%' }}>
+          <div 
+            className={`urgify-popup-preview urgify-popup-preview--${style} ${isHorizontalLayout ? 'urgify-popup-preview--horizontal' : ''}`}
+            style={previewContainerStyle}
+          >
             <button 
               className="urgify-popup-close-preview"
               type="button"
@@ -1195,13 +1294,13 @@ export default function PopupSettings() {
                 background: style === 'spectacular' || style === 'brutalist' 
                   ? 'rgba(255, 255, 255, 0.2)' 
                   : style === 'glassmorphism'
-                  ? 'rgba(255, 255, 255, 0.3)'
+                  ? 'rgba(255, 255, 255, 0.5)'
                   : 'rgba(255, 255, 255, 0.9)',
-                border: 'none',
+                border: style === 'glassmorphism' ? '1px solid rgba(255, 255, 255, 0.7)' : 'none',
                 fontSize: '32px',
                 lineHeight: 1,
                 cursor: 'default',
-                color: style === 'spectacular' || style === 'brutalist' ? '#fff' : '#666',
+                color: style === 'spectacular' || style === 'brutalist' ? '#fff' : style === 'glassmorphism' ? '#1a1a1a' : '#666',
                 width: '36px',
                 height: '36px',
                 display: 'flex',
@@ -1216,23 +1315,26 @@ export default function PopupSettings() {
             >
               ×
             </button>
-            {imageUrl && (
-              <img 
-                src={imageUrl} 
-                alt={imageAlt || 'Preview'}
-                style={{ objectFit: imageFit === 'contain' ? 'contain' : 'cover' }}
-              />
+            {imageUrl && imagePosition !== 'bottom' && (
+              <div className="urgify-popup-preview-image-container" style={imageContainerStyle}>
+                <img 
+                  src={imageUrl} 
+                  alt={imageAlt || 'Urgify popup preview image'}
+                  style={imageInnerStyle}
+                />
+              </div>
             )}
-            {title && (
-              <h3 style={getTitleStyles()}>
-                {title}
-              </h3>
-            )}
-            {description && (
-              <p style={getDescriptionStyles()}>
-                {description}
-              </p>
-            )}
+            <div className="urgify-popup-preview-content-wrapper" style={contentWrapperStyle}>
+              {title && (
+                <h3 style={getTitleStyles()}>
+                  {title}
+                </h3>
+              )}
+              {description && (
+                <p style={getDescriptionStyles()}>
+                  {description}
+                </p>
+              )}
             {enableNewsletter ? (
               <div 
                 className="urgify-popup-newsletter-container" 
@@ -1248,9 +1350,10 @@ export default function PopupSettings() {
                   className="urgify-popup-newsletter-input-group" 
                   style={{ 
                     display: 'flex', 
+                    flexDirection: isHorizontalLayout ? 'column' : 'row',
                     gap: '12px', 
                     width: '100%', 
-                    alignItems: 'center',
+                    alignItems: isHorizontalLayout ? 'stretch' : 'center',
                     visibility: 'visible',
                     opacity: 1
                   }}
@@ -1285,7 +1388,8 @@ export default function PopupSettings() {
                       cursor: 'pointer',
                       whiteSpace: 'nowrap',
                       backgroundColor: style === 'custom' ? ctaBackgroundColor : '#007bff',
-                      color: style === 'custom' ? ctaTextColor : '#ffffff'
+                      color: style === 'custom' ? ctaTextColor : '#ffffff',
+                      width: isHorizontalLayout ? '100%' : 'auto'
                     }}
                     onClick={(e) => e.preventDefault()}
                     disabled
@@ -1293,23 +1397,6 @@ export default function PopupSettings() {
                     Subscribe
                   </button>
                 </div>
-                {discountCodeId && (
-                  <div 
-                    className="urgify-popup-discount-container" 
-                    style={{ 
-                      marginTop: '12px', 
-                      padding: '12px', 
-                      backgroundColor: 'rgba(0, 123, 255, 0.1)', 
-                      borderRadius: '8px', 
-                      fontSize: '14px', 
-                      display: 'block',
-                      visibility: 'visible',
-                      opacity: 1
-                    }}
-                  >
-                    Discount code will be shown after signup
-                  </div>
-                )}
               </div>
             ) : (
               ctaText && (
@@ -1318,12 +1405,23 @@ export default function PopupSettings() {
                   className="urgify-popup-cta-preview"
                   style={getCtaStyles()}
                   onClick={(e) => e.preventDefault()}
-                >
-                  {ctaText}
-                </button>
-              )
+                  >
+                    {ctaText}
+                  </button>
+                )
+              )}
+            </div>
+            {imageUrl && imagePosition === 'bottom' && (
+              <div className="urgify-popup-preview-image-container" style={imageContainerStyle}>
+                <img 
+                  src={imageUrl} 
+                  alt={imageAlt || 'Urgify popup preview image'}
+                  style={imageInnerStyle}
+                />
+              </div>
             )}
           </div>
+        </div>
       </s-stack>
     );
   };
@@ -1332,7 +1430,7 @@ export default function PopupSettings() {
     <s-page heading="PopUp Settings">
       <s-grid 
         gap="base" 
-        gridTemplateColumns={isMobilePopup ? "1fr" : "repeat(2, 1fr)"}
+        gridTemplateColumns={isMobilePopup ? "1fr" : "1fr 2fr"}
         className="popup-settings-grid"
       >
         <s-section heading="PopUp Settings">
@@ -1526,36 +1624,37 @@ export default function PopupSettings() {
                     onInput={handleImageUpload as any}
                     disabled={isUploading}
                     error={uploadError || undefined}
-                  >
-                    {imageUrl && (
-                      <div style={{ marginTop: '12px' }}>
-                        <s-image
-                          src={imageUrl}
-                          alt="Uploaded image preview"
-                          inlineSize="auto"
-                          borderRadius="base"
-                          style={{ maxWidth: '200px', maxHeight: '200px' }}
-                        />
-                        <s-button
-                          variant="tertiary"
-                          onClick={(e: React.MouseEvent<HTMLElement>) => {
-                            e.preventDefault();
-                            setImageUrl('');
-                            setIsDirty(true);
-                            setUploadError(null);
-                          }}
-                          style={{ marginTop: '8px' }}
-                        >
-                          Remove Image
-                        </s-button>
-                      </div>
-                    )}
-                  </s-drop-zone>
+                  />
+                  
+                  {imageUrl && (
+                    <div style={{ marginTop: '12px' }}>
+                      <s-image
+                        src={imageUrl}
+                        alt="Uploaded image preview"
+                        inlineSize="auto"
+                        borderRadius="base"
+                        style={{ maxWidth: '200px', maxHeight: '200px' }}
+                      />
+                      <s-button
+                        variant="tertiary"
+                        onClick={(e: React.MouseEvent<HTMLElement>) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setImageUrl('');
+                          setIsDirty(true);
+                          setUploadError(null);
+                        }}
+                        style={{ marginTop: '8px' }}
+                      >
+                        Remove Image
+                      </s-button>
+                    </div>
+                  )}
                   
                   {imageUrl && (
                     <>
                       <s-select
-                        label="Image Position"
+                        label="Image Fit"
                         value={imageFit}
                         onChange={(e) => {
                           setImageFit(e.currentTarget.value);
@@ -1565,6 +1664,21 @@ export default function PopupSettings() {
                       >
                         <s-option value="cover">Fill</s-option>
                         <s-option value="contain">Contain</s-option>
+                      </s-select>
+                      
+                      <s-select
+                        label="Image Position in Popup"
+                        value={imagePosition}
+                        onChange={(e) => {
+                          setImagePosition(e.currentTarget.value);
+                          setIsDirty(true);
+                        }}
+                        details="Where to position the image within the popup: Top (above content), Bottom (below content), Left (beside content), or Right (beside content)."
+                      >
+                        <s-option value="top">Top</s-option>
+                        <s-option value="bottom">Bottom</s-option>
+                        <s-option value="left">Left</s-option>
+                        <s-option value="right">Right</s-option>
                       </s-select>
                       
                       <s-text-field
@@ -1658,36 +1772,46 @@ export default function PopupSettings() {
                     />
                   )}
                   
-                  <div style={{ opacity: ignoreCookie ? 0.5 : 1, pointerEvents: ignoreCookie ? 'none' : 'auto' }}>
-                    <s-number-field
-                      label="Cookie Duration (days)"
-                      value={cookieDays}
-                      min={1}
+                  {!isAlwaysTrigger && (
+                    <>
+                      <div style={{ opacity: ignoreCookie ? 0.5 : 1, pointerEvents: ignoreCookie ? 'none' : 'auto' }}>
+                        <s-number-field
+                          label="Cookie Duration (days)"
+                          value={cookieDays}
+                          min={1}
+                          onChange={(e) => {
+                            if (ignoreCookie) return;
+                            const value = e.currentTarget.value;
+                            const numValue = parseInt(value, 10);
+                            // Ensure value is at least 1
+                            const safeValue = isNaN(numValue) || numValue < 1 ? '1' : value;
+                            setCookieDays(safeValue);
+                            setIsDirty(true);
+                          }}
+                        />
+                      </div>
+                      <s-paragraph color="subdued" style={{ marginTop: '-8px', marginBottom: '16px' }}>
+                        Days to hide popup after dismissal
+                      </s-paragraph>
+                    </>
+                  )}
+
+                  <div style={isAlwaysTrigger ? { opacity: 0.5, pointerEvents: 'none' } : undefined}>
+                    <s-checkbox
+                      label="Always show popup (ignore cookie)"
+                      checked={isAlwaysTrigger ? true : ignoreCookie}
+                      aria-disabled={isAlwaysTrigger ? 'true' : 'false'}
                       onChange={(e) => {
-                        if (ignoreCookie) return;
-                        const value = e.currentTarget.value;
-                        const numValue = parseInt(value, 10);
-                        // Ensure value is at least 1
-                        const safeValue = isNaN(numValue) || numValue < 1 ? '1' : value;
-                        setCookieDays(safeValue);
+                        if (isAlwaysTrigger) return;
+                        setIgnoreCookie(e.currentTarget.checked);
                         setIsDirty(true);
                       }}
                     />
                   </div>
                   <s-paragraph color="subdued" style={{ marginTop: '-8px', marginBottom: '16px' }}>
-                    Days to hide popup after dismissal
-                  </s-paragraph>
-                  
-                  <s-checkbox
-                    label="Always show popup (ignore cookie)"
-                    checked={ignoreCookie}
-                    onChange={(e) => {
-                      setIgnoreCookie(e.currentTarget.checked);
-                      setIsDirty(true);
-                    }}
-                  />
-                  <s-paragraph color="subdued" style={{ marginTop: '-8px', marginBottom: '16px' }}>
-                    If enabled, the popup will always be shown, regardless of cookie duration. This overrides the cookie duration setting.
+                    {isAlwaysTrigger
+                      ? "Always Show trigger ignores cookie duration and forces the popup to appear on every page load."
+                      : "If enabled, the popup will always be shown, regardless of cookie duration. This overrides the cookie duration setting."}
                   </s-paragraph>
                   
                   {style === "custom" && (
@@ -1812,6 +1936,7 @@ export default function PopupSettings() {
             setImageUrl(String(settings.imageUrl || ''));
             setImageFit(String(settings.imageFit || 'cover'));
             setImageAlt(String(settings.imageAlt || ''));
+            setImagePosition(String(settings.imagePosition || 'top'));
             setStyle(String(settings.style || 'spectacular'));
             setTitleFontSize(String(settings.titleFontSize || '24px'));
             setDescriptionFontSize(String(settings.descriptionFontSize || '16px'));

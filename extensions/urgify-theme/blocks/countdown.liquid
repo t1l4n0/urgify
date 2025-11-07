@@ -44,6 +44,11 @@
 .urgify-countdown {
   position: relative;
   transition: all 0.3s ease;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 .urgify-countdown.hidden {
@@ -68,6 +73,35 @@
 
 .countdown-container.is-ready {
   opacity: 1;
+}
+
+/* Minimal style should render inline without card background */
+.countdown-container.countdown-minimal {
+  margin: 0;
+  padding: 12px 16px;
+  background: var(--countdown-minimal-background, transparent) !important;
+  box-shadow: none !important;
+  border-radius: {{ block.settings.border_radius | default: '12' }}px;
+  color: var(--countdown-minimal-text-color, #ffffff);
+  display: inline-flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0;
+}
+
+.countdown-container.countdown-minimal .minimal-value,
+.countdown-container.countdown-minimal .minimal-label,
+.countdown-container.countdown-minimal .minimal-separator {
+  text-shadow: none;
+  color: inherit !important;
+}
+
+.countdown-container.countdown-minimal .minimal-label {
+  opacity: 0.75;
+}
+
+.countdown-container.countdown-minimal .minimal-separator {
+  opacity: 0.6;
 }
 
 /* Color Themes - Applied to countdown container */
@@ -100,6 +134,18 @@
   stroke: white !important;
 }
 
+
+.countdown-container.countdown-theme-primary.countdown-minimal {
+  --countdown-minimal-background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  --countdown-minimal-text-color: #ffffff;
+}
+
+.countdown-container.countdown-theme-primary.countdown-minimal .minimal-value,
+.countdown-container.countdown-theme-primary.countdown-minimal .minimal-label,
+.countdown-container.countdown-theme-primary.countdown-minimal .minimal-separator {
+  color: var(--countdown-minimal-text-color, #ffffff) !important;
+}
+
 .countdown-container.countdown-theme-success {
   background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
 }
@@ -127,6 +173,17 @@
 
 .countdown-container.countdown-theme-success .circular-progress-bar {
   stroke: white !important;
+}
+
+.countdown-container.countdown-theme-success.countdown-minimal {
+  --countdown-minimal-background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  --countdown-minimal-text-color: #ffffff;
+}
+
+.countdown-container.countdown-theme-success.countdown-minimal .minimal-value,
+.countdown-container.countdown-theme-success.countdown-minimal .minimal-label,
+.countdown-container.countdown-theme-success.countdown-minimal .minimal-separator {
+  color: var(--countdown-minimal-text-color, #ffffff) !important;
 }
 
 .countdown-container.countdown-theme-warning {
@@ -158,6 +215,17 @@
   stroke: white !important;
 }
 
+.countdown-container.countdown-theme-warning.countdown-minimal {
+  --countdown-minimal-background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+  --countdown-minimal-text-color: #1f2933;
+}
+
+.countdown-container.countdown-theme-warning.countdown-minimal .minimal-value,
+.countdown-container.countdown-theme-warning.countdown-minimal .minimal-label,
+.countdown-container.countdown-theme-warning.countdown-minimal .minimal-separator {
+  color: var(--countdown-minimal-text-color, #1f2933) !important;
+}
+
 .countdown-container.countdown-theme-danger {
   background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%) !important;
 }
@@ -187,6 +255,17 @@
   stroke: white !important;
 }
 
+.countdown-container.countdown-theme-danger.countdown-minimal {
+  --countdown-minimal-background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+  --countdown-minimal-text-color: #ffffff;
+}
+
+.countdown-container.countdown-theme-danger.countdown-minimal .minimal-value,
+.countdown-container.countdown-theme-danger.countdown-minimal .minimal-label,
+.countdown-container.countdown-theme-danger.countdown-minimal .minimal-separator {
+  color: var(--countdown-minimal-text-color, #ffffff) !important;
+}
+
 .countdown-container.countdown-theme-custom {
   {% if block.settings.background_color != blank %}
     background-color: {{ block.settings.background_color | color_to_hex }} !important;
@@ -198,6 +277,17 @@
   {% else %}
     color: white !important;
   {% endif %}
+}
+
+.countdown-container.countdown-theme-custom.countdown-minimal {
+  --countdown-minimal-background: {% if block.settings.background_color != blank %}{{ block.settings.background_color | color_to_hex }}{% else %}linear-gradient(135deg, #ff6b35 0%, #f7931e 100%){% endif %};
+  --countdown-minimal-text-color: {% if block.settings.value_color != blank %}{{ block.settings.value_color | color_to_hex }}{% elsif block.settings.font_color != blank %}{{ block.settings.font_color | color_to_hex }}{% else %}#ffffff{% endif %};
+}
+
+.countdown-container.countdown-theme-custom.countdown-minimal .minimal-value,
+.countdown-container.countdown-theme-custom.countdown-minimal .minimal-label,
+.countdown-container.countdown-theme-custom.countdown-minimal .minimal-separator {
+  color: var(--countdown-minimal-text-color, #ffffff) !important;
 }
 
 /* Custom theme colors for countdown elements */

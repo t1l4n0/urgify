@@ -66,7 +66,7 @@
   background: {{ block.settings.background_color | default: 'linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)' }};
   border-radius: {{ block.settings.border_radius | default: '12' }}px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  text-align: {{ block.settings.content_alignment | default: 'center' }};
+  text-align: center;
   color: {{ block.settings.font_color | default: 'white' }};
   transition: opacity 0.2s ease;
 }
@@ -1111,17 +1111,6 @@
         { "value": "custom", "label": "Custom" }
       ],
       "default": "primary"
-    },
-    {
-      "type": "select",
-      "id": "content_alignment",
-      "label": "Text Alignment",
-      "options": [
-        { "value": "left", "label": "Left" },
-        { "value": "center", "label": "Center" },
-        { "value": "right", "label": "Right" }
-      ],
-      "default": "center"
     },
     {
       "type": "select",

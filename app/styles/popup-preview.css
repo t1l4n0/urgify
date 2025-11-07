@@ -197,6 +197,7 @@
 .urgify-popup-preview p {
   margin: 0 0 24px 0;
   line-height: 1.6;
+  white-space: pre-line;
 }
 
 /* Newsletter Form Preview Styles */

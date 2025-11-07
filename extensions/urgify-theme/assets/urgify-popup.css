@@ -364,6 +364,7 @@
 .urgify-popup-description {
   margin: 0 0 24px 0;
   line-height: 1.6;
+  white-space: pre-line;
 }
 
 .urgify-popup-cta {

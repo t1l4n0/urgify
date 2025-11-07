@@ -6,7 +6,7 @@ import { z } from "zod";
 import { shouldRateLimit, checkShopifyRateLimit } from "../utils/rateLimiting";
 import { validateSessionToken } from "../utils/sessionToken";
 // Polaris Web Components - no imports needed, components are global
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, Fragment } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import popupPreviewStyles from "../styles/popup-preview.css?url";
 import { authenticatedFetch } from "../utils/authenticatedFetch";
@@ -1332,7 +1332,16 @@ export default function PopupSettings() {
               )}
               {description && (
                 <p style={getDescriptionStyles()}>
-                  {description}
+                  {description
+                    .replace(/\r\n/g, '\n')  // Normalize Windows line breaks
+                    .replace(/\r/g, '\n')    // Normalize Mac line breaks
+                    .split('\n')
+                    .map((line, i, arr) => (
+                      <Fragment key={i}>
+                        {line}
+                        {i < arr.length - 1 && <br />}
+                      </Fragment>
+                    ))}
                 </p>
               )}
             {enableNewsletter ? (

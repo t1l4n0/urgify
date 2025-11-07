@@ -348,7 +348,36 @@
       // Render description
       if (descriptionEl) {
         if (this.config.description) {
-          descriptionEl.textContent = this.config.description;
+          // Debug: Log the raw description to check for line breaks
+          if (typeof this.config.description === 'string') {
+            const hasNewlines = this.config.description.includes('\n') || 
+                               this.config.description.includes('\r') ||
+                               this.config.description.includes('\\n');
+            console.log('Urgify Popup: Description debug', {
+              length: this.config.description.length,
+              hasNewlines: hasNewlines,
+              firstChars: this.config.description.substring(0, 100).replace(/\n/g, '\\n').replace(/\r/g, '\\r')
+            });
+          }
+          
+          // Normalize line breaks: convert \r\n and \r to \n, then to <br> tags
+          // Also handle escaped newlines (\\n) that might come from JSON
+          let normalizedText = this.config.description
+            .replace(/\\n/g, '\n')   // Handle escaped newlines from JSON
+            .replace(/\r\n/g, '\n')  // Windows line breaks
+            .replace(/\r/g, '\n');   // Mac line breaks
+          
+          // Escape HTML first
+          const escapedText = normalizedText
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+          
+          // Convert line breaks to <br> tags
+          descriptionEl.innerHTML = escapedText.replace(/\n/g, '<br>');
+          
           if (style === 'custom' && this.config.description_font_size) {
             descriptionEl.style.fontSize = this.config.description_font_size;
           }

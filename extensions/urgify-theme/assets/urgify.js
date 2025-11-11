@@ -1,6 +1,64 @@
 (function () {
   'use strict';
   
+  const globalConsole = (typeof window !== "undefined" && window.console) || {
+    log: () => {},
+    warn: () => {},
+    error: () => {},
+  };
+
+  let debugEnabled =
+    (typeof window !== "undefined" &&
+      (window.UrgifyDebug === true ||
+        (window.Shopify && window.Shopify.designMode === true))) ||
+    false;
+
+  const console = {
+    log: (...args) => {
+      if (debugEnabled) {
+        globalConsole.log(...args);
+      }
+    },
+    info: (...args) => {
+      if (debugEnabled && typeof globalConsole.info === "function") {
+        globalConsole.info(...args);
+      } else if (debugEnabled) {
+        globalConsole.log(...args);
+      }
+    },
+    debug: (...args) => {
+      if (debugEnabled && typeof globalConsole.debug === "function") {
+        globalConsole.debug(...args);
+      } else if (debugEnabled) {
+        globalConsole.log(...args);
+      }
+    },
+    warn: (...args) => {
+      if (debugEnabled) {
+        globalConsole.warn(...args);
+      }
+    },
+    error: (...args) => {
+      globalConsole.error(...args);
+    },
+  };
+
+  if (typeof window !== "undefined") {
+    try {
+      Object.defineProperty(window, "UrgifyDebug", {
+        get() {
+          return debugEnabled;
+        },
+        set(value) {
+          debugEnabled = Boolean(value);
+        },
+        configurable: true,
+      });
+    } catch (error) {
+      globalConsole.warn("Urgify: Unable to define UrgifyDebug property", error);
+    }
+  }
+
   // Set presence flag early to prevent fallback conflicts
   window.__URGIFY_PRESENT__ = true;
   

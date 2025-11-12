@@ -1,22 +1,24 @@
+import { randomUUID } from "node:crypto";
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 import { processWebhookSafely } from "../utils/webhookHelpers";
-import prisma from "../db.server";
+import { webhookShopRedactSchema } from "../utils/validation";
+import { handleShopRedact } from "../utils/gdpr";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   try {
     const hmac = request.headers.get("X-Shopify-Hmac-Sha256");
 
     if (hmac) {
-      const webhookId = request.headers.get("X-Shopify-Webhook-Id") || crypto.randomUUID();
+      const webhookId = request.headers.get("X-Shopify-Webhook-Id") || randomUUID();
       const { topic, shop, payload } = await authenticate.webhook(request);
 
       if (topic?.toUpperCase() !== "SHOP/REDACT") {
         console.warn(`Unexpected topic at /app/webhooks/shop/redact: ${topic}`);
       }
 
-      if (shop) {
+      if (shop && payload) {
         Promise.resolve().then(async () => {
           await processWebhookSafely(
             webhookId,
@@ -24,9 +26,8 @@ export const action = async ({ request }: ActionFunctionArgs) => {
             shop,
             payload,
             async () => {
-              await prisma.$transaction([
-                prisma.session.deleteMany({ where: { shop } }),
-              ]);
+              const validatedPayload = webhookShopRedactSchema.parse(payload);
+              await handleShopRedact(shop, validatedPayload);
             }
           );
         });

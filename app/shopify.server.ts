@@ -22,9 +22,16 @@ console.log(
   process.env.HOST,
 );
 
+const apiSecretKey = process.env.SHOPIFY_API_SECRET;
+if (!apiSecretKey) {
+  throw new Error(
+    "[CONFIG] SHOPIFY_API_SECRET fehlt. Bitte Secret im Deployment setzen.",
+  );
+}
+
 const shopify = shopifyApp({
   apiKey: process.env.SHOPIFY_API_KEY,
-  apiSecretKey: process.env.SHOPIFY_API_SECRET || "",
+  apiSecretKey,
   apiVersion: ApiVersion.October25,
   scopes: process.env.SCOPES?.split(","),
   appUrl: normalizedAppUrl,

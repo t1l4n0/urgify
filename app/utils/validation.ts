@@ -37,10 +37,23 @@ export const webhookDataRequestSchema = z.object({
   customer: z.object({
     id: z.number(),
     email: z.string().email().optional(),
+    phone: z.string().optional().nullable(),
   }),
+  orders_requested: z.array(z.number()).optional(),
 });
 
-export const webhookRedactSchema = z.object({
+export const webhookCustomerRedactSchema = z.object({
+  shop_id: z.number(),
+  shop_domain: z.string(),
+  customer: z.object({
+    id: z.number(),
+    email: z.string().email().optional(),
+    phone: z.string().optional().nullable(),
+  }),
+  orders_to_redact: z.array(z.number()).optional(),
+});
+
+export const webhookShopRedactSchema = z.object({
   shop_id: z.number(),
   shop_domain: z.string(),
 });

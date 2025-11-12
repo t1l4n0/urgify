@@ -1,10 +1,19 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
+import { useAppBridge } from "@shopify/app-bridge-react";
+import { getSessionToken as fetchAppBridgeToken } from "@shopify/app-bridge-utils";
+import { requestSessionToken } from "../utils/authenticatedFetch";
 
 interface SessionTokenContextType {
   sessionToken: string | null;
   isLoading: boolean;
   error: string | null;
-  refreshToken: () => Promise<void>;
+  refreshToken: () => Promise<string | null>;
 }
 
 const SessionTokenContext = createContext<SessionTokenContextType | null>(null);
@@ -23,39 +32,132 @@ interface SessionTokenProviderProps {
 }
 
 export function ServerSessionTokenProvider({ children, initialToken }: SessionTokenProviderProps) {
+  const app = useAppBridge();
   const [sessionToken, setSessionToken] = useState<string | null>(initialToken || null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(!initialToken);
   const [error, setError] = useState<string | null>(null);
 
-
-  // Store token in session storage when it changes
-  React.useEffect(() => {
-    if (sessionToken) {
-      sessionStorage.setItem('shopify_session_token', sessionToken);
+  const persistToken = useCallback((token: string) => {
+    if (typeof window !== "undefined") {
+      sessionStorage.setItem("shopify_session_token", token);
     }
-  }, [sessionToken]);
+  }, []);
 
-  const refreshToken = async () => {
-    try {
-      setIsLoading(true);
+  const refreshTokenInternal = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}): Promise<string | null> => {
+      if (!silent) {
+        setIsLoading(true);
+      }
       setError(null);
 
-      // For now, just use the initial token from server
-      // In a real implementation, you might want to refresh this
+      try {
+        let token: string | null = null;
+
+        if (app) {
+          try {
+            token = await fetchAppBridgeToken(app as any);
+          } catch (appBridgeError) {
+            console.warn("Failed to obtain session token from App Bridge:", appBridgeError);
+          }
+        }
+
+        if (!token) {
+          token = await requestSessionToken();
+        }
+
+        if (!token && typeof window !== "undefined") {
+          token = sessionStorage.getItem("shopify_session_token");
+        }
+
+        if (!token && initialToken) {
+          token = initialToken;
+        }
+
+        if (!token) {
+          throw new Error("No session token available");
+        }
+
+        setSessionToken(token);
+        persistToken(token);
+
+        return token;
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : "Unknown error";
+        setError(errorMessage);
+        console.error("Session token refresh failed:", err);
+        return null;
+      } finally {
+        if (!silent) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [app, initialToken, persistToken],
+  );
+
+  const refreshToken = useCallback(async () => {
+    return refreshTokenInternal({ silent: false });
+  }, [refreshTokenInternal]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const initialize = async () => {
       if (initialToken) {
         setSessionToken(initialToken);
-        sessionStorage.setItem('shopify_session_token', initialToken);
-      } else {
-        throw new Error('No initial session token provided');
+        persistToken(initialToken);
+        setIsLoading(false);
       }
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      setError(errorMessage);
-      console.error('Session token refresh failed:', err);
-    } finally {
-      setIsLoading(false);
+
+      if (isMounted) {
+        await refreshTokenInternal({ silent: !!initialToken });
+      }
+    };
+
+    initialize();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [initialToken, persistToken, refreshTokenInternal]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
     }
-  };
+
+    const handleFocus = () => {
+      refreshTokenInternal({ silent: true });
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshTokenInternal({ silent: true });
+      }
+    };
+
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [refreshTokenInternal]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      refreshTokenInternal({ silent: true });
+    }, 45 * 1000);
+
+    return () => {
+      window.clearInterval(interval);
+    };
+  }, [refreshTokenInternal]);
 
   const value: SessionTokenContextType = {
     sessionToken,

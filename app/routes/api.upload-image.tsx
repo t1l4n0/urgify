@@ -246,14 +246,84 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       );
     }
 
-    // Get the image URL - check if it's a MediaImage
+    // Get the permanent image URL - poll until file is ready if necessary
     let imageUrl = '';
+    const fileId = createdFile.id;
+    
+    // Check if we already have the permanent URL
     if ('image' in createdFile && createdFile.image?.url) {
       imageUrl = createdFile.image.url;
     } else {
-      // Fallback: if fileStatus is READY, we might need to query the file again
-      // For now, return the resourceUrl as fallback
-      imageUrl = stagedTarget.resourceUrl;
+      // File might not be ready yet - poll until we get the permanent URL
+      // Maximum 10 attempts with 1 second delay = 10 seconds max wait
+      const maxAttempts = 10;
+      const delayMs = 1000;
+      
+      for (let attempt = 0; attempt < maxAttempts; attempt++) {
+        // Wait before retrying (except first attempt)
+        if (attempt > 0) {
+          await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+        
+        // Query the file to get its current status
+        const fileQueryResponse = await admin.graphql(`
+          query getFile($id: ID!) {
+            node(id: $id) {
+              ... on MediaImage {
+                id
+                fileStatus
+                image {
+                  url
+                  width
+                  height
+                }
+              }
+            }
+          }
+        `, {
+          variables: {
+            id: fileId,
+          },
+        });
+
+        const fileQueryData = await fileQueryResponse.json() as {
+          errors?: Array<{ message: string }>;
+          data?: {
+            node?: {
+              id: string;
+              fileStatus: string;
+              image?: { url: string; width: number; height: number };
+            };
+          };
+        };
+
+        if (fileQueryData.errors) {
+          console.error("GraphQL errors querying file:", fileQueryData.errors);
+          break;
+        }
+
+        const fileNode = fileQueryData.data?.node;
+        if (fileNode && 'image' in fileNode && fileNode.image?.url) {
+          imageUrl = fileNode.image.url;
+          break;
+        }
+
+        // If file status is READY but no URL yet, allow next iteration to retry (loop handles waiting)
+        if (fileNode?.fileStatus === 'READY' && !imageUrl) {
+          continue;
+        }
+      }
+    }
+
+    // CRITICAL: Never return the temporary staging URL
+    // If we don't have a permanent URL, return an error
+    if (!imageUrl || imageUrl.includes('shopify-staged-uploads')) {
+      return json(
+        { 
+          error: "File upload completed but permanent URL is not yet available. Please try again in a few seconds." 
+        },
+        { status: 503, headers: { ...CORS_HEADERS } }
+      );
     }
 
     return json({ 

@@ -1,12 +1,18 @@
-import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
+import {
+  json,
+  type LoaderFunctionArgs,
+  type ActionFunctionArgs,
+  type SerializeFrom,
+} from "@remix-run/node";
 import { useLoaderData, useRevalidator } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
-import { BillingManager } from "../utils/billing";
+import { BillingManager, hasAccessToPopups } from "../utils/billing";
 import { z } from "zod";
 import { shouldRateLimit, checkShopifyRateLimit } from "../utils/rateLimiting";
 import { validateSessionToken } from "../utils/sessionToken";
+import { ViewPlansLink } from "../components/ViewPlansLink";
 // Polaris Web Components - no imports needed, components are global
-import { useState, useCallback, useEffect, useRef, Fragment } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo, Fragment } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
 import popupPreviewStyles from "../styles/popup-preview.css?url";
 import { authenticatedFetch } from "../utils/authenticatedFetch";
@@ -84,9 +90,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     console.error("Failed to sync subscription status:", syncError);
   }
 
-  // Check subscription status
+  // Check subscription status and feature access
   let hasActiveSubscription = false;
   let isTrialActive = false;
+  let planHandle: string | null = null;
+  let hasAccess = false;
   
   try {
     const billingManager = new BillingManager(session.shop, admin);
@@ -94,8 +102,23 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     
     hasActiveSubscription = subscriptionStatus.hasActiveSubscription;
     isTrialActive = subscriptionStatus.isTrialActive;
+    planHandle = subscriptionStatus.planHandle;
+    hasAccess = hasAccessToPopups(planHandle);
   } catch (error) {
     console.error("Error checking subscription status:", error);
+  }
+  
+  // If user doesn't have access, return early with error message
+  if (!hasAccess) {
+    return json({
+      error: "PopUps feature requires a Plus plan. Please upgrade your subscription to access this feature.",
+      hasAccess: false,
+      planHandle,
+    }, { 
+      headers: { 
+        "Cache-Control": "no-store" 
+      } 
+    });
   }
 
   try {
@@ -341,6 +364,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       discountCodes,
       hasActiveSubscription,
       isTrialActive,
+      hasAccess: true,
     }, { 
       headers: { 
         "Cache-Control": "no-store" 
@@ -383,6 +407,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         discountCodes: [],
         hasActiveSubscription,
         isTrialActive,
+        hasAccess: false,
     }, { 
       headers: { 
         "Cache-Control": "no-store" 
@@ -647,10 +672,52 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 };
 
+type DiscountCodeOption = { id: string; code: string; title: string };
+type PopupResource = { id: string; title: string; handle: string };
+type PopupLoaderData = SerializeFrom<typeof loader>;
+type PopupLoaderSuccess = Extract<PopupLoaderData, { settings: unknown }>;
+
 export default function PopupSettings() {
-  const { settings, discountCodes, selectedResource: loadedResource } = useLoaderData<typeof loader>();
+  const loaderData = useLoaderData<PopupLoaderData>();
+
+  if (!("settings" in loaderData)) {
+    const message =
+      loaderData.error ||
+      "PopUps feature requires a Plus plan. Please upgrade your subscription to access this feature.";
+
+    return <PopupAccessRequired message={message} />;
+  }
+
+  return <PopupSettingsForm data={loaderData} />;
+}
+
+function PopupAccessRequired({ message }: { message: string }) {
+  return (
+    <s-page heading="PopUp Settings">
+      <s-section>
+        <s-banner tone="warning" heading="Subscription Required">
+          <s-paragraph>{message}</s-paragraph>
+          <div style={{ marginTop: "12px" }}>
+            <ViewPlansLink />
+          </div>
+        </s-banner>
+      </s-section>
+    </s-page>
+  );
+}
+
+function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
   const revalidator = useRevalidator();
   const shopify = useAppBridge();
+  const {
+    settings,
+    discountCodes: discountCodeOptions,
+    selectedResource: loadedResource,
+  } = data;
+  const discountCodes = useMemo<DiscountCodeOption[]>(
+    () => (discountCodeOptions ?? []) as DiscountCodeOption[],
+    [discountCodeOptions],
+  );
   // Priming: Stelle sicher, dass ein Session-Token vorhanden ist, sobald die Seite geladen ist
   useEffect(() => {
     let cancelled = false;
@@ -693,7 +760,9 @@ export default function PopupSettings() {
   const [ctaText, setCtaText] = useState(String(settings.ctaText || 'Get Started'));
   const [ctaUrl, setCtaUrl] = useState(String(settings.ctaUrl || 'https://'));
   const [ctaUrlType, setCtaUrlType] = useState<'product' | 'collection' | 'external'>('external');
-  const [selectedResource, setSelectedResource] = useState<{ id: string; title: string; handle: string } | null>(null);
+  const [selectedResource, setSelectedResource] = useState<PopupResource | null>(
+    (loadedResource ?? null) as PopupResource | null,
+  );
   const [imageUrl, setImageUrl] = useState(String(settings.imageUrl || ''));
   const [imageFit, setImageFit] = useState<string>(String(settings.imageFit || 'cover'));
   const [imageAlt, setImageAlt] = useState<string>(String(settings.imageAlt || ''));
@@ -1065,7 +1134,9 @@ export default function PopupSettings() {
   }, [shopify]);
 
   const handleSaveSettings = useCallback(async () => {
-    const selectedDiscount = discountCodes.find(dc => dc.id === discountCodeId);
+    const selectedDiscount = discountCodes.find(
+      (dc: DiscountCodeOption) => dc.id === discountCodeId,
+    );
     const discountCode = selectedDiscount?.code || '';
 
     const payload: Record<string, string> = {
@@ -1617,7 +1688,7 @@ export default function PopupSettings() {
                       details="Select a discount code to show after newsletter signup"
                     >
                       <s-option value="">No discount</s-option>
-                      {discountCodes.map(dc => (
+                      {discountCodes.map((dc: DiscountCodeOption) => (
                         <s-option key={dc.id} value={dc.id}>
                           {dc.title} ({dc.code})
                         </s-option>

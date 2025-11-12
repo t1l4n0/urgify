@@ -83,26 +83,5 @@
   </div>
   
   <script src="{{ 'urgify-popup.js' | asset_url }}" defer></script>
-{% else %}
-  <!-- Urgify Popup Debug: Config missing or empty - popup_config metafield not set or empty -->
-  <script>
-    console.warn('Urgify Popup: Config not found or empty.', {
-      subscriptionActive: {{ subscription_active }},
-      shouldRender: {{ should_render }},
-      showPopup: {{ show_popup }},
-      configRaw: '{{ popup_config_raw | slice: 0, 100 }}'
-    });
-  </script>
 {% endunless %}
-
-{% if should_render and show_popup %}
-  <script>
-    // Debug: Log that snippet was rendered
-    console.log('Urgify Popup: Snippet rendered', {
-      containerExists: !!document.getElementById('urgify-popup-container'),
-      configScriptExists: !!document.getElementById('urgify-popup-config'),
-      timestamp: new Date().toISOString()
-    });
-  </script>
-{% endif %}
 

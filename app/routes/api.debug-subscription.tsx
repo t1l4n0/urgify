@@ -7,6 +7,38 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   try {
     const { admin, session } = await authenticate.admin(request);
     
+    // Get raw subscription data from API
+    const rawResponse = await admin.graphql(`
+      query getCurrentAppInstallation {
+        currentAppInstallation {
+          activeSubscriptions {
+            id
+            name
+            status
+            currentPeriodEnd
+            lineItems {
+              id
+              plan {
+                ... on AppPlanV2 {
+                  pricingDetails {
+                    ... on AppRecurringPricing {
+                      price {
+                        amount
+                        currencyCode
+                      }
+                      interval
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `);
+    
+    const rawData = await rawResponse.json();
+    
     // Get subscription status
     const billingManager = new BillingManager(session.shop, admin);
     const subscriptionStatus = await billingManager.getSubscriptionStatus();
@@ -30,7 +62,8 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       subscriptionStatus,
       currentMetafield,
       shop: session.shop,
-      isActive: subscriptionStatus.hasActiveSubscription || subscriptionStatus.isTrialActive
+      isActive: subscriptionStatus.hasActiveSubscription || subscriptionStatus.isTrialActive,
+      rawApiData: rawData,
     });
   } catch (error) {
     console.error("Error in debug subscription:", error);

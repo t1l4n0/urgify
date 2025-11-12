@@ -57,3 +57,20 @@ model DeadLetter {
 
   @@map("dead_letters")
 }
+
+model GdprRequest {
+  id               String   @id @default(cuid())
+  shop             String
+  topic            String
+  customerId       String?
+  customerEmailHash String?
+  status           String   @default("queued")
+  artifactPath     String?
+  details          String?
+  createdAt        DateTime @default(now())
+  processedAt      DateTime?
+  deletedAt        DateTime?
+
+  @@index([shop, topic])
+  @@index([shop, customerId])
+}

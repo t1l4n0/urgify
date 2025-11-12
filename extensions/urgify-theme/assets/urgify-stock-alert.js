@@ -31,7 +31,7 @@
                   document.getElementById('urgify-variant-qty-auto')?.textContent || '{}';
       invMap = JSON.parse(raw);
     } catch (e) { 
-      console.warn('Urgify: Could not parse variant quantities', e);
+      // Could not parse variant quantities (log removed to reduce console noise)
       invMap = {}; 
     }
 

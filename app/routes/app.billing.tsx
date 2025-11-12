@@ -34,34 +34,38 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         const result = await billingManager.createSubscription(planId);
         
         if (result.success && result.confirmationUrl) {
-          return json({ 
-            success: true, 
-            confirmationUrl: result.confirmationUrl 
-          });
-        } else {
-          return json({ 
-            success: false, 
-            error: result.error || "Failed to create subscription" 
+          return json({
+            action: "create_subscription",
+            success: true,
+            confirmationUrl: result.confirmationUrl,
           });
         }
+
+        return json({
+          action: "create_subscription",
+          success: false,
+          error: result.error || "Failed to create subscription",
+        });
       }
       
       case "cancel_subscription": {
         const subscriptionId = formData.get("subscriptionId") as string;
         const result = await billingManager.cancelSubscription(subscriptionId);
         
-        return json({ 
-          success: result.success, 
-          error: result.error 
+        return json({
+          action: "cancel_subscription",
+          success: result.success,
+          error: result.error,
         });
       }
       
       default:
-        return json({ success: false, error: "Invalid action" });
+        return json({ action, success: false, error: "Invalid action" });
     }
   } catch (error) {
     console.error("Billing action error:", error);
     return json({ 
+      action,
       success: false, 
       error: "An error occurred while processing your request" 
     });

@@ -1,9 +1,15 @@
-import { json, type LoaderFunctionArgs, type ActionFunctionArgs } from "@remix-run/node";
+import {
+  json,
+  type LoaderFunctionArgs,
+  type ActionFunctionArgs,
+  type SerializeFrom,
+} from "@remix-run/node";
 import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
-import { BillingManager } from "../utils/billing";
+import { BillingManager, hasAccessToStockAlerts } from "../utils/billing";
 import { z } from "zod";
 import { shouldRateLimit, checkShopifyRateLimit } from "../utils/rateLimiting";
+import { ViewPlansLink } from "../components/ViewPlansLink";
 // Polaris Web Components - no imports needed, components are global
 import { useState, useCallback, useEffect, useRef } from "react";
 import stockAlertStyles from "../styles/stock-alert-preview.css?url";
@@ -28,6 +34,38 @@ const stockAlertSettingsSchema = z.object({
   stockCounterPosition: z.string().default('above'),
   stockAlertStyle: z.string().default('spectacular'),
 });
+
+type StockAlertsLoaderData = SerializeFrom<typeof loader>;
+type StockAlertsSuccess = Extract<StockAlertsLoaderData, { settings: unknown }>;
+
+export default function StockAlertsSimple() {
+  const loaderData = useLoaderData<StockAlertsLoaderData>();
+
+  if (!("settings" in loaderData)) {
+    const message =
+      loaderData.error ||
+      "Stock Alerts feature requires an active paid plan. Please upgrade your subscription to access this feature.";
+
+    return <StockAlertsAccessRequired message={message} />;
+  }
+
+  return <StockAlertsForm data={loaderData} />;
+}
+
+function StockAlertsAccessRequired({ message }: { message: string }) {
+  return (
+    <s-page heading="Stock Alert Settings">
+      <s-section>
+        <s-banner tone="warning" heading="Subscription Required">
+          <s-paragraph>{message}</s-paragraph>
+          <div style={{ marginTop: "12px" }}>
+            <ViewPlansLink />
+          </div>
+        </s-banner>
+      </s-section>
+    </s-page>
+  );
+}
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -54,9 +92,11 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     // Continue with subscription check even if sync fails
   }
 
-  // Check subscription status first
+  // Check subscription status and feature access
   let hasActiveSubscription = false;
   let isTrialActive = false;
+  let planHandle: string | null = null;
+  let hasAccess = false;
   
   try {
     const billingManager = new BillingManager(session.shop, admin);
@@ -64,9 +104,24 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     
     hasActiveSubscription = subscriptionStatus.hasActiveSubscription;
     isTrialActive = subscriptionStatus.isTrialActive;
+    planHandle = subscriptionStatus.planHandle;
+    hasAccess = hasAccessToStockAlerts(planHandle);
   } catch (error) {
     console.error("Error checking subscription status:", error);
     // Continue without subscription check
+  }
+  
+  // If user doesn't have access, return early with error message
+  if (!hasAccess) {
+    return json({
+      error: "Stock Alerts feature requires an active paid plan. Please upgrade your subscription to access this feature.",
+      hasAccess: false,
+      planHandle,
+    }, { 
+      headers: { 
+        "Cache-Control": "no-store" 
+      } 
+    });
   }
   
   // Continue with fetching settings, but mark subscription status in data
@@ -154,6 +209,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       settings,
       hasActiveSubscription,
       isTrialActive,
+      hasAccess: true,
       products: products
         .filter((product: any) => (product.totalInventory || 0) > 0) // Nur Produkte mit Bestand > 0
         .map((product: any) => ({
@@ -189,6 +245,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       },
       hasActiveSubscription,
       isTrialActive,
+      hasAccess: false,
       products: [], 
       error: "Failed to fetch data" 
     }, { 
@@ -484,10 +541,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   }
 };
 
-export default function StockAlertsSimple() {
-  const { settings, products } = useLoaderData<typeof loader>();
+function StockAlertsForm({ data }: { data: StockAlertsSuccess }) {
   const fetcher = useFetcher();
   const revalidator = useRevalidator();
+  const { settings, products } = data;
   
   // Simple state management
   const [globalThreshold, setGlobalThreshold] = useState(String(settings.global_threshold || 5));

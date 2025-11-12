@@ -165,6 +165,10 @@ async function getSessionToken(): Promise<string | null> {
   }
 }
 
+export async function requestSessionToken(): Promise<string | null> {
+  return getSessionToken();
+}
+
 /**
  * Makes authenticated GraphQL requests
  */

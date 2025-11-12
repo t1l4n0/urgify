@@ -5,11 +5,11 @@ export default function Features() {
       <s-stack gap="base">
         <s-box>
           <s-heading level="2">⏰ Advanced Countdown Timers</s-heading>
-          <s-paragraph>Create stunning countdown timers with 4 different styles: Digital Clock, Flip Cards, Circular Progress, and Minimal. Fully customizable colors, animations, and responsive layouts.</s-paragraph>
+          <s-paragraph>Create stunning countdown timers with multiple styles. Fully customizable colors, animations, and responsive layouts.</s-paragraph>
         </s-box>
         <s-box>
           <s-heading level="2">🎯 Limited Time Offers</s-heading>
-          <s-paragraph>Design spectacular limited-time offers with 4 unique styles: Spectacular (animated), Brutalist Bold, Glassmorphism, and Neumorphism. Perfect for flash sales and special promotions.</s-paragraph>
+          <s-paragraph>Design spectacular limited-time offers with multiple styles. Perfect for flash sales and special promotions.</s-paragraph>
         </s-box>
         <s-box>
           <s-heading level="2">📦 Smart Stock Alerts</s-heading>
@@ -17,7 +17,7 @@ export default function Features() {
         </s-box>
         <s-box>
           <s-heading level="2">⚠️ Scarcity Banners</s-heading>
-          <s-paragraph>Add scarcity messaging with customizable banners featuring 3 unique styles: Spectacular (animated), Brutalist Bold, and Glassmorphism. Perfect for creating urgency and highlighting product scarcity.</s-paragraph>
+          <s-paragraph>Add scarcity messaging with customizable banners featuring multiple styles. Perfect for creating urgency and highlighting product scarcity.</s-paragraph>
         </s-box>
         <s-box>
           <s-heading level="2">🎪 Smart PopUps</s-heading>

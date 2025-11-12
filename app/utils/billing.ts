@@ -60,6 +60,48 @@ export const BILLING_CONFIG = {
   }
 } as const;
 
+const PLAN_METADATA = {
+  basic: {
+    id: BILLING_CONFIG.PLANS.BASIC.id,
+    price: BILLING_CONFIG.PLANS.BASIC.price,
+  },
+  pro: {
+    id: BILLING_CONFIG.PLANS.PRO.id,
+    price: BILLING_CONFIG.PLANS.PRO.price,
+  },
+  enterprise: {
+    id: BILLING_CONFIG.PLANS.ENTERPRISE.id,
+    price: BILLING_CONFIG.PLANS.ENTERPRISE.price,
+  },
+} as const;
+
+type PlanHandle = keyof typeof PLAN_METADATA;
+
+const PLAN_NAME_ALIASES: Record<string, PlanHandle> = {
+  basic: "basic",
+  starter: "basic",
+  pro: "pro",
+  "pro-plan": "pro",
+  advanced: "pro",
+  enterprise: "enterprise",
+  premium: "enterprise",
+  plus: "enterprise",
+  "plus-plan": "enterprise",
+};
+
+const PLAN_PRICE_ALIASES: Array<{ handle: PlanHandle; amount: number }> = [
+  { handle: "enterprise", amount: PLAN_METADATA.enterprise.price },
+  { handle: "enterprise", amount: 19.99 }, // Plus monthly
+  { handle: "enterprise", amount: 199 }, // Plus yearly
+  { handle: "pro", amount: PLAN_METADATA.pro.price },
+  { handle: "pro", amount: 7.99 }, // Updated Pro monthly
+  { handle: "pro", amount: 79 }, // Pro yearly
+  { handle: "basic", amount: PLAN_METADATA.basic.price },
+  { handle: "basic", amount: 0 },
+];
+
+const PRICE_MATCH_TOLERANCE = 0.5;
+
 // Validation schemas
 export const billingStatusSchema = z.enum([
   'trial',
@@ -76,6 +118,7 @@ export const subscriptionSchema = z.object({
   currentPeriodEnd: z.string(),
   trialEndsAt: z.string().optional(),
   planId: z.string(),
+  planHandle: z.string().optional(),
   price: z.number(),
   currency: z.string(),
   interval: z.string(),
@@ -83,6 +126,32 @@ export const subscriptionSchema = z.object({
 
 export type BillingStatus = z.infer<typeof billingStatusSchema>;
 export type Subscription = z.infer<typeof subscriptionSchema>;
+
+function derivePlanHandleFromName(name: string | null | undefined): PlanHandle | null {
+  if (!name) return null;
+
+  const normalized = name.toLowerCase();
+  for (const [alias, handle] of Object.entries(PLAN_NAME_ALIASES)) {
+    if (normalized.includes(alias)) {
+      return handle;
+    }
+  }
+  return null;
+}
+
+function approximatelyEquals(value: number, target: number): boolean {
+  return Math.abs(value - target) <= PRICE_MATCH_TOLERANCE;
+}
+
+function derivePlanHandleFromPrice(price: number): PlanHandle | null {
+  for (const { handle, amount } of PLAN_PRICE_ALIASES) {
+    if (approximatelyEquals(price, amount)) {
+      return handle;
+    }
+  }
+  if (price > 0) return "basic";
+  return null;
+}
 
 // Billing utility class
 export class BillingManager {
@@ -101,6 +170,7 @@ export class BillingManager {
     isTrialActive: boolean;
     daysUntilTrialEnds: number | null;
     daysUntilSubscriptionEnds: number | null;
+    planHandle: string | null;
   }> {
     try {
       const response = await this.admin.graphql(`
@@ -114,13 +184,15 @@ export class BillingManager {
               lineItems {
                 id
                 plan {
-                  pricingDetails {
-                    ... on AppRecurringPricing {
-                      price {
-                        amount
-                        currencyCode
+                  ... on AppPlanV2 {
+                    pricingDetails {
+                      ... on AppRecurringPricing {
+                        price {
+                          amount
+                          currencyCode
+                        }
+                        interval
                       }
-                      interval
                     }
                   }
                 }
@@ -143,6 +215,7 @@ export class BillingManager {
           isTrialActive: false,
           daysUntilTrialEnds: null,
           daysUntilSubscriptionEnds: null,
+          planHandle: null,
         };
       }
 
@@ -180,6 +253,7 @@ export class BillingManager {
           isTrialActive: false,
           daysUntilTrialEnds: null,
           daysUntilSubscriptionEnds: null,
+          planHandle: null,
         };
       }
 
@@ -190,16 +264,54 @@ export class BillingManager {
         currentPeriodEnd: activeSubscription.currentPeriodEnd,
       });
 
+      // Extract plan information from subscription line items
+      // AppPlanV2 only has pricingDetails, no id or handle
+      const plan = activeSubscription.lineItems?.[0]?.plan;
+      const price = parseFloat(plan?.pricingDetails?.price?.amount || '0');
+      const subscriptionName = activeSubscription.name || '';
+      
+      console.log('[BillingManager] Plan information:', {
+        subscriptionName,
+        price,
+        plan,
+        lineItems: activeSubscription.lineItems,
+      });
+      
+      // Derive plan handle from subscription name or price
+      // Subscription names typically contain the plan name (e.g., "Urgify Pro")
+      let planHandle = derivePlanHandleFromName(subscriptionName);
+
+      if (!planHandle) {
+        planHandle = derivePlanHandleFromPrice(price);
+      }
+
+      if (planHandle) {
+        console.log(
+          "[BillingManager] Derived plan handle:",
+          planHandle,
+          "from name:",
+          subscriptionName,
+          "price:",
+          price,
+        );
+      } else {
+        console.warn(
+          "[BillingManager] Could not determine plan handle from name or price",
+          { subscriptionName, price },
+        );
+      }
+
       const subscription: Subscription = {
         id: activeSubscription.id,
         name: activeSubscription.name,
         status: activeSubscription.status.toLowerCase(),
         currentPeriodEnd: activeSubscription.currentPeriodEnd,
         trialEndsAt: undefined, // Field not available in API 2025-04
-        planId: activeSubscription.lineItems?.[0]?.plan?.pricingDetails?.price?.amount ? 'urgify_pro' : 'urgify_basic',
-        price: activeSubscription.lineItems?.[0]?.plan?.pricingDetails?.price?.amount || 0,
-        currency: activeSubscription.lineItems?.[0]?.plan?.pricingDetails?.price?.currencyCode || 'USD',
-        interval: activeSubscription.lineItems?.[0]?.plan?.pricingDetails?.interval || 'monthly',
+        planId: planHandle ? PLAN_METADATA[planHandle].id : BILLING_CONFIG.PLANS.BASIC.id,
+        planHandle: planHandle ?? undefined,
+        price: price,
+        currency: plan?.pricingDetails?.price?.currencyCode || 'USD',
+        interval: plan?.pricingDetails?.interval || 'monthly',
       };
 
       const statusUpper = activeSubscription.status?.toUpperCase();
@@ -214,13 +326,24 @@ export class BillingManager {
         (new Date(activeSubscription.currentPeriodEnd).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
       );
 
-      return {
+      const result = {
         hasActiveSubscription: true,
         subscription,
         isTrialActive: !!isTrialActive,
         daysUntilTrialEnds,
         daysUntilSubscriptionEnds,
+        planHandle: planHandle ?? null,
       };
+
+      console.log('[BillingManager] Final subscription status result:', {
+        hasActiveSubscription: result.hasActiveSubscription,
+        planHandle: result.planHandle,
+        subscriptionPlanHandle: subscription.planHandle,
+        subscriptionStatus: subscription.status,
+        subscriptionName: subscription.name,
+      });
+
+      return result;
     } catch (error) {
       console.error('Error fetching subscription status:', error);
       return {
@@ -229,6 +352,7 @@ export class BillingManager {
         isTrialActive: false,
         daysUntilTrialEnds: null,
         daysUntilSubscriptionEnds: null,
+        planHandle: null,
       };
     }
   }
@@ -555,4 +679,44 @@ export async function syncSubscriptionStatusToMetafield(admin: any, shopId: stri
       error: 'Failed to sync subscription status'
     };
   }
+}
+
+// Feature gating functions
+export function hasAccessToFeature(
+  planHandle: string | null | undefined,
+  requiredPlan: PlanHandle
+): boolean {
+  if (!planHandle) return false;
+
+  // Plan hierarchy: basic < pro < enterprise
+  const planHierarchy: Record<PlanHandle, number> = {
+    basic: 1,
+    pro: 2,
+    enterprise: 3,
+  };
+
+  const normalizedHandle =
+    PLAN_NAME_ALIASES[planHandle.toLowerCase()] ??
+    (["basic", "pro", "enterprise"].includes(planHandle.toLowerCase())
+      ? (planHandle.toLowerCase() as PlanHandle)
+      : null);
+
+  if (!normalizedHandle) return false;
+
+  const userPlanLevel = planHierarchy[normalizedHandle];
+  const requiredPlanLevel = planHierarchy[requiredPlan];
+
+  return userPlanLevel >= requiredPlanLevel;
+}
+
+export function hasAccessToStockAlerts(planHandle: string | null | undefined): boolean {
+  return hasAccessToFeature(planHandle, 'basic');
+}
+
+export function hasAccessToAppBlocks(planHandle: string | null | undefined): boolean {
+  return hasAccessToFeature(planHandle, 'pro');
+}
+
+export function hasAccessToPopups(planHandle: string | null | undefined): boolean {
+  return hasAccessToFeature(planHandle, 'enterprise');
 }

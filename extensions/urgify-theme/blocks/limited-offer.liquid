@@ -34,7 +34,7 @@
   </div>
 {% else %}
 
-<div class="urgify-limited-offer offer-style-{{ block.settings.offer_style | default: 'brutalist' }}" 
+<div class="urgify-limited-offer offer-style-{{ block.settings.offer_style | default: 'spectacular' }}" 
      data-urgify="limited-offer" 
      data-block-id="{{ block.id }}"
      data-end-date="{{ end_iso }}"
@@ -45,14 +45,18 @@
        {% endif %}
      ">
 
-  <!-- Background Elements -->
-  <div class="offer-bg-elements">
-    <div class="sparkle"></div>
-    <div class="sparkle"></div>
-    <div class="sparkle"></div>
-    <div class="pulse-ring"></div>
-    <div class="pulse-ring"></div>
-  </div>
+  {% assign current_style = block.settings.offer_style | default: 'spectacular' %}
+
+  {% if current_style == 'spectacular' or current_style == 'spectacular-blue' or current_style == 'spectacular-mint' or current_style == 'spectacular-purple' or current_style == 'spectacular-emerald' %}
+    <!-- Background Elements -->
+    <div class="offer-bg-elements">
+      <div class="sparkle"></div>
+      <div class="sparkle"></div>
+      <div class="sparkle"></div>
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+    </div>
+  {% endif %}
 
   <!-- Main Content -->
   <div class="offer-content">
@@ -72,6 +76,39 @@
 
     {% if block.settings.description != blank %}
       <p class="offer-description">{{ block.settings.description }}</p>
+    {% endif %}
+
+    {% if block.settings.product != blank %}
+      {% assign selected_product = all_products[block.settings.product] %}
+      {% if selected_product %}
+        <div class="offer-product">
+          <a href="{{ selected_product.url }}" class="offer-product-link">
+            {% if selected_product.featured_image %}
+              <div class="offer-product-image">
+                <img src="{{ selected_product.featured_image | image_url: width: 300 }}" 
+                     alt="{{ selected_product.featured_image.alt | escape | default: selected_product.title | escape }}"
+                     loading="lazy"
+                     width="300"
+                     height="{{ 300 | divided_by: selected_product.featured_image.aspect_ratio | round }}">
+              </div>
+            {% endif %}
+            <div class="offer-product-info">
+              <h3 class="offer-product-title">{{ selected_product.title }}</h3>
+              {% assign product_variant = selected_product.selected_or_first_available_variant %}
+              {% if product_variant %}
+                <div class="offer-product-price">
+                  {% if product_variant.compare_at_price > product_variant.price %}
+                    <span class="offer-product-price-compare">{{ product_variant.compare_at_price | money }}</span>
+                    <span class="offer-product-price-sale">{{ product_variant.price | money }}</span>
+                  {% else %}
+                    <span class="offer-product-price-regular">{{ product_variant.price | money }}</span>
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
+          </a>
+        </div>
+      {% endif %}
     {% endif %}
 
     {% if block.settings.show_timer %}
@@ -96,8 +133,10 @@
     {% endif %}
   </div>
 
-  <!-- Border Animation -->
-  <div class="offer-border-animation"></div>
+  {% if current_style == 'spectacular' or current_style == 'spectacular-blue' or current_style == 'spectacular-mint' or current_style == 'spectacular-purple' or current_style == 'spectacular-emerald' %}
+    <!-- Border Animation -->
+    <div class="offer-border-animation"></div>
+  {% endif %}
 </div>
 
 <style>
@@ -109,6 +148,15 @@
   padding: 40px 30px;
   margin: 20px 0;
   text-align: center;
+  background: linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+  animation: limitedOfferPulse 3s infinite;
+}
+
+[data-urgify="limited-offer"]:hover,
+.urgify-limited-offer:hover {
+  transform: none !important;
 }
 
 /* Background Elements */
@@ -223,6 +271,78 @@
   white-space: pre-line;
 }
 
+/* Product Display */
+.offer-product {
+  margin: 30px 0;
+  position: relative;
+  z-index: 2;
+}
+
+.offer-product-link {
+  display: inline-block;
+  text-decoration: none;
+  transition: transform 0.3s ease;
+  max-width: 100%;
+}
+
+.offer-product-link:hover {
+  transform: translateY(-5px);
+  text-decoration: none;
+}
+
+.offer-product-image {
+  margin: 0 auto 15px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  max-width: 300px;
+  width: 100%;
+  aspect-ratio: 1;
+  position: relative;
+}
+
+.offer-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.offer-product-info {
+  text-align: center;
+}
+
+.offer-product-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+  line-height: 1.3;
+}
+
+.offer-product-price {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.offer-product-price-compare {
+  text-decoration: line-through;
+  opacity: 0.7;
+  font-size: 0.9em;
+}
+
+.offer-product-price-sale {
+  font-weight: 700;
+  font-size: 1.2em;
+}
+
+.offer-product-price-regular {
+  font-weight: 700;
+  font-size: 1.2em;
+}
+
 .offer-timer {
   display: inline-flex;
   align-items: center;
@@ -274,7 +394,7 @@
 }
 
 /* Spectacular Style (Default) */
-.offer-style-spectacular {
+.urgify-limited-offer.offer-style-spectacular {
   position: relative;
   padding: 50px 40px;
   text-align: center;
@@ -288,56 +408,68 @@
   animation: spectacularPulse 2s infinite, spectacularShimmer 3s infinite;
 }
 
-.offer-style-spectacular .offer-badge {
-  background: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 25px;
-  font-weight: 700;
-  font-size: 0.9rem;
-  letter-spacing: 1px;
-  padding: 12px 24px;
-  backdrop-filter: blur(10px);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  animation: badgeBounce 2s infinite;
+/* Spectacular Blue Style */
+.urgify-limited-offer.offer-style-spectacular-blue {
+  position: relative;
+  padding: 50px 40px;
+  text-align: center;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
+  animation: spectacularShimmer 3s infinite;
 }
 
-.offer-style-spectacular .offer-title {
-  color: white;
-  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-  font-weight: 800;
-  font-size: 3rem;
-  letter-spacing: -0.5px;
-  line-height: 1.2;
-  margin: 20px 0;
-  animation: titleShimmer 3s infinite;
+/* Spectacular Mint Style */
+.urgify-limited-offer.offer-style-spectacular-mint {
+  position: relative;
+  padding: 50px 40px;
+  text-align: center;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #00b4d8 0%, #48cae4 50%, #90e0ef 100%);
+  animation: spectacularShimmer 3s infinite;
 }
 
-.offer-style-spectacular .offer-description {
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1.2rem;
-  line-height: 1.6;
-  margin: 20px 0;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  white-space: pre-line;
+/* Spectacular Purple Style */
+.urgify-limited-offer.offer-style-spectacular-purple {
+  position: relative;
+  padding: 50px 40px;
+  text-align: center;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(64, 38, 131, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 50%, #a855f7 100%);
+  animation: spectacularShimmer 3s infinite;
 }
 
-.offer-style-spectacular .offer-timer {
-  background: rgba(255, 255, 255, 0.15);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 25px;
-  font-weight: 600;
-  font-size: 1rem;
-  letter-spacing: 1px;
-  padding: 12px 24px;
-  backdrop-filter: blur(10px);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-  animation: timerPulse 2s infinite;
+/* Spectacular Emerald Style */
+.urgify-limited-offer.offer-style-spectacular-emerald {
+  position: relative;
+  padding: 50px 40px;
+  text-align: center;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(15, 118, 110, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  background: linear-gradient(135deg, #0f766e 0%, #10b981 50%, #34d399 100%);
+  animation: spectacularShimmer 3s infinite;
 }
 
 /* Brutalist Bold Style */
-.offer-style-brutalist {
+.urgify-limited-offer.offer-style-brutalist {
   background: #000000;
   border: 8px solid #ff0000;
   border-radius: 0;
@@ -353,7 +485,12 @@
   overflow: visible;
 }
 
-.offer-style-brutalist .offer-badge {
+.urgify-limited-offer.offer-style-brutalist .offer-bg-elements,
+.urgify-limited-offer.offer-style-brutalist .offer-border-animation {
+  display: none;
+}
+
+.urgify-limited-offer.offer-style-brutalist .offer-badge {
   background: #ff0000;
   color: #000000;
   border: 4px solid #ffff00;
@@ -369,7 +506,7 @@
   z-index: 2;
 }
 
-.offer-style-brutalist .offer-title {
+.urgify-limited-offer.offer-style-brutalist .offer-title {
   color: #ffff00;
   text-shadow: 4px 4px 0px #ff0000;
   font-family: 'Impact', sans-serif;
@@ -381,7 +518,7 @@
   margin: 20px 0;
 }
 
-.offer-style-brutalist .offer-description {
+.urgify-limited-offer.offer-style-brutalist .offer-description {
   font-family: 'Impact', sans-serif;
   font-weight: 600;
   color: #ffffff;
@@ -393,7 +530,29 @@
   white-space: pre-line;
 }
 
-.offer-style-brutalist .offer-timer {
+.urgify-limited-offer.offer-style-brutalist .offer-product-title {
+  font-family: 'Impact', sans-serif;
+  font-weight: 900;
+  color: #ffff00;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-shadow: 4px 4px 0px #ff0000;
+}
+
+.urgify-limited-offer.offer-style-brutalist .offer-product-price-compare {
+  color: #ffffff;
+  text-shadow: 2px 2px 0px #ff0000;
+}
+
+.urgify-limited-offer.offer-style-brutalist .offer-product-price-sale,
+.urgify-limited-offer.offer-style-brutalist .offer-product-price-regular {
+  font-family: 'Impact', sans-serif;
+  font-weight: 900;
+  color: #ffff00;
+  text-shadow: 3px 3px 0px #ff0000;
+}
+
+.urgify-limited-offer.offer-style-brutalist .offer-timer {
   background: #ffff00;
   color: #000000;
   border: 4px solid #ff0000;
@@ -410,21 +569,27 @@
 }
 
 /* Glassmorphism Style */
-.offer-style-glassmorphism {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.urgify-limited-offer.offer-style-glassmorphism {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(226, 232, 240, 0.3);
   border-radius: 20px;
   box-shadow: 
-    0 8px 32px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    0 12px 36px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
   font-family: 'SF Pro Display', 'Helvetica Neue', sans-serif;
   font-weight: 300;
   position: relative;
   overflow: hidden;
+  color: rgba(15, 23, 42, 0.92);
 }
 
-.offer-style-glassmorphism::before {
+.urgify-limited-offer.offer-style-glassmorphism .offer-bg-elements,
+.urgify-limited-offer.offer-style-glassmorphism .offer-border-animation {
+  display: none;
+}
+
+.urgify-limited-offer.offer-style-glassmorphism::before {
   content: '';
   position: absolute;
   top: 0;
@@ -438,57 +603,75 @@
   pointer-events: none;
 }
 
-.offer-style-glassmorphism .offer-badge {
-  background: rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+.urgify-limited-offer.offer-style-glassmorphism .offer-badge {
+  background: rgba(15, 23, 42, 0.08);
+  color: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(15, 23, 42, 0.18);
   border-radius: 50px;
   font-family: 'SF Pro Display', sans-serif;
   font-weight: 600;
   font-size: 0.9rem;
   letter-spacing: 1px;
   padding: 12px 24px;
-  backdrop-filter: blur(10px);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(16px);
 }
 
-.offer-style-glassmorphism .offer-title {
-  color: rgba(255, 255, 255, 0.95);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.urgify-limited-offer.offer-style-glassmorphism .offer-title {
+  color: rgba(15, 23, 42, 0.98);
+  text-shadow: none;
   font-family: 'SF Pro Display', sans-serif;
-  font-weight: 300;
+  font-weight: 600;
   font-size: 3.5rem;
   letter-spacing: -1px;
   line-height: 1.1;
   margin: 20px 0;
 }
 
-.offer-style-glassmorphism .offer-description {
+.urgify-limited-offer.offer-style-glassmorphism .offer-description {
   font-family: 'SF Pro Display', sans-serif;
   font-weight: 400;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(15, 23, 42, 0.8);
   font-size: 1.2rem;
   line-height: 1.5;
   letter-spacing: 0.3px;
   white-space: pre-line;
 }
 
-.offer-style-glassmorphism .offer-timer {
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+.urgify-limited-offer.offer-style-glassmorphism .offer-product-title {
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.95);
+  text-shadow: none;
+}
+
+.urgify-limited-offer.offer-style-glassmorphism .offer-product-price-compare {
+  color: rgba(15, 23, 42, 0.55);
+}
+
+.urgify-limited-offer.offer-style-glassmorphism .offer-product-price-sale,
+.urgify-limited-offer.offer-style-glassmorphism .offer-product-price-regular {
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.95);
+  text-shadow: none;
+}
+
+.urgify-limited-offer.offer-style-glassmorphism .offer-timer {
+  background: rgba(15, 23, 42, 0.07);
+  color: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 50px;
   font-family: 'SF Pro Display', sans-serif;
   font-weight: 500;
   font-size: 1rem;
   letter-spacing: 1px;
   padding: 12px 24px;
-  backdrop-filter: blur(10px);
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(16px);
+  text-shadow: none;
 }
 
 /* Neumorphism Style */
-.offer-style-neumorphism {
+.urgify-limited-offer.offer-style-neumorphism {
   background: #e0e5ec;
   border: none;
   border-radius: 30px;
@@ -501,7 +684,12 @@
   position: relative;
 }
 
-.offer-style-neumorphism .offer-badge {
+.urgify-limited-offer.offer-style-neumorphism .offer-bg-elements,
+.urgify-limited-offer.offer-style-neumorphism .offer-border-animation {
+  display: none;
+}
+
+.urgify-limited-offer.offer-style-neumorphism .offer-badge {
   background: #e0e5ec;
   color: #4a5568;
   border: none;
@@ -517,7 +705,7 @@
   text-transform: uppercase;
 }
 
-.offer-style-neumorphism .offer-title {
+.urgify-limited-offer.offer-style-neumorphism .offer-title {
   color: #2d3748;
   text-shadow: none;
   font-family: 'Poppins', sans-serif;
@@ -528,7 +716,7 @@
   margin: 20px 0;
 }
 
-.offer-style-neumorphism .offer-description {
+.urgify-limited-offer.offer-style-neumorphism .offer-description {
   font-family: 'Poppins', sans-serif;
   font-weight: 400;
   color: #4a5568;
@@ -538,7 +726,24 @@
   white-space: pre-line;
 }
 
-.offer-style-neumorphism .offer-timer {
+.urgify-limited-offer.offer-style-neumorphism .offer-product-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.urgify-limited-offer.offer-style-neumorphism .offer-product-price-compare {
+  color: #718096;
+}
+
+.urgify-limited-offer.offer-style-neumorphism .offer-product-price-sale,
+.urgify-limited-offer.offer-style-neumorphism .offer-product-price-regular {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.urgify-limited-offer.offer-style-neumorphism .offer-timer {
   background: #e0e5ec;
   color: #2d3748;
   border: none;
@@ -598,7 +803,11 @@
 }
 
 /* Spectacular Button */
-.offer-button-spectacular {
+.offer-button-spectacular,
+.offer-button-spectacular-blue,
+.offer-button-spectacular-mint,
+.offer-button-spectacular-purple,
+.offer-button-spectacular-emerald {
   background: rgba(255, 255, 255, 0.2);
   color: white;
   border: 2px solid rgba(255, 255, 255, 0.3);
@@ -606,9 +815,37 @@
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
 }
 
-.offer-button-spectacular:hover {
+.offer-button-spectacular:hover,
+.offer-button-spectacular-blue:hover,
+.offer-button-spectacular-mint:hover,
+.offer-button-spectacular-purple:hover,
+.offer-button-spectacular-emerald:hover {
   background: rgba(255, 255, 255, 0.3);
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+}
+
+.offer-button-spectacular-mint {
+  box-shadow: 0 8px 25px rgba(0, 180, 216, 0.25);
+}
+
+.offer-button-spectacular-mint:hover {
+  box-shadow: 0 12px 35px rgba(0, 180, 216, 0.35);
+}
+
+.offer-button-spectacular-purple {
+  box-shadow: 0 8px 25px rgba(91, 33, 182, 0.28);
+}
+
+.offer-button-spectacular-purple:hover {
+  box-shadow: 0 12px 35px rgba(91, 33, 182, 0.35);
+}
+
+.offer-button-spectacular-emerald {
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.28);
+}
+
+.offer-button-spectacular-emerald:hover {
+  box-shadow: 0 12px 35px rgba(16, 185, 129, 0.36);
 }
 
 /* Brutalist Button */
@@ -630,19 +867,19 @@
 
 /* Glassmorphism Button */
 .offer-button-glassmorphism {
-  background: rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  backdrop-filter: blur(20px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.96) 0%, rgba(14, 116, 144, 0.92) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.25);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 16px 32px rgba(30, 64, 175, 0.22);
   font-family: 'SF Pro Display', sans-serif;
   font-weight: 600;
   letter-spacing: 1px;
 }
 
 .offer-button-glassmorphism:hover {
-  background: rgba(255, 255, 255, 0.25);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, rgba(30, 64, 175, 1) 0%, rgba(14, 116, 144, 0.98) 100%);
+  box-shadow: 0 22px 40px rgba(30, 64, 175, 0.28);
 }
 
 /* Neumorphism Button */
@@ -670,6 +907,40 @@
     inset -8px -8px 16px #ffffff;
 }
 
+/* Animations */
+@keyframes limitedOfferPulse {
+  0%, 100% {
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.5);
+    transform: scale(1.01);
+  }
+}
+
+@keyframes sparkleFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseRing {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
 /* Spectacular Animations */
 @keyframes spectacularPulse {
   0%, 100% { 
@@ -689,29 +960,6 @@
 @keyframes spectacularShimmer {
   0% { background-position: -200% center; }
   100% { background-position: 200% center; }
-}
-
-/* Animations */
-@keyframes sparkleFloat {
-  0%, 100% { 
-    transform: translateY(0px) rotate(0deg);
-    opacity: 0.7;
-  }
-  50% { 
-    transform: translateY(-20px) rotate(180deg);
-    opacity: 1;
-  }
-}
-
-@keyframes pulseRing {
-  0% {
-    transform: translate(-50%, -50%) scale(0.8);
-    opacity: 1;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(2);
-    opacity: 0;
-  }
 }
 
 @keyframes badgeBounce {
@@ -771,6 +1019,115 @@
     flex-direction: column;
     gap: 5px;
   }
+  
+  .offer-product-image {
+    max-width: 250px;
+  }
+  
+  .offer-product-title {
+    font-size: 1.1rem;
+  }
+  
+  .offer-product-price-sale,
+  .offer-product-price-regular {
+    font-size: 1em;
+  }
+}
+
+/* Spectacular Shared Elements */
+.urgify-limited-offer.offer-style-spectacular .offer-badge,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-badge,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-badge,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-badge,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 25px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  backdrop-filter: blur(10px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  animation: badgeBounce 2s infinite;
+}
+
+.urgify-limited-offer.offer-style-spectacular .offer-title,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-title,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-title,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-title,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-title {
+  color: white;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  font-weight: 800;
+  font-size: 3rem;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin: 20px 0;
+  animation: titleShimmer 3s infinite;
+}
+
+.urgify-limited-offer.offer-style-spectacular .offer-description,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-description,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-description,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-description,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.2rem;
+  line-height: 1.6;
+  margin: 20px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  white-space: pre-line;
+}
+
+.urgify-limited-offer.offer-style-spectacular .offer-product-title,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-product-title,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-product-title,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-product-title,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-product-title {
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.urgify-limited-offer.offer-style-spectacular .offer-product-price-compare,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-product-price-compare,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-product-price-compare,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-product-price-compare,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-product-price-compare {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.urgify-limited-offer.offer-style-spectacular .offer-product-price-sale,
+.urgify-limited-offer.offer-style-spectacular .offer-product-price-regular,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-product-price-sale,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-product-price-regular,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-product-price-sale,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-product-price-regular,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-product-price-sale,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-product-price-regular,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-product-price-sale,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-product-price-regular {
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.urgify-limited-offer.offer-style-spectacular .offer-timer,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-timer,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-timer,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-timer,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-timer {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  backdrop-filter: blur(10px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  animation: timerPulse 2s infinite;
 }
 </style>
 
@@ -877,6 +1234,12 @@ document.addEventListener('DOMContentLoaded', function() {
       "content": "Content"
     },
     {
+      "type": "product",
+      "id": "product",
+      "label": "Product",
+      "info": "Select a product to display in the offer"
+    },
+    {
       "type": "text",
       "id": "badge_text",
       "label": "Badge Text",
@@ -911,7 +1274,8 @@ document.addEventListener('DOMContentLoaded', function() {
       "id": "end_date",
       "label": "End Date & Time",
       "info": "When the offer expires (YYYY-MM-DD HH:MM format, e.g. 2025-12-31 23:59)",
-      "placeholder": "2025-12-31 23:59"
+      "placeholder": "2025-12-31 23:59",
+      "default": "2025-12-31 23:59"
     },
     {
       "type": "header",
@@ -980,7 +1344,11 @@ document.addEventListener('DOMContentLoaded', function() {
       "id": "offer_style",
       "label": "Offer Style",
       "options": [
-        {"value": "spectacular", "label": "Spectacular (Animated)"},
+        {"value": "spectacular", "label": "Spectacular Red"},
+        {"value": "spectacular-blue", "label": "Spectacular Blue"},
+        {"value": "spectacular-mint", "label": "Spectacular Mint"},
+        {"value": "spectacular-purple", "label": "Spectacular Purple"},
+        {"value": "spectacular-emerald", "label": "Spectacular Emerald"},
         {"value": "brutalist", "label": "Brutalist Bold"},
         {"value": "glassmorphism", "label": "Glassmorphism"},
         {"value": "neumorphism", "label": "Neumorphism"}

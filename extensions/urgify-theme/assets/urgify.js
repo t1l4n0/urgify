@@ -81,14 +81,10 @@
      * Initialize all Urgify blocks on the page
      */
     init() {
-      console.log('Urgify: Starting initialization...');
-      
       // Find and initialize all Urgify blocks
       const blocks = document.querySelectorAll('[data-urgify]');
-      console.log('Urgify: Found', blocks.length, 'blocks');
       
       blocks.forEach(block => {
-        console.log('Urgify: Initializing block:', block.id, 'type:', block.dataset.urgify);
         this.initBlock(block);
       });
       
@@ -96,7 +92,6 @@
       this.observeChanges();
       
       this.initialized = true;
-      console.log('Urgify: Initialization complete');
     }
 
     /**
@@ -126,7 +121,9 @@
           }
           // remove stale map entry so new init runs below
           this.blocks.delete(blockId);
-          console.info('Urgify: re-initializing blockId (detected replaced DOM node):', blockId);
+          if (debugEnabled) {
+            console.info('Urgify: re-initializing blockId (detected replaced DOM node):', blockId);
+          }
         } else {
           // same element still in DOM -> nothing to do
           return;
@@ -164,11 +161,6 @@
      * Initialize Countdown Block
      */
     initCountdown(block) {
-      console.log('Urgify: Initializing countdown block:', block.id);
-      console.log('Urgify: Block settings:', block.getAttribute('data-settings'));
-      console.log('Urgify: Target epoch:', block.getAttribute('data-target-epoch'));
-      console.log('Urgify: Target datetime:', block.getAttribute('data-target-datetime'));
-      
       // The UrgifyCountdown constructor now handles everything automatically
       // It reads settings from data-settings attribute and initializes itself
       new UrgifyCountdown(block);
@@ -282,7 +274,9 @@
       if (block) {
         // Clean up any timers, event listeners, etc.
         this.blocks.delete(blockId);
-        console.log(`Destroyed block: ${blockId}`);
+        if (debugEnabled) {
+          console.log(`Destroyed block: ${blockId}`);
+        }
       }
     }
   }
@@ -376,26 +370,17 @@
   }
 
     init() {
-      console.log('UrgifyCountdown: Initializing with settings:', this.settings);
-      
       // Mindestens einer der beiden muss da sein
       if (
         !(typeof this.settings.target_epoch === 'number' && this.settings.target_epoch > 0) &&
         !this.settings.target_datetime
       ) {
-        console.warn('UrgifyCountdown: No target provided (neither epoch nor datetime).');
+        if (debugEnabled) {
+          console.warn('UrgifyCountdown: No target provided (neither epoch nor datetime).');
+        }
         return;
       }
       
-      // Log target time for debugging
-      if (this.settings.target_epoch) {
-        console.log('UrgifyCountdown: Target epoch:', this.settings.target_epoch, '->', new Date(this.settings.target_epoch * 1000).toISOString());
-      }
-      if (this.settings.target_datetime) {
-        console.log('UrgifyCountdown: Target datetime:', this.settings.target_datetime);
-      }
-      
-      console.log('UrgifyCountdown: Target found, setting up countdown...');
       this.setupCountdown();
       this.updateCountdown();
     }
@@ -403,12 +388,11 @@
   setupCountdown() {
     const countdownContainer = this.block.querySelector('.countdown-container');
     if (!countdownContainer) {
-      console.warn('UrgifyCountdown: Countdown container not found');
+      if (debugEnabled) {
+        console.warn('UrgifyCountdown: Countdown container not found');
+      }
       return;
     }
-
-    console.log('UrgifyCountdown: Setting up countdown for block:', this.block.id);
-    console.log('UrgifyCountdown: Countdown style:', this.settings.countdown_style);
 
     // Make countdown visible
     countdownContainer.style.display = 'flex';
@@ -423,8 +407,6 @@
 
     // Helpful debug flag
     this._lastTotalSeconds = null;
-
-    console.info('UrgifyCountdown: starting interval for', this.block.id);
 
     this.countdownInterval = setInterval(() => {
       try {
@@ -928,11 +910,7 @@
       const lowStockAlert = this.block.querySelector('.low-stock');
       const criticalStockAlert = this.block.querySelector('.critical-stock');
 
-      if (criticalStockAlert && criticalStockAlert.style.display !== 'none') {
-        console.log("Showing server-side critical stock alert");
-      } else if (lowStockAlert && lowStockAlert.style.display !== 'none') {
-        console.log("Showing server-side low stock alert");
-      }
+      // Server-side stock alerts are displayed (log removed to reduce console noise)
     }
   }
 
@@ -958,7 +936,7 @@
     }
 
     init() {
-      console.log("Scarcity Banner block initialized");
+      // Scarcity Banner block initialized (log removed)
       // Implementation for scarcity banner functionality
     }
   }
@@ -1012,17 +990,12 @@
   window.UrgifyScarcityBanner = UrgifyScarcityBanner;
   window.UrgifyUrgencyNotification = UrgifyUrgencyNotification;
   
-  // Debug: Log initialization
-  console.log('Urgify: Script loaded, initializing...');
-  
   // Initialize when DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
-      console.log('Urgify: DOM ready, initializing...');
       window.Urgify.init();
     });
   } else {
-    console.log('Urgify: DOM already ready, initializing immediately...');
     window.Urgify.init();
   }
 

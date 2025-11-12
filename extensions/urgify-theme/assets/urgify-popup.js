@@ -1,12 +1,54 @@
 (() => {
   'use strict';
 
-  // Early debug log to confirm script is loading
-  console.log('Urgify Popup: Script loaded', {
-    timestamp: new Date().toISOString(),
-    readyState: document.readyState,
-    url: window.location.href
-  });
+  const globalConsole = (typeof window !== "undefined" && window.console) || {
+    log: () => {},
+    warn: () => {},
+    error: () => {},
+  };
+
+  let debugEnabled =
+    (typeof window !== "undefined" &&
+      (window.UrgifyDebug === true ||
+        (window.Shopify && window.Shopify.designMode === true))) ||
+    false;
+
+  const console = {
+    log: (...args) => {
+      if (debugEnabled) {
+        globalConsole.log(...args);
+      }
+    },
+    warn: (...args) => {
+      if (debugEnabled) {
+        globalConsole.warn(...args);
+      }
+    },
+    error: (...args) => {
+      globalConsole.error(...args);
+    },
+  };
+
+  if (typeof window !== "undefined") {
+    try {
+      Object.defineProperty(window, "UrgifyDebug", {
+        get() {
+          return debugEnabled;
+        },
+        set(value) {
+          debugEnabled = Boolean(value);
+        },
+        configurable: true,
+      });
+    } catch (error) {
+      globalConsole.warn("Urgify Popup: Unable to define UrgifyDebug property", error);
+    }
+  }
+
+  // Early debug log to confirm script is loading (only in debug mode)
+  if (debugEnabled) {
+    console.log('Urgify Popup: Script loaded');
+  }
 
   class UrgifyPopup {
     constructor(container) {
@@ -21,6 +63,10 @@
       this.boundClose = this.close.bind(this);
       this.handleDocumentKeydown = this.handleDocumentKeydown.bind(this);
       this.handleFocusTrap = this.handleFocusTrap.bind(this);
+
+      if (container && container.dataset && container.dataset.debug === 'true') {
+        debugEnabled = true;
+      }
       
       this.init();
     }
@@ -31,10 +77,7 @@
         return;
       }
 
-      console.log('Urgify Popup: Initializing...', {
-        containerExists: !!this.container,
-        hasDebugAttr: this.container.dataset.debug === 'true'
-      });
+      // Initialization log removed to reduce console noise
 
       try {
         const parsedConfig = this.loadConfig();
@@ -44,36 +87,19 @@
           return;
         }
 
-        console.log('Urgify Popup: Config loaded', {
-          enabled: parsedConfig.enabled,
-          enabledType: typeof parsedConfig.enabled,
-          placement: parsedConfig.placement,
-          placementType: typeof parsedConfig.placement,
-          triggerType: parsedConfig.trigger_type || parsedConfig.triggerType,
-          allConfigKeys: Object.keys(parsedConfig),
-          fullConfig: parsedConfig
-        });
+        // Config loaded log removed to reduce console noise
 
         this.config = parsedConfig;
         
         // Check if popup is enabled
         if (!this.config || !this.config.enabled) {
-          console.log('Urgify Popup: Popup is disabled in settings (enabled: false)');
           return;
         }
         
         // Check placement conditions
         const shouldShow = this.shouldShowForCurrentPage();
-        console.log('Urgify Popup: Placement check', {
-          placement: this.config.placement,
-          shouldShow,
-          currentPath: window.location.pathname,
-          isHomepage: this.isHomepage(),
-          isProductPage: this.isProductPage()
-        });
         
         if (!shouldShow) {
-          console.log('Urgify Popup: Not showing - placement conditions not met');
           return;
         }
         
@@ -82,7 +108,6 @@
         
         // Check if popup was dismissed via cookie
         if (this.isDismissed()) {
-          console.log('Urgify Popup: Popup was previously dismissed (cookie check)');
           return;
         }
 
@@ -90,10 +115,6 @@
         this.setupEventListeners();
         
         // Trigger based on type
-        console.log('Urgify Popup: Setting up trigger', {
-          triggerType: this.config.trigger_type || this.config.triggerType,
-          delaySeconds: this.config.delay_seconds || this.config.delaySeconds
-        });
         this.triggerPopup();
       } catch (error) {
         console.error('Urgify Popup: Error initializing:', error);
@@ -129,27 +150,14 @@
       const isHomepage = this.isHomepage();
       const isProductPage = this.isProductPage();
       
-      console.log('Urgify Popup: shouldShowForCurrentPage check', {
-        placement,
-        placementType: typeof placement,
-        placementValue: String(placement),
-        isHomepage,
-        isProductPage,
-        currentPath: window.location.pathname,
-        configKeys: Object.keys(this.config)
-      });
-      
       // Normalize placement value (handle string comparisons)
       const normalizedPlacement = String(placement).toLowerCase().trim();
       
       if (normalizedPlacement === 'all') {
-        console.log('Urgify Popup: Placement is "all" - showing on all pages');
         return true;
       } else if (normalizedPlacement === 'homepage') {
-        console.log('Urgify Popup: Placement is "homepage" - checking if homepage:', isHomepage);
         return isHomepage;
       } else if (normalizedPlacement === 'products') {
-        console.log('Urgify Popup: Placement is "products" - checking if product page:', isProductPage);
         return isProductPage;
       }
       
@@ -167,14 +175,7 @@
         return;
       }
       
-      console.log('Urgify Popup: Rendering content', {
-        config: {
-          enabled: this.config.enabled,
-          title: this.config.title?.substring(0, 50),
-          style: this.config.style,
-          position: this.config.position
-        }
-      });
+      // Rendering content (log removed to reduce console noise)
       
       const overlay = this.container.querySelector('.urgify-popup-overlay');
       const content = this.container.querySelector('.urgify-popup-content');
@@ -196,11 +197,6 @@
       
       // Set position class (popup position on screen)
       const position = this.config.position || 'middle-center';
-      console.log('Urgify Popup: Setting position class', {
-        position,
-        positionClass: `urgify-popup--${position}`,
-        containerClassesBefore: this.container.className
-      });
       
       // Remove any existing position classes first
       const positionClasses = [
@@ -212,12 +208,6 @@
       
       // Add the new position class
       this.container.classList.add(`urgify-popup--${position}`);
-      
-      console.log('Urgify Popup: Position class set', {
-        containerClassesAfter: this.container.className,
-        computedJustifyContent: getComputedStyle(this.container).justifyContent,
-        computedAlignItems: getComputedStyle(this.container).alignItems
-      });
       
       // Set style class
       const style = this.config.style || 'spectacular';
@@ -240,10 +230,6 @@
       
       // Get image position (top, bottom, left, right)
       const imagePosition = (this.config.image_position || 'top').toLowerCase();
-      console.log('Urgify Popup: Setting image position', {
-        imagePosition,
-        imagePositionClass: `image-position-${imagePosition}`
-      });
       
       // Remove any existing image position classes
       const imagePositionClasses = [
@@ -348,17 +334,7 @@
       // Render description
       if (descriptionEl) {
         if (this.config.description) {
-          // Debug: Log the raw description to check for line breaks
-          if (typeof this.config.description === 'string') {
-            const hasNewlines = this.config.description.includes('\n') || 
-                               this.config.description.includes('\r') ||
-                               this.config.description.includes('\\n');
-            console.log('Urgify Popup: Description debug', {
-              length: this.config.description.length,
-              hasNewlines: hasNewlines,
-              firstChars: this.config.description.substring(0, 100).replace(/\n/g, '\\n').replace(/\r/g, '\\r')
-            });
-          }
+          // Description processing (debug log removed)
           
           // Normalize line breaks: convert \r\n and \r to \n, then to <br> tags
           // Also handle escaped newlines (\\n) that might come from JSON
@@ -406,14 +382,17 @@
         
         // Set up newsletter form handler
         if (newsletterForm) {
-          // Prevent default form submission completely
-          newsletterForm.setAttribute('onsubmit', 'return false;');
-          newsletterForm.addEventListener('submit', (e) => {
-            this.handleNewsletterSubmit(e);
-          }, { capture: true });
-          
-          // Also prevent any default action on the form
-          newsletterForm.action = 'javascript:void(0);';
+          newsletterForm.addEventListener(
+            'submit',
+            (e) => {
+              this.handleNewsletterSubmit(e);
+            },
+            { capture: true },
+          );
+
+          if (!newsletterForm.getAttribute('action')) {
+            newsletterForm.setAttribute('action', '/contact');
+          }
         }
       } else {
         // Show CTA, hide newsletter (CTA and Newsletter are mutually exclusive)
@@ -465,7 +444,7 @@
         submitBtn.textContent = 'Subscribing...';
       }
       
-      console.log('Urgify Popup: Submitting newsletter form', { email, action: form.action || '/contact' });
+      // Newsletter form submission (log removed to reduce console noise)
       
       // Submit to Shopify customer form endpoint
       // Use redirect: 'manual' to prevent page reload on redirect
@@ -478,14 +457,6 @@
         redirect: 'manual' // Don't follow redirects - prevents page reload
       })
       .then(response => {
-        console.log('Urgify Popup: Newsletter response', {
-          status: response.status,
-          ok: response.ok,
-          type: response.type,
-          redirected: response.redirected,
-          url: response.url
-        });
-        
         // Shopify's customer form endpoint returns:
         // - 302 Redirect (successful subscription) - with redirect: 'manual', this becomes type: 'opaqueredirect'
         // - 200 OK (sometimes)
@@ -501,7 +472,6 @@
                           response.redirected);
         
         if (isSuccess) {
-          console.log('Urgify Popup: Newsletter subscription successful');
           
           // Don't set cookie here - let user manually close the popup
           // Only set sessionStorage flag to prevent popup from reopening immediately after page reload
@@ -514,12 +484,6 @@
           
           // Show discount code if available (check both snake_case and camelCase)
           const discountCode = this.config.discount_code || this.config.discountCode;
-          console.log('Urgify Popup: Checking discount code', {
-            discount_code: this.config.discount_code,
-            discountCode: this.config.discountCode,
-            resolved: discountCode,
-            hasDiscountCode: !!discountCode
-          });
           
           if (discountCode) {
             this.showDiscountCode();
@@ -554,12 +518,6 @@
         
         // Show discount code if available (even on error, as subscription might have worked)
         const discountCode = this.config.discount_code || this.config.discountCode;
-        console.log('Urgify Popup: Checking discount code in error handler', {
-          discount_code: this.config.discount_code,
-          discountCode: this.config.discountCode,
-          resolved: discountCode,
-          hasDiscountCode: !!discountCode
-        });
         
         if (discountCode) {
           this.showDiscountCode();
@@ -579,7 +537,6 @@
         }
         
         // The confirmation email indicates success
-        console.log('Urgify Popup: Assuming success based on email delivery');
       })
       .finally(() => {
         // Re-enable button in case of any issues
@@ -599,14 +556,6 @@
       // Get discount code (support both snake_case and camelCase)
       const discountCode = this.config.discount_code || this.config.discountCode || '';
       
-      console.log('Urgify Popup: showDiscountCode called', {
-        discount_code: this.config.discount_code,
-        discountCode: this.config.discountCode,
-        resolved: discountCode,
-        hasDiscountContainer: !!discountContainer,
-        hasDiscountCodeEl: !!discountCodeEl
-      });
-      
       if (newsletterContainer) {
         newsletterContainer.style.display = 'none';
       }
@@ -614,11 +563,6 @@
       if (discountContainer && discountCodeEl && discountCode) {
         discountCodeEl.textContent = discountCode;
         discountContainer.style.display = 'block';
-        
-        console.log('Urgify Popup: Discount code displayed', {
-          code: discountCode,
-          containerDisplay: getComputedStyle(discountContainer).display
-        });
         
         // Don't show CTA when newsletter is enabled - they are mutually exclusive
         // Even after showing discount code, CTA should remain hidden if newsletter was the trigger
@@ -690,36 +634,31 @@
     triggerPopup() {
       const triggerType = this.config.trigger_type || this.config.triggerType || 'delay';
 
-      console.log('Urgify Popup: Triggering popup with type:', triggerType);
-
       switch (triggerType) {
         case 'immediate':
-          console.log('Urgify Popup: Showing immediately');
           this.show();
           break;
         
         case 'delay':
           const delay = parseInt(this.config.delay_seconds || this.config.delaySeconds || 3, 10) * 1000;
-          console.log('Urgify Popup: Showing after delay', delay, 'ms');
           setTimeout(() => {
-            console.log('Urgify Popup: Delay timeout, showing now');
             this.show();
           }, delay);
           break;
         
         case 'exit_intent':
-          console.log('Urgify Popup: Exit intent mode - waiting for mouse leave');
           // Already handled in setupExitIntent
           break;
         
         case 'always':
-          console.log('Urgify Popup: Always show mode');
           this.show();
           break;
         
         default:
           // Default to delay
-          console.warn('Urgify Popup: Unknown trigger type, defaulting to delay:', triggerType);
+          if (debugEnabled) {
+            console.warn('Urgify Popup: Unknown trigger type, defaulting to delay:', triggerType);
+          }
           setTimeout(() => {
             this.show();
           }, 3000);
@@ -728,12 +667,6 @@
 
     show() {
       if (this.isVisible || !this.container) {
-        console.log('Urgify Popup: Cannot show - already visible or container missing', {
-          isVisible: this.isVisible,
-          hasContainer: !!this.container,
-          containerDisplay: this.container ? getComputedStyle(this.container).display : 'N/A',
-          containerClasses: this.container ? this.container.className : 'N/A'
-        });
         return;
       }
       
@@ -743,15 +676,8 @@
       
       // Check cookie again before showing
       if (this.isDismissed()) {
-        console.log('Urgify Popup: Not showing - dismissed by cookie');
         return;
       }
-
-      console.log('Urgify Popup: Showing popup now', {
-        containerExists: !!this.container,
-        containerStyle: this.container ? getComputedStyle(this.container).display : 'N/A',
-        configEnabled: this.config?.enabled
-      });
 
       this.isVisible = true;
       this.previouslyFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -792,14 +718,6 @@
       this.container.style.justifyContent = positionStyles.justifyContent;
       this.container.style.alignItems = positionStyles.alignItems;
       
-      console.log('Urgify Popup: Position styles applied', {
-        position,
-        justifyContent: positionStyles.justifyContent,
-        alignItems: positionStyles.alignItems,
-        computedJustifyContent: getComputedStyle(this.container).justifyContent,
-        computedAlignItems: getComputedStyle(this.container).alignItems
-      });
-      
       if (!this.container.hasAttribute('tabindex')) {
         this.container.setAttribute('tabindex', '-1');
       }
@@ -811,12 +729,6 @@
       requestAnimationFrame(() => {
         this.container.classList.add('urgify-popup-visible');
         this.setInitialFocus();
-        console.log('Urgify Popup: Popup visible and focused', {
-          isVisible: this.container.classList.contains('urgify-popup-visible'),
-          computedDisplay: getComputedStyle(this.container).display,
-          computedOpacity: getComputedStyle(this.container).opacity,
-          computedVisibility: getComputedStyle(this.container).visibility
-        });
       });
 
       // Prevent body scroll
@@ -866,7 +778,6 @@
                             this.config.ignoreCookie === 'true';
       
       if (ignoreCookie) {
-        console.log('Urgify Popup: ignore_cookie is enabled - ignoring cookie check');
         // Clean up any existing cookies
         this.clearDismissedCookie();
         return false;
@@ -876,7 +787,6 @@
       
       // If cookie_days is 0 or less, don't check cookie (always show)
       if (cookieDays <= 0) {
-        console.log('Urgify Popup: Cookie days is 0 or less - ignoring cookie check');
         // Clean up any existing cookies
         this.clearDismissedCookie();
         return false;
@@ -890,14 +800,6 @@
         const expiryTime = dismissedTime + (cookieDays * 24 * 60 * 60 * 1000);
         
         const isDismissed = Date.now() < expiryTime;
-        console.log('Urgify Popup: Cookie check', {
-          cookieDays,
-          dismissedTime,
-          expiryTime,
-          now: Date.now(),
-          isDismissed,
-          timeUntilExpiry: expiryTime - Date.now()
-        });
         
         return isDismissed;
       } catch (error) {
@@ -915,7 +817,6 @@
                               this.config.ignoreCookie === 'true';
         
         if (ignoreCookie) {
-          console.log('Urgify Popup: ignore_cookie is enabled - not setting cookie');
           // Clean up any existing cookies
           this.clearDismissedCookie();
           return;
@@ -925,7 +826,6 @@
         
         // If cookie_days is 0 or less, don't set cookie (always show)
         if (cookieDays <= 0) {
-          console.log('Urgify Popup: Cookie days is 0 or less - not setting cookie');
           // Clean up any existing cookies
           this.clearDismissedCookie();
           return;
@@ -936,12 +836,6 @@
         
         const cookieValue = Date.now().toString();
         document.cookie = `${this.cookieName}=${cookieValue};expires=${expiryDate.toUTCString()};path=/;SameSite=Lax`;
-        
-        console.log('Urgify Popup: Cookie set', {
-          cookieDays,
-          expiryDate: expiryDate.toISOString(),
-          cookieValue
-        });
         
         // Fallback to localStorage
         try {
@@ -969,7 +863,7 @@
           // localStorage not available, skip
         }
         
-        console.log('Urgify Popup: Cookie cleared');
+        // Cookie cleared (log removed)
       } catch (error) {
         console.error('Urgify Popup: Error clearing cookie:', error);
       }
@@ -1030,18 +924,7 @@
           return null;
         }
 
-        console.log('Urgify Popup: Raw config found, parsing...', {
-          length: rawConfig.length,
-          startsWith: rawConfig.substring(0, 50),
-          source: configScript ? 'script-tag' : 'data-attribute'
-        });
-
         const parsed = JSON.parse(rawConfig);
-        console.log('Urgify Popup: Config parsed successfully', {
-          enabled: parsed.enabled,
-          placement: parsed.placement,
-          triggerType: parsed.trigger_type || parsed.triggerType
-        });
         return parsed;
       } catch (error) {
         console.error('Urgify Popup: Invalid config JSON', error);
@@ -1124,17 +1007,7 @@
     const container = document.getElementById('urgify-popup-container');
     const configScript = document.getElementById('urgify-popup-config');
     
-    console.log('Urgify Popup: initPopup called', {
-      readyState: document.readyState,
-      containerExists: !!container,
-      configScriptExists: !!configScript,
-      configScriptContent: configScript ? (configScript.textContent ? configScript.textContent.substring(0, 100) : 'empty') : 'missing',
-      containerDisplay: container ? getComputedStyle(container).display : 'N/A',
-      containerInitialized: container ? container.dataset.initialized : 'N/A'
-    });
-
     if (container && !container.dataset.initialized) {
-      console.log('Urgify Popup: Initializing popup instance');
       container.dataset.initialized = 'true';
       try {
         new UrgifyPopup(container);
@@ -1142,36 +1015,28 @@
         console.error('Urgify Popup: Error creating popup instance:', error);
       }
     } else if (!container) {
-      console.warn('Urgify Popup: Container element not found. Make sure the popup snippet is included in your theme.', {
-        allElementsWithId: Array.from(document.querySelectorAll('[id*="urgify"]')).map(el => el.id),
-        bodyInnerHTML: document.body.innerHTML.substring(0, 500)
-      });
+      if (debugEnabled) {
+        console.warn('Urgify Popup: Container element not found. Make sure the popup snippet is included in your theme.');
+      }
       // Try again after a short delay (in case script loads before HTML)
       setTimeout(() => {
         const retryContainer = document.getElementById('urgify-popup-container');
         if (retryContainer && !retryContainer.dataset.initialized) {
-          console.log('Urgify Popup: Container found on retry, initializing');
           retryContainer.dataset.initialized = 'true';
           try {
             new UrgifyPopup(retryContainer);
           } catch (error) {
             console.error('Urgify Popup: Error creating popup instance on retry:', error);
           }
-        } else {
-          console.warn('Urgify Popup: Container still not found after retry');
         }
       }, 500);
-    } else {
-      console.log('Urgify Popup: Already initialized');
     }
   }
 
   // Initialize on DOM ready
   if (document.readyState === 'loading') {
-    console.log('Urgify Popup: Waiting for DOMContentLoaded');
     document.addEventListener('DOMContentLoaded', initPopup);
   } else {
-    console.log('Urgify Popup: DOM already ready, initializing immediately');
     initPopup();
   }
 
@@ -1190,7 +1055,7 @@
     const observer = new MutationObserver((mutations) => {
       const container = document.getElementById('urgify-popup-container');
       if (container && !container.dataset.initialized) {
-        console.log('Urgify Popup: Container detected via MutationObserver, initializing');
+        // Container detected via MutationObserver (log removed)
         container.dataset.initialized = 'true';
         new UrgifyPopup(container);
       }

@@ -783,14 +783,12 @@
        // Check if urgify.js is already loaded, if not load it
        if (!document.querySelector('script[src*="urgify.js"]') && 
            typeof window.__URGIFY_PRESENT__ === 'undefined') {
-         console.log('Urgify: Loading script as fallback...');
          var script = document.createElement('script');
          script.src = '{{ 'urgify.js' | asset_url }}';
-         script.onload = function() {
-           console.log('Urgify: Fallback script loaded successfully');
-         };
          script.onerror = function() {
-           console.error('Urgify: Failed to load fallback script');
+           if (window.UrgifyDebug) {
+             console.error('Urgify: Failed to load fallback script');
+           }
          };
          document.head.appendChild(script);
        }
@@ -1022,19 +1020,18 @@
         
         // Robusterer Check mit Retry-Logic
         function checkUrgifyLoaded(retries = 10, delay = 200) {
-          console.log(`Urgify: Checking if loaded (${retries} retries left)...`);
-          
           if (typeof window.__URGIFY_PRESENT__ !== 'undefined' || 
               typeof window.Urgify !== 'undefined' ||
               typeof window.UrgifyCountdown !== 'undefined') {
-            console.log('Urgify: Scripts loaded successfully');
             return;
           }
           
           if (retries > 0) {
             setTimeout(() => checkUrgifyLoaded(retries - 1, delay), delay);
           } else {
-            console.warn('Urgify: Core script not loaded after retries - showing fallback message');
+            if (window.UrgifyDebug) {
+              console.warn('Urgify: Core script not loaded after retries - showing fallback message');
+            }
             
             // Fallback: Countdown-Container sichtbar machen
             const countdownBlocks = document.querySelectorAll('[data-urgify="countdown"]');

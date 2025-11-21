@@ -1,6 +1,6 @@
-import type { AdminApiContext } from "@shopify/shopify-app-remix/server";
-
-type AdminApi = AdminApiContext["admin"];
+// AdminApi type - matches the admin object returned from authenticate.admin()
+// Using any to match the pattern in billing.ts until we can determine the exact type
+type AdminApi = any;
 
 type DefinitionConfig = {
   key: string;

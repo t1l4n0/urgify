@@ -16,6 +16,7 @@ import { useState, useCallback, useEffect, useRef, useMemo, Fragment } from "rea
 import { useAppBridge } from "@shopify/app-bridge-react";
 import popupPreviewStyles from "../styles/popup-preview.css?url";
 import { authenticatedFetch } from "../utils/authenticatedFetch";
+import { ensureShopMetafieldDefinitions } from "../utils/metafieldDefinitions";
 
 // CORS headers (lenient: allow any origin; request is same-origin in iframe)
 const CORS_HEADERS = {
@@ -35,6 +36,7 @@ const popupSettingsSchema = z.object({
   title: z.string().default(''),
   description: z.string().default(''),
   ctaText: z.string().default(''),
+  newsletterButtonText: z.string().default('Subscribe'),
   ctaUrl: z.string().default(''),
   imageUrl: z.string().default(''),
   imageFit: z.string().default('cover'),
@@ -64,10 +66,12 @@ const popupSettingsSchema = z.object({
   enableNewsletter: z.string().default('false'),
   discountCodeId: z.string().default(''),
   discountCode: z.string().default(''),
+  termsText: z.string().default(''),
 });
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
+  await ensureShopMetafieldDefinitions(admin);
 
   // Sync subscription status to metafield first
   try {
@@ -230,6 +234,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       title: 'Special Offer - Limited Time Only!',
       description: 'Don\'t miss out on our exclusive deal. Get 20% off your first order when you sign up today.',
       cta_text: 'Get Started',
+      newsletter_button_text: 'Subscribe',
       cta_url: '/',
       image_url: '',
       image_fit: 'cover',
@@ -252,6 +257,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       enable_newsletter: false,
       discount_code_id: '',
       discount_code: '',
+      terms_text: '',
     };
 
     if (configValue) {
@@ -325,6 +331,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       title: rawSettings.title,
       description: rawSettings.description,
       ctaText: rawSettings.cta_text || rawSettings.ctaText || 'Get Started',
+      newsletterButtonText: rawSettings.newsletter_button_text || rawSettings.newsletterButtonText || 'Subscribe',
       ctaUrl,
       imageUrl: rawSettings.image_url || rawSettings.imageUrl || '',
       imageFit: rawSettings.image_fit || rawSettings.imageFit || 'cover',
@@ -356,6 +363,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
                         false,
       discountCodeId: rawSettings.discount_code_id || rawSettings.discountCodeId || '',
       discountCode: rawSettings.discount_code || rawSettings.discountCode || '',
+      termsText: rawSettings.terms_text || rawSettings.termsText || '',
     };
 
     return json({
@@ -379,6 +387,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           title: 'Special Offer - Limited Time Only!',
           description: 'Don\'t miss out on our exclusive deal. Get 20% off your first order when you sign up today.',
           ctaText: 'Get Started',
+          newsletterButtonText: 'Subscribe',
           ctaUrl: 'https://',
           imageUrl: '',
           imageFit: 'cover',
@@ -402,6 +411,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           enableNewsletter: Boolean(false),
           discountCodeId: '',
           discountCode: '',
+          termsText: '',
         },
         selectedResource: null,
         discountCodes: [],
@@ -449,6 +459,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
     // Authenticate the request using Shopify's session token
     const { admin, session } = await authenticate.admin(request);
+    await ensureShopMetafieldDefinitions(admin);
     // Check rate limiting
     const rateLimitCheck = await shouldRateLimit(request, 'admin');
     if (rateLimitCheck.limited) {
@@ -492,6 +503,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       title: getStr("title", ""),
       description: getStr("description", ""),
       ctaText: getStr("ctaText", "Get Started"),
+      newsletterButtonText: getStr("newsletterButtonText", "Subscribe"),
       ctaUrl: getStr("ctaUrl", "/"),
       imageUrl: getStr("imageUrl", ""),
       imageFit: getStr("imageFit", "cover"),
@@ -515,6 +527,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       enableNewsletter: getStr("enableNewsletter", "false"),
       discountCodeId: getStr("discountCodeId", ""),
       discountCode: getStr("discountCode", ""),
+      termsText: getStr("termsText", ""),
     };
 
     // Validate input
@@ -525,6 +538,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       title,
       description,
       ctaText,
+      newsletterButtonText,
       ctaUrl,
       imageUrl,
       imageFit,
@@ -548,6 +562,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       enableNewsletter,
       discountCodeId,
       discountCode,
+      termsText,
     } = validatedData;
 
     // Get the shop ID
@@ -572,6 +587,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       title,
       description,
       cta_text: ctaText,
+      newsletter_button_text: newsletterButtonText,
       cta_url: ctaUrl,
       image_url: imageUrl,
       image_fit: imageFit,
@@ -595,6 +611,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       enable_newsletter: enableNewsletter === "true",
       discount_code_id: discountCodeId,
       discount_code: discountCode,
+      terms_text: termsText,
     };
 
     // Save as JSON metafield
@@ -758,6 +775,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
   const [title, setTitle] = useState(String(settings.title || ''));
   const [description, setDescription] = useState(String(settings.description || ''));
   const [ctaText, setCtaText] = useState(String(settings.ctaText || 'Get Started'));
+  const [newsletterButtonText, setNewsletterButtonText] = useState(String(settings.newsletterButtonText || 'Subscribe'));
   const [ctaUrl, setCtaUrl] = useState(String(settings.ctaUrl || 'https://'));
   const [ctaUrlType, setCtaUrlType] = useState<'product' | 'collection' | 'external'>('external');
   const [selectedResource, setSelectedResource] = useState<PopupResource | null>(
@@ -784,6 +802,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
   const [ignoreCookie, setIgnoreCookie] = useState(Boolean(settings.ignoreCookie || false));
   const [enableNewsletter, setEnableNewsletter] = useState(Boolean(settings.enableNewsletter || false));
   const [discountCodeId, setDiscountCodeId] = useState(String(settings.discountCodeId || ''));
+  const [termsText, setTermsText] = useState(String(settings.termsText || ''));
   
   const [isDirty, setIsDirty] = useState(false);
   const [toastActive, setToastActive] = useState(false);
@@ -818,6 +837,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
     setTitle(String(settings.title || ''));
     setDescription(String(settings.description || ''));
     setCtaText(String(settings.ctaText || 'Get Started'));
+    setNewsletterButtonText(String(settings.newsletterButtonText || 'Subscribe'));
     const url = String(settings.ctaUrl || 'https://');
     setCtaUrl(url);
     
@@ -853,6 +873,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
     setIgnoreCookie(Boolean(settings.ignoreCookie || false));
     setEnableNewsletter(Boolean(settings.enableNewsletter || false));
     setDiscountCodeId(String(settings.discountCodeId || ''));
+    setTermsText(String(settings.termsText || ''));
     
     // Set selected resource if loaded from server
     if (loadedResource) {
@@ -1144,6 +1165,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
       title,
       description,
       ctaText,
+      newsletterButtonText,
       ctaUrl,
       imageUrl,
       imageFit: imageFit.toString(),
@@ -1167,6 +1189,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
       enableNewsletter: enableNewsletter.toString(),
       discountCodeId,
       discountCode,
+      termsText,
     };
 
     const formPayload = new URLSearchParams();
@@ -1229,7 +1252,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
     } finally {
       setIsSaving(false);
     }
-  }, [discountCodes, discountCodeId, enableNewsletter, backgroundColor, ctaBackgroundColor, ctaFontSize, ctaText, ctaTextColor, ctaUrl, delaySeconds, description, descriptionFontSize, enabled, imageUrl, imageFit, imageAlt, imagePosition, overlayColor, placement, position, triggerType, revalidator, shopify, style, textColor, title, titleFontSize, cookieDays, ignoreCookie]);
+  }, [discountCodes, discountCodeId, enableNewsletter, backgroundColor, ctaBackgroundColor, ctaFontSize, ctaText, newsletterButtonText, ctaTextColor, ctaUrl, delaySeconds, description, descriptionFontSize, termsText, enabled, imageUrl, imageFit, imageAlt, imagePosition, overlayColor, placement, position, triggerType, revalidator, shopify, style, textColor, title, titleFontSize, cookieDays, ignoreCookie]);
 
   // Preview component
   const PopupPreview = () => {
@@ -1278,6 +1301,27 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
       }
       return {};
     };
+
+    const getTermsStyles = () => ({
+      fontSize: '12px',
+      color: style === 'custom' ? textColor : 'rgba(26, 26, 26, 0.7)',
+      marginTop: '16px',
+      marginBottom: 0,
+      lineHeight: 1.4,
+      opacity: style === 'custom' ? 0.8 : 0.75,
+    });
+
+    const renderWithLineBreaks = (value: string) =>
+      value
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .split('\n')
+        .map((line, i, arr) => (
+          <Fragment key={`${line}-${i}`}>
+            {line}
+            {i < arr.length - 1 && <br />}
+          </Fragment>
+        ));
 
         // Determine layout based on image position
         const isHorizontalLayout = imagePosition === 'left' || imagePosition === 'right';
@@ -1403,16 +1447,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
               )}
               {description && (
                 <p style={getDescriptionStyles()}>
-                  {description
-                    .replace(/\r\n/g, '\n')  // Normalize Windows line breaks
-                    .replace(/\r/g, '\n')    // Normalize Mac line breaks
-                    .split('\n')
-                    .map((line, i, arr) => (
-                      <Fragment key={i}>
-                        {line}
-                        {i < arr.length - 1 && <br />}
-                      </Fragment>
-                    ))}
+                  {renderWithLineBreaks(description)}
                 </p>
               )}
             {enableNewsletter ? (
@@ -1474,7 +1509,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                     onClick={(e) => e.preventDefault()}
                     disabled
                   >
-                    Subscribe
+                    {newsletterButtonText?.trim() || 'Subscribe'}
                   </button>
                 </div>
               </div>
@@ -1489,6 +1524,11 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                     {ctaText}
                   </button>
                 )
+              )}
+              {termsText?.trim() && (
+                <p style={getTermsStyles()}>
+                  {renderWithLineBreaks(termsText)}
+                </p>
               )}
             </div>
             {imageUrl && imagePosition === 'bottom' && (
@@ -1539,6 +1579,18 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                       setIsDirty(true);
                     }}
                     rows={3}
+                  />
+                  
+                  <s-text-area
+                    label="Small print / terms (optional)"
+                    value={termsText}
+                    onChange={(e) => {
+                      setTermsText(e.currentTarget.value);
+                      setIsDirty(true);
+                    }}
+                    rows={3}
+                    placeholder="Terms: Code valid only during the promotion period. One use per order. Cannot be combined with other discounts. Not redeemable for cash. Valid on eligible items only. Adjustments after purchase not possible."
+                    details="Shown as fine print at the bottom of the PopUp."
                   />
                   
                   <s-heading level="2">CTA Button or Newsletter Signup</s-heading>
@@ -1678,22 +1730,34 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                   ) : null}
                   
                   {enableNewsletter && (
-                    <s-select
-                      label="Discount Code"
-                      value={discountCodeId}
-                      onChange={(e) => {
-                        setDiscountCodeId(e.currentTarget.value);
-                        setIsDirty(true);
-                      }}
-                      details="Select a discount code to show after newsletter signup"
-                    >
-                      <s-option value="">No discount</s-option>
-                      {discountCodes.map((dc: DiscountCodeOption) => (
-                        <s-option key={dc.id} value={dc.id}>
-                          {dc.title} ({dc.code})
-                        </s-option>
-                      ))}
-                    </s-select>
+                    <s-stack gap="base" direction="block">
+                      <s-text-field
+                        label="Newsletter button text"
+                        value={newsletterButtonText}
+                        onChange={(e) => {
+                          setNewsletterButtonText(e.currentTarget.value);
+                          setIsDirty(true);
+                        }}
+                        autocomplete="off"
+                        details="Label of the signup button inside the PopUp."
+                      />
+                      <s-select
+                        label="Discount Code"
+                        value={discountCodeId}
+                        onChange={(e) => {
+                          setDiscountCodeId(e.currentTarget.value);
+                          setIsDirty(true);
+                        }}
+                        details="Select a discount code to show after newsletter signup"
+                      >
+                        <s-option value="">No discount</s-option>
+                        {discountCodes.map((dc: DiscountCodeOption) => (
+                          <s-option key={dc.id} value={dc.id}>
+                            {dc.title} ({dc.code})
+                          </s-option>
+                        ))}
+                      </s-select>
+                    </s-stack>
                   )}
                   
                   <s-drop-zone
@@ -2012,6 +2076,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
             setTitle(String(settings.title || ''));
             setDescription(String(settings.description || ''));
             setCtaText(String(settings.ctaText || 'Get Started'));
+            setNewsletterButtonText(String(settings.newsletterButtonText || 'Subscribe'));
             setCtaUrl(String(settings.ctaUrl || 'https://'));
             setImageUrl(String(settings.imageUrl || ''));
             setImageFit(String(settings.imageFit || 'cover'));
@@ -2032,6 +2097,9 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
             setDelaySeconds(String(settings.delaySeconds || 3));
             setCookieDays(String(settings.cookieDays || 7));
             setIgnoreCookie(Boolean(settings.ignoreCookie || false));
+            setEnableNewsletter(Boolean(settings.enableNewsletter || false));
+            setDiscountCodeId(String(settings.discountCodeId || ''));
+            setTermsText(String(settings.termsText || ''));
             setIsDirty(false);
           }}
         >

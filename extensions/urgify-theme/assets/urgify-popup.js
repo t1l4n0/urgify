@@ -183,7 +183,13 @@
       const imageContainer = this.container.querySelector('.urgify-popup-image-container');
       const titleEl = this.container.querySelector('.urgify-popup-title');
       const descriptionEl = this.container.querySelector('.urgify-popup-description');
+      const termsEl = this.container.querySelector('.urgify-popup-terms');
       const ctaEl = this.container.querySelector('.urgify-popup-cta');
+      const newsletterSubmitButton = this.container.querySelector('.urgify-popup-newsletter-submit');
+      const newsletterButtonText = this.config.newsletter_button_text || this.config.newsletterButtonText || 'Subscribe';
+      if (newsletterSubmitButton) {
+        newsletterSubmitButton.textContent = newsletterButtonText;
+      }
       
       if (!content) {
         console.error('Urgify Popup: Content element not found!');
@@ -256,7 +262,8 @@
             descriptionEl,
             this.container.querySelector('.urgify-popup-newsletter-container'),
             this.container.querySelector('.urgify-popup-discount-container'),
-            ctaEl
+            ctaEl,
+            termsEl
           ].filter(el => el !== null);
           
           elementsToWrap.forEach(el => {
@@ -365,6 +372,29 @@
         }
       }
       
+      // Render terms / fine print
+      if (termsEl) {
+        const termsText = this.config.terms_text || this.config.termsText || '';
+        if (termsText) {
+          const normalizedTerms = termsText
+            .replace(/\\n/g, '\n')
+            .replace(/\r\n/g, '\n')
+            .replace(/\r/g, '\n');
+          const escapedTerms = normalizedTerms
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+          termsEl.innerHTML = escapedTerms.replace(/\n/g, '<br>');
+          if (style === 'custom' && this.config.text_color) {
+            termsEl.style.color = this.config.text_color;
+          }
+        } else {
+          termsEl.remove();
+        }
+      }
+      
       // Handle Newsletter vs CTA
       const newsletterContainer = this.container.querySelector('.urgify-popup-newsletter-container');
       const discountContainer = this.container.querySelector('.urgify-popup-discount-container');
@@ -374,6 +404,9 @@
         // Show newsletter form, hide CTA completely when newsletter is enabled
         if (newsletterContainer) {
           newsletterContainer.style.display = 'block';
+          if (newsletterSubmitButton) {
+            newsletterSubmitButton.textContent = newsletterButtonText;
+          }
         }
         // Always hide CTA when newsletter is enabled - they are mutually exclusive
         if (ctaEl) {
@@ -424,6 +457,16 @@
             ctaEl.remove();
           }
         }
+      }
+      
+      // FINAL STEP: Ensure terms are always at the very bottom
+      // This must happen AFTER all other content is rendered
+      if (termsEl && termsEl.parentNode) {
+        const container = termsEl.parentNode;
+        // Remove from current position
+        termsEl.remove();
+        // Append to absolute end
+        container.appendChild(termsEl);
       }
     }
     
@@ -924,7 +967,23 @@
           return null;
         }
 
-        const parsed = JSON.parse(rawConfig);
+        let parsed = JSON.parse(rawConfig);
+
+        // Handle double-encoded JSON (string containing JSON)
+        if (typeof parsed === 'string') {
+          try {
+            parsed = JSON.parse(parsed);
+          } catch (doubleParseError) {
+            console.warn('Urgify Popup: Config was a string but could not be parsed as JSON:', doubleParseError);
+            return null;
+          }
+        }
+
+        if (typeof parsed !== 'object' || parsed === null) {
+          console.warn('Urgify Popup: Parsed config is not an object. Parsed value:', parsed);
+          return null;
+        }
+
         return parsed;
       } catch (error) {
         console.error('Urgify Popup: Invalid config JSON', error);
@@ -1005,7 +1064,6 @@
   // Initialize when DOM is ready
   function initPopup() {
     const container = document.getElementById('urgify-popup-container');
-    const configScript = document.getElementById('urgify-popup-config');
     
     if (container && !container.dataset.initialized) {
       container.dataset.initialized = 'true';

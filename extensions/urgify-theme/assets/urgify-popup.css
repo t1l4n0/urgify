@@ -171,6 +171,10 @@
   order: 5;
 }
 
+.urgify-popup-body.image-position-top .urgify-popup-terms {
+  order: 99;
+}
+
 /* Image Position: Bottom */
 .urgify-popup-body.image-position-bottom {
   flex-direction: column;
@@ -198,6 +202,10 @@
 
 .urgify-popup-body.image-position-bottom .urgify-popup-cta {
   order: 4;
+}
+
+.urgify-popup-body.image-position-bottom .urgify-popup-terms {
+  order: 99;
 }
 
 /* Image Position: Left */
@@ -264,6 +272,11 @@
   order: 4;
 }
 
+.urgify-popup-body.image-position-left .urgify-popup-terms,
+.urgify-popup-body.image-position-left .urgify-popup-content-wrapper .urgify-popup-terms {
+  order: 99;
+}
+
 /* Image Position: Right */
 .urgify-popup-body.image-position-right {
   flex-direction: row-reverse;
@@ -322,6 +335,11 @@
 
 .urgify-popup-body.image-position-right .urgify-popup-cta {
   order: 4;
+}
+
+.urgify-popup-body.image-position-right .urgify-popup-terms,
+.urgify-popup-body.image-position-right .urgify-popup-content-wrapper .urgify-popup-terms {
+  order: 99;
 }
 
 /* Responsive: Stack image and content vertically on mobile for left/right positions */
@@ -719,6 +737,19 @@
 .urgify-popup-newsletter-submit:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.urgify-popup-terms {
+  margin-top: auto;
+  padding-top: 16px;
+  margin-bottom: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: inherit;
+  opacity: 0.75;
+  order: 99;
+  width: 100%;
+  display: block;
 }
 
 /* Discount Code Display Styles */

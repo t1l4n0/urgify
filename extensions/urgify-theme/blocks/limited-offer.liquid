@@ -73,6 +73,7 @@
      data-end-epoch="{{ end_epoch }}"
      data-layout="{{ block.settings.layout | default: 'stacked' }}"
      data-match-height="{{ block.settings.match_height_side | default: false }}"
+     data-side-gap="{{ block.settings.side_gap | default: 24 }}"
      style="
        {% if block.settings.text_align != blank %}
          text-align: {{ block.settings.text_align }};
@@ -173,6 +174,7 @@
         <span class="timer-icon">⏰</span>
         <span class="timer-text">{{ block.settings.timer_text | default: 'Offer ends in:' }}</span>
         <div class="timer-countdown" id="urgify-timer-{{ block.id }}"></div>
+        <div class="timer-expired-text" hidden>{{ block.settings.timer_expired_text | default: 'Offer expired' }}</div>
       </div>
     {% endif %}
 
@@ -342,6 +344,8 @@ function urgifyApplyLimitedOfferLayout(root) {
     }
   });
   const offerBlocks = scope.querySelectorAll('.urgify-limited-offer[data-layout="side-by-side"]');
+  const parentDetails = new Map();
+
   offerBlocks.forEach((block) => {
     const wrapper =
       block.closest('.shopify-app-block') ||
@@ -349,6 +353,44 @@ function urgifyApplyLimitedOfferLayout(root) {
       block.parentElement;
     if (wrapper && !wrapper.classList.contains('urgify-limited-offer-wrapper--side')) {
       wrapper.classList.add('urgify-limited-offer-wrapper--side');
+    }
+
+    const parent = wrapper ? wrapper.parentElement : null;
+    if (parent) {
+      const details = parentDetails.get(parent) || { count: 0, gaps: [] };
+      details.count += 1;
+      const blockGap = Number(block.dataset.sideGap || 24);
+      if (!isNaN(blockGap)) {
+        details.gaps.push(blockGap);
+      }
+      parentDetails.set(parent, details);
+    }
+  });
+
+  const containerScope =
+    scope === document
+      ? document
+      : scope.closest('.shopify-section') || scope;
+  const existingContainers = containerScope.querySelectorAll('.urgify-limited-offer-side-container');
+  existingContainers.forEach((container) => {
+    const wrapperCount = container.querySelectorAll('.urgify-limited-offer-wrapper--side').length;
+    if (wrapperCount < 2) {
+      container.classList.remove('urgify-limited-offer-side-container');
+      container.style.removeProperty('--urgify-side-gap');
+    }
+  });
+
+  parentDetails.forEach((details, parent) => {
+    if (details.count > 1) {
+      const gapValue =
+        details.gaps.length > 0
+          ? Math.max(...details.gaps)
+          : 24;
+      parent.classList.add('urgify-limited-offer-side-container');
+      parent.style.setProperty('--urgify-side-gap', `${gapValue}px`);
+    } else {
+      parent.classList.remove('urgify-limited-offer-side-container');
+      parent.style.removeProperty('--urgify-side-gap');
     }
   });
 
@@ -366,6 +408,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const endDateString = block.dataset.endDate;
     
     if (timerElement && endDateString) {
+      const timerWrapper = block.querySelector('.offer-timer');
+      const timerIcon = timerWrapper ? timerWrapper.querySelector('.timer-icon') : null;
+      const timerLabel = timerWrapper ? timerWrapper.querySelector('.timer-text') : null;
+      const expiredTextElement = timerWrapper ? timerWrapper.querySelector('.timer-expired-text') : null;
       // Parse the end date - handle different formats
       let endDate;
       
@@ -387,11 +433,31 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       
+      let timerIntervalId;
+
+      function showActiveTimerParts(isActive) {
+        const displayValue = isActive ? '' : 'none';
+        if (timerIcon) {
+          timerIcon.style.display = displayValue;
+        }
+        if (timerLabel) {
+          timerLabel.style.display = displayValue;
+        }
+        if (timerElement) {
+          timerElement.style.display = displayValue;
+        }
+        if (expiredTextElement) {
+          expiredTextElement.hidden = isActive;
+          expiredTextElement.style.display = isActive ? 'none' : '';
+        }
+      }
+
       function updateTimer() {
         const now = new Date().getTime();
         const timeLeft = endDate - now;
         
         if (timeLeft > 0) {
+          showActiveTimerParts(true);
           const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
           const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
           const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
@@ -399,12 +465,18 @@ document.addEventListener('DOMContentLoaded', function() {
           
           timerElement.innerHTML = `${days}d ${hours}h ${minutes}m ${seconds}s`;
         } else {
-          timerElement.innerHTML = 'Offer Expired';
+          showActiveTimerParts(false);
+          if (!expiredTextElement) {
+            timerElement.innerHTML = 'Offer Expired';
+          }
+          if (timerIntervalId) {
+            clearInterval(timerIntervalId);
+          }
         }
       }
       
       updateTimer();
-      setInterval(updateTimer, 1000);
+      timerIntervalId = setInterval(updateTimer, 1000);
     }
   });
 });
@@ -506,6 +578,13 @@ window.addEventListener('resize', function() {
       "id": "timer_text",
       "label": "Timer Text",
       "default": "Offer ends in:"
+    },
+    {
+      "type": "text",
+      "id": "timer_expired_text",
+      "label": "Text after countdown ends",
+      "default": "Offer expired",
+      "info": "Shown once the countdown reached zero."
     },
     {
       "type": "text",
@@ -673,10 +752,22 @@ window.addEventListener('resize', function() {
         {"value": "fullwidth", "label": "Full Width"},
         {"value": "container", "label": "Container"},
         {"value": "narrow", "label": "Narrow"},
-        {"value": "super-narrow", "label": "Super Narrow"}
+        {"value": "super-narrow", "label": "Super Narrow"},
+        {"value": "ultra-narrow", "label": "Ultra Narrow"}
       ],
       "default": "fullwidth",
       "info": "Control the width of the offer block"
+    },
+    {
+      "type": "range",
+      "id": "side_gap",
+      "label": "Side-by-side spacing",
+      "min": 0,
+      "max": 80,
+      "step": 2,
+      "default": 24,
+      "unit": "px",
+      "info": "Distance between two offers when they are shown next to each other."
     },
     {
       "type": "header",

@@ -1,6 +1,80 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
 
+type ShopifyGraphQLError = {
+  message: string;
+  extensions?: Record<string, unknown>;
+};
+
+type LocationsQueryResponse = {
+  data?: {
+    locations?: {
+      edges?: Array<{
+        node: {
+          id: string;
+          name: string;
+        };
+      }>;
+    };
+  };
+  errors?: ShopifyGraphQLError[];
+};
+
+type InventoryLevelsQueryResponse = {
+  data?: {
+    location?: {
+      id: string;
+      name: string;
+      inventoryLevels?: {
+        pageInfo?: {
+          hasNextPage: boolean;
+          endCursor: string | null;
+        };
+        edges?: Array<{
+          cursor?: string | null;
+          node: {
+            quantities?: Array<{
+              name?: string | null;
+              quantity?: number | null;
+            }>;
+            item?: {
+              variant?: {
+                id?: string;
+                title?: string | null;
+                product?: {
+                  id?: string;
+                  title?: string | null;
+                  handle?: string | null;
+                } | null;
+              } | null;
+            } | null;
+          };
+        }>;
+      };
+    };
+  };
+  errors?: ShopifyGraphQLError[];
+};
+
+type ParsedLocation = {
+  id: string;
+  name: string;
+};
+
+type ProductVariantSummary = {
+  id?: string;
+  title: string;
+  available: number;
+};
+
+type ProductSummary = {
+  id: string;
+  title: string;
+  handle: string;
+  locationInventory: number;
+  variants: ProductVariantSummary[];
+};
+
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
   
@@ -9,7 +83,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   
   try {
     // Fetch locations
-    const locationsResponse = await admin.graphql(`
+    const locationsResponse: Response = await admin.graphql(`
       query getLocations {
         locations(first: 250) {
           edges {
@@ -22,14 +96,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     `);
     
-    const locationsData = await locationsResponse.json();
-    const parsedLocations = locationsData.data?.locations?.edges?.map((edge: any) => ({
-      id: edge.node.id,
-      name: edge.node.name,
-    })) || [];
+    const locationsData = await locationsResponse.json() as LocationsQueryResponse;
+    if (locationsData.errors?.length) {
+      return json({
+        error: "Failed to load locations",
+        details: locationsData.errors,
+      }, { status: 502 });
+    }
+    
+    const parsedLocations: ParsedLocation[] =
+      locationsData.data?.locations?.edges?.map((edge) => ({
+        id: edge.node.id,
+        name: edge.node.name,
+      })) || [];
     
     const selectedLocationId = locationId || parsedLocations[0]?.id || null;
-    const selectedLocation = parsedLocations.find((loc: any) => loc.id === selectedLocationId);
+    const selectedLocation = parsedLocations.find((loc) => loc.id === selectedLocationId) || null;
     
     if (!selectedLocationId) {
       return json({
@@ -39,7 +121,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
     
     // Fetch inventory for the selected location
-    const productsMap = new Map<string, any>();
+    const productsMap = new Map<string, ProductSummary>();
     let cursor: string | null = null;
     let hasNextPage = true;
     let pageCount = 0;
@@ -47,7 +129,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     
     while (hasNextPage && pageCount < maxPages) {
       pageCount++;
-      const response = await admin.graphql(
+      const response: Response = await admin.graphql(
         `#graphql
           query inventoryLevelsByLocation($locationId: ID!, $cursor: String) {
             location(id: $locationId) {
@@ -90,9 +172,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         }
       );
       
-      const data = await response.json();
+      const data = await response.json() as InventoryLevelsQueryResponse;
       
-      if (data.errors) {
+      if (data.errors?.length) {
         return json({
           error: "GraphQL errors",
           errors: data.errors,
@@ -113,6 +195,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       const inventoryLevels = location.inventoryLevels?.edges || [];
       
       for (const edge of inventoryLevels) {
+        if (!edge?.node) continue;
         const node = edge.node;
         const productId = node.item?.variant?.product?.id;
         const productTitle = node.item?.variant?.product?.title || "Unknown";
@@ -123,39 +206,37 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         // Try multiple sources for available quantity
         let availableQty = 0;
         if (Array.isArray(node.quantities)) {
-          const availableEntry = node.quantities.find((qty: any) => qty?.name === "available");
+          const availableEntry = node.quantities.find((qty) => qty?.name === "available");
           if (availableEntry && typeof availableEntry.quantity === "number") {
             availableQty = availableEntry.quantity;
           }
         }
         
+        const variantSummary: ProductVariantSummary = {
+          id: node.item?.variant?.id,
+          title: variantTitle,
+          available: availableQty,
+        };
+        
         if (productsMap.has(productId)) {
           const existing = productsMap.get(productId);
-          existing.locationInventory += availableQty;
-          existing.variants.push({
-            id: node.item?.variant?.id,
-            title: variantTitle,
-            available: availableQty,
-          });
+          if (existing) {
+            existing.locationInventory += availableQty;
+            existing.variants.push(variantSummary);
+          }
         } else {
           productsMap.set(productId, {
             id: productId,
             title: productTitle,
             handle: node.item?.variant?.product?.handle || "",
             locationInventory: availableQty,
-            variants: [
-              {
-                id: node.item?.variant?.id,
-                title: variantTitle,
-                available: availableQty,
-              },
-            ],
+            variants: [variantSummary],
           });
         }
       }
       
       const pageInfo = location.inventoryLevels?.pageInfo;
-      hasNextPage = pageInfo?.hasNextPage || false;
+      hasNextPage = pageInfo?.hasNextPage ?? false;
       cursor = pageInfo?.endCursor || null;
     }
     
@@ -164,7 +245,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     const threshold = Number.isFinite(thresholdParam) && thresholdParam > 0 ? thresholdParam : 10;
     const lowStockProducts = products.filter((p) =>
       Array.isArray(p.variants) &&
-      p.variants.some((variant: any) => variant.available > 0 && variant.available <= threshold)
+      p.variants.some((variant) => variant.available > 0 && variant.available <= threshold)
     );
     
     return json({
@@ -180,14 +261,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         locationInventory: p.locationInventory,
         lowStock:
           Array.isArray(p.variants) &&
-          p.variants.some((variant: any) => variant.available > 0 && variant.available <= threshold),
+          p.variants.some((variant) => variant.available > 0 && variant.available <= threshold),
         variants: p.variants.slice(0, 3),
       })),
       lowStockSample: lowStockProducts.slice(0, 10).map((p) => ({
         id: p.id,
         title: p.title,
         locationInventory: p.locationInventory,
-        variants: p.variants.filter((v: any) => v.available > 0 && v.available <= threshold),
+        variants: p.variants.filter((v) => v.available > 0 && v.available <= threshold),
       })),
       allLocations: parsedLocations,
     });

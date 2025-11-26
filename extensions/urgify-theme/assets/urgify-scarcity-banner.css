@@ -1,0 +1,325 @@
+/* Notification – Visual Styles borrowed from Limited Offer */
+.notify-style-spectacular.urgify-scarcity-banner {
+  position: relative;
+  border-radius: 20px;
+  padding: 16px 22px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: var(--custom-bg, linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%));
+  background-size: 200% 200%;
+  animation: spectacularPulse 2s infinite, spectacularShimmer 3s infinite;
+}
+
+.notify-style-spectacular .notification-message { 
+  color: var(--custom-color, #fff); 
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3); 
+  font-weight: 700; 
+  animation: titleShimmer 3s infinite;
+}
+
+.notify-style-spectacular .notification-icon { 
+  color: #ffffff;
+  margin-right: 12px; 
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 0, 0, 0.4);
+  animation: badgeBounce 2s infinite;
+}
+
+.notify-style-brutalist.urgify-scarcity-banner {
+  background: var(--custom-bg, #000);
+  border: 6px solid #ff0000;
+  border-radius: 0;
+  box-shadow: 8px 8px 0 #ff0000, 16px 16px 0 #ffff00, 24px 24px 0 #00ff00;
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.notify-style-brutalist .notification-message { color: var(--custom-color, #fff); font-weight: 900; text-shadow: 2px 2px 0 #ff0000; }
+.notify-style-brutalist .notification-icon { color: #ffff00; margin-right: 12px; text-shadow: 2px 2px 0 #ff0000; }
+
+/* Glassmorphism Design - True Glassmorphism Effect */
+.notify-style-glassmorphism.urgify-scarcity-banner {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #1a1a1a;
+  font-weight: 600;
+  padding: 16px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Adaptive text color - will be controlled by JavaScript */
+.notify-style-glassmorphism.urgify-scarcity-banner {
+  color: #1a1a1a;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Dark mode system preference */
+@media (prefers-color-scheme: dark) {
+  .notify-style-glassmorphism.urgify-scarcity-banner {
+    color: rgba(255, 255, 255, 0.95);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.notify-style-glassmorphism.urgify-scarcity-banner::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.3) 30%, 
+    rgba(255, 255, 255, 0.5) 50%, 
+    rgba(255, 255, 255, 0.3) 70%, 
+    transparent 100%);
+}
+
+/* Theme Editor Preview - always dark text with white shadow */
+.notify-style-glassmorphism .notification-message { 
+  color: #1a1a1a !important; 
+  font-weight: 600; 
+  text-shadow: 
+    0 1px 2px rgba(255, 255, 255, 0.9),
+    0 0 4px rgba(255, 255, 255, 0.7),
+    0 0 8px rgba(255, 255, 255, 0.5) !important;
+}
+
+.notify-style-glassmorphism .notification-icon { 
+  color: #2d2d2d !important; 
+  margin-right: 12px; 
+  filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.8)) !important;
+}
+
+/* Live View - Override Theme Editor styles */
+body:not(.shopify-theme-inspector) .notify-style-glassmorphism .notification-message,
+html:not([data-shopify-theme-inspector]) .notify-style-glassmorphism .notification-message {
+  color: #ffffff !important; 
+  text-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.8),
+    0 0 6px rgba(0, 0, 0, 0.6),
+    0 0 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+body:not(.shopify-theme-inspector) .notify-style-glassmorphism .notification-icon,
+html:not([data-shopify-theme-inspector]) .notify-style-glassmorphism .notification-icon {
+  color: #ffffff !important; 
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8)) !important;
+}
+
+/* Dark mode adaptations */
+@media (prefers-color-scheme: dark) {
+  .notify-style-glassmorphism .notification-message { 
+    color: rgba(255, 255, 255, 0.95) !important; 
+    text-shadow: 
+      0 1px 3px rgba(0, 0, 0, 0.8),
+      0 0 6px rgba(0, 0, 0, 0.6),
+      0 0 12px rgba(0, 0, 0, 0.4) !important;
+  }
+  
+  .notify-style-glassmorphism .notification-icon { 
+    color: rgba(255, 255, 255, 0.95) !important; 
+    filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8)) !important;
+  }
+}
+
+/* Additional fallback for very dark backgrounds */
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #000"],
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #111"],
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #222"],
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #333"] {
+  color: #ffffff !important;
+}
+
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #000"] .notification-message,
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #111"] .notification-message,
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #222"] .notification-message,
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #333"] .notification-message {
+  color: #ffffff !important;
+  text-shadow: 
+    0 1px 3px rgba(0, 0, 0, 0.8),
+    0 0 6px rgba(0, 0, 0, 0.6),
+    0 0 12px rgba(0, 0, 0, 0.4) !important;
+}
+
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #000"] .notification-icon,
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #111"] .notification-icon,
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #222"] .notification-icon,
+.notify-style-glassmorphism.urgify-scarcity-banner[style*="background-color: #333"] .notification-icon {
+  color: #ffffff !important;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.8)) !important;
+}
+
+
+
+/* Base scarcity banner styles */
+.urgify-scarcity-banner {
+  position: relative !important;
+  display: flex !important;
+  align-items: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  word-wrap: break-word;
+  z-index: 1 !important;
+  margin: 0 auto !important;
+}
+
+/* Badge layout - normal size in container */
+.urgify-scarcity-banner.badge { 
+  width: auto !important;
+  max-width: 400px !important;
+  margin: 0 auto !important;
+}
+
+/* Message styling */
+.notification-message {
+  flex-grow: 1 !important;
+}
+
+/* Ensure visibility over all elements */
+.urgify-scarcity-banner * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Additional CSS to ensure visibility */
+body .urgify-scarcity-banner {
+  z-index: 1 !important;
+}
+
+/* Blackweek Style */
+.notify-style-blackweek.urgify-scarcity-banner {
+  position: relative;
+  border-radius: 12px;
+  padding: 16px 22px;
+  box-shadow:
+    0 8px 24px rgba(220, 53, 69, 0.3),
+    0 0 0 1px rgba(220, 53, 69, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  background: #000000 !important;
+  border: 2px solid #dc3545 !important;
+  color: #ffffff !important;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+.notify-style-blackweek .notification-message {
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  position: relative;
+  z-index: 1;
+}
+
+.notify-style-blackweek .notification-icon {
+  color: #ffc107;
+  margin-right: 12px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Festive Christmas Style */
+.notify-style-christmas.urgify-scarcity-banner {
+  position: relative;
+  border-radius: 18px;
+  padding: 18px 26px;
+  background: linear-gradient(135deg, #0f5132 0%, #198754 55%, #b02a37 100%);
+  color: #fff8e1;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 15px 30px rgba(15, 81, 50, 0.35),
+    inset 0 0 12px rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.notify-style-christmas.urgify-scarcity-banner::before,
+.notify-style-christmas.urgify-scarcity-banner::after {
+  content: '';
+  position: absolute;
+  top: -30%;
+  left: -10%;
+  width: 140%;
+  height: 160%;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.45) 0, transparent 50%),
+    radial-gradient(circle at 60% 60%, rgba(255, 255, 255, 0.25) 0, transparent 55%),
+    radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.35) 0, transparent 45%);
+  animation: bannerSnow 14s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.notify-style-christmas.urgify-scarcity-banner::after {
+  animation-duration: 20s;
+  opacity: 0.5;
+  transform: rotate(8deg);
+}
+
+.notify-style-christmas.urgify-scarcity-banner > * {
+  position: relative;
+  z-index: 2;
+}
+
+.notify-style-christmas .notification-message {
+  color: #fff8e1;
+  font-weight: 700;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.35);
+}
+
+.notify-style-christmas .notification-icon {
+  color: #ffe066;
+  margin-right: 12px;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
+@keyframes spectacularPulse {
+  0%, 100% { 
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% { 
+    box-shadow: 
+      0 30px 60px rgba(220, 53, 69, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes spectacularShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes titleShimmer {
+  0%, 100% { 
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  50% { 
+    text-shadow: 0 4px 8px rgba(255,255,255,0.3), 0 2px 4px rgba(0,0,0,0.3);
+  }
+}
+
+@keyframes badgeBounce {
+  0%, 100% { 
+    transform: translateY(0px);
+  }
+  50% { 
+    transform: translateY(-3px);
+  }
+}
+
+@keyframes bannerSnow {
+  0% { transform: translate3d(0, -10%, 0); }
+  100% { transform: translate3d(0, 10%, 0); }
+}
+

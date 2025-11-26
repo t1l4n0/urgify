@@ -23,6 +23,26 @@
     if (cfg.stock_counter_position && host.id === 'urgify-stock-alert-auto') {
       host.dataset.position = cfg.stock_counter_position;
     }
+    const activeLocationId = cfg.location_id || host.dataset.locationId || null;
+    const normalizeVariantId = (value) => {
+      if (value === null || value === undefined) return null;
+      const asString = String(value);
+      if (!asString) return null;
+      const parts = asString.split('/');
+      return parts[parts.length - 1] || asString;
+    };
+    const locationCache =
+      cfg.low_stock_cache &&
+      typeof cfg.low_stock_cache === 'object' &&
+      cfg.low_stock_cache.locationId &&
+      activeLocationId &&
+      cfg.low_stock_cache.locationId === activeLocationId
+        ? cfg.low_stock_cache
+        : null;
+    const cachedVariants =
+      locationCache && typeof locationCache.variants === 'object'
+        ? locationCache.variants
+        : {};
 
     // Varianten-Bestände aus dem Script-Tag lesen:
     let invMap = {};
@@ -87,7 +107,15 @@
         return;
       }
       
-      const qty = invMap[id];
+      const normalizedId = normalizeVariantId(id);
+      const overrideQty =
+        normalizedId && Object.prototype.hasOwnProperty.call(cachedVariants, normalizedId)
+          ? cachedVariants[normalizedId]
+          : null;
+      const datasetQty =
+        (normalizedId && invMap[normalizedId] !== undefined ? invMap[normalizedId] : invMap[id]) ??
+        null;
+      const qty = typeof overrideQty === 'number' ? overrideQty : datasetQty;
       
       // Hide banner if inventory tracking is disabled
       if (!tracksInventory) {

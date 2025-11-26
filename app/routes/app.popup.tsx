@@ -17,6 +17,10 @@ import { useAppBridge } from "@shopify/app-bridge-react";
 import popupPreviewStyles from "../styles/popup-preview.css?url";
 import { authenticatedFetch } from "../utils/authenticatedFetch";
 import { ensureShopMetafieldDefinitions } from "../utils/metafieldDefinitions";
+import {
+  ServerSessionTokenProvider,
+  useSessionToken,
+} from "../components/ServerSessionTokenProvider";
 
 // CORS headers (lenient: allow any origin; request is same-origin in iframe)
 const CORS_HEADERS = {
@@ -37,6 +41,10 @@ const popupSettingsSchema = z.object({
   description: z.string().default(''),
   ctaText: z.string().default(''),
   newsletterButtonText: z.string().default('Subscribe'),
+  emailPlaceholderText: z.string().default('Enter your email'),
+  newsletterSuccessTitle: z.string().default('Thank you for subscribing!'),
+  newsletterSuccessMessage: z.string().default('Please check your email to confirm your subscription.'),
+  discountMessageText: z.string().default('Use code {{code}} at checkout.'),
   ctaUrl: z.string().default(''),
   imageUrl: z.string().default(''),
   imageFit: z.string().default('cover'),
@@ -46,11 +54,13 @@ const popupSettingsSchema = z.object({
   titleFontSize: z.string().default('24px'),
   descriptionFontSize: z.string().default('16px'),
   ctaFontSize: z.string().default('16px'),
+  termsFontSize: z.string().default('12px'),
   backgroundColor: z.string().default('#ffffff'),
   textColor: z.string().default('#000000'),
   ctaBackgroundColor: z.string().default('#007bff'),
   ctaTextColor: z.string().default('#ffffff'),
   overlayColor: z.string().default('rgba(0, 0, 0, 0.5)'),
+  showOverlay: z.string().default('true'),
   placement: z.string().default('all'),
   position: z.string().default('middle-center'),
   triggerType: z.string().default('delay'),
@@ -243,6 +253,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       title_font_size: '24px',
       description_font_size: '16px',
       cta_font_size: '16px',
+      terms_font_size: '12px',
       background_color: '#ffffff',
       text_color: '#000000',
       cta_background_color: '#007bff',
@@ -258,6 +269,9 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       discount_code_id: '',
       discount_code: '',
       terms_text: '',
+      newsletter_success_title: 'Thank you for subscribing!',
+      newsletter_success_message: 'Please check your email to confirm your subscription.',
+      discount_message_text: 'Use code {{code}} at checkout.',
     };
 
     if (configValue) {
@@ -332,6 +346,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       description: rawSettings.description,
       ctaText: rawSettings.cta_text || rawSettings.ctaText || 'Get Started',
       newsletterButtonText: rawSettings.newsletter_button_text || rawSettings.newsletterButtonText || 'Subscribe',
+      emailPlaceholderText: rawSettings.email_placeholder_text || rawSettings.emailPlaceholderText || 'Enter your email',
+      newsletterSuccessTitle: rawSettings.newsletter_success_title || rawSettings.newsletterSuccessTitle || 'Thank you for subscribing!',
+      newsletterSuccessMessage: rawSettings.newsletter_success_message || rawSettings.newsletterSuccessMessage || 'Please check your email to confirm your subscription.',
+      discountMessageText: rawSettings.discount_message_text || rawSettings.discountMessageText || 'Use code {{code}} at checkout.',
       ctaUrl,
       imageUrl: rawSettings.image_url || rawSettings.imageUrl || '',
       imageFit: rawSettings.image_fit || rawSettings.imageFit || 'cover',
@@ -341,11 +359,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       titleFontSize: rawSettings.title_font_size || rawSettings.titleFontSize || '24px',
       descriptionFontSize: rawSettings.description_font_size || rawSettings.descriptionFontSize || '16px',
       ctaFontSize: rawSettings.cta_font_size || rawSettings.ctaFontSize || '16px',
+      termsFontSize: rawSettings.terms_font_size || rawSettings.termsFontSize || '12px',
       backgroundColor: rawSettings.background_color || rawSettings.backgroundColor || '#ffffff',
       textColor: rawSettings.text_color || rawSettings.textColor || '#000000',
       ctaBackgroundColor: rawSettings.cta_background_color || rawSettings.ctaBackgroundColor || '#007bff',
       ctaTextColor: rawSettings.cta_text_color || rawSettings.ctaTextColor || '#ffffff',
       overlayColor: rawSettings.overlay_color || rawSettings.overlayColor || 'rgba(0, 0, 0, 0.5)',
+      showOverlay: rawSettings.show_overlay !== undefined ? String(rawSettings.show_overlay) : (rawSettings.showOverlay !== undefined ? String(rawSettings.showOverlay) : 'true'),
       placement: rawSettings.placement,
       position: rawSettings.position,
       triggerType: rawSettings.trigger_type || rawSettings.triggerType || 'delay',
@@ -388,6 +408,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           description: 'Don\'t miss out on our exclusive deal. Get 20% off your first order when you sign up today.',
           ctaText: 'Get Started',
           newsletterButtonText: 'Subscribe',
+          emailPlaceholderText: 'Enter your email',
+          newsletterSuccessTitle: 'Thank you for subscribing!',
+          newsletterSuccessMessage: 'Please check your email to confirm your subscription.',
+          discountMessageText: 'Use code {{code}} at checkout.',
           ctaUrl: 'https://',
           imageUrl: '',
           imageFit: 'cover',
@@ -397,11 +421,13 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
           titleFontSize: '24px',
           descriptionFontSize: '16px',
           ctaFontSize: '16px',
+          termsFontSize: '12px',
           backgroundColor: '#ffffff',
           textColor: '#000000',
           ctaBackgroundColor: '#007bff',
           ctaTextColor: '#ffffff',
           overlayColor: 'rgba(0, 0, 0, 0.5)',
+          showOverlay: 'true',
           placement: 'all',
           position: 'middle-center',
           triggerType: 'delay',
@@ -458,8 +484,37 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
 
     // Authenticate the request using Shopify's session token
-    const { admin, session } = await authenticate.admin(request);
-    await ensureShopMetafieldDefinitions(admin);
+    let admin, session;
+    try {
+      const authResult = await authenticate.admin(request);
+      admin = authResult.admin;
+      session = authResult.session;
+    } catch (authError) {
+      console.error("Authentication error in /app/popup:", authError);
+      const authErrorMessage = authError instanceof Error ? authError.message : String(authError);
+      if (
+        authErrorMessage.includes('Session token') ||
+        authErrorMessage.includes('unauthorized') ||
+        authErrorMessage.includes('authentication') ||
+        authErrorMessage.includes('Invalid session')
+      ) {
+        return json(
+          { error: "Authentication failed: " + authErrorMessage },
+          { status: 401, headers: { ...CORS_HEADERS } }
+        );
+      }
+      throw authError;
+    }
+    
+    // Ensure metafield definitions exist before saving
+    try {
+      await ensureShopMetafieldDefinitions(admin);
+      console.log("Metafield definitions ensured");
+    } catch (metafieldDefError) {
+      console.error("Error ensuring metafield definitions:", metafieldDefError);
+      // Don't continue if we can't ensure definitions - this is critical
+      throw new Error(`Failed to ensure metafield definitions: ${metafieldDefError instanceof Error ? metafieldDefError.message : String(metafieldDefError)}`);
+    }
     // Check rate limiting
     const rateLimitCheck = await shouldRateLimit(request, 'admin');
     if (rateLimitCheck.limited) {
@@ -504,6 +559,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       description: getStr("description", ""),
       ctaText: getStr("ctaText", "Get Started"),
       newsletterButtonText: getStr("newsletterButtonText", "Subscribe"),
+      emailPlaceholderText: getStr("emailPlaceholderText", "Enter your email"),
+      newsletterSuccessTitle: getStr("newsletterSuccessTitle", "Thank you for subscribing!"),
+      newsletterSuccessMessage: getStr("newsletterSuccessMessage", "Please check your email to confirm your subscription."),
+      discountMessageText: getStr("discountMessageText", "Use code {{code}} at checkout."),
       ctaUrl: getStr("ctaUrl", "/"),
       imageUrl: getStr("imageUrl", ""),
       imageFit: getStr("imageFit", "cover"),
@@ -513,11 +572,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       titleFontSize: getStr("titleFontSize", "24px"),
       descriptionFontSize: getStr("descriptionFontSize", "16px"),
       ctaFontSize: getStr("ctaFontSize", "16px"),
+      termsFontSize: getStr("termsFontSize", "12px"),
       backgroundColor: getStr("backgroundColor", "#ffffff"),
       textColor: getStr("textColor", "#000000"),
       ctaBackgroundColor: getStr("ctaBackgroundColor", "#007bff"),
       ctaTextColor: getStr("ctaTextColor", "#ffffff"),
       overlayColor: getStr("overlayColor", "rgba(0, 0, 0, 0.5)"),
+      showOverlay: getStr("showOverlay", "true"),
       placement: getStr("placement", "all"),
       position: getStr("position", "middle-center"),
       triggerType: getStr("triggerType", "delay"),
@@ -539,6 +600,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       description,
       ctaText,
       newsletterButtonText,
+      emailPlaceholderText,
+      newsletterSuccessTitle,
+      newsletterSuccessMessage,
+      discountMessageText,
       ctaUrl,
       imageUrl,
       imageFit,
@@ -548,11 +613,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       titleFontSize,
       descriptionFontSize,
       ctaFontSize,
+      termsFontSize,
       backgroundColor,
       textColor,
       ctaBackgroundColor,
       ctaTextColor,
       overlayColor,
+      showOverlay,
       placement,
       position,
       triggerType,
@@ -588,6 +655,10 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       description,
       cta_text: ctaText,
       newsletter_button_text: newsletterButtonText,
+      email_placeholder_text: emailPlaceholderText,
+      newsletter_success_title: newsletterSuccessTitle,
+      newsletter_success_message: newsletterSuccessMessage,
+      discount_message_text: discountMessageText,
       cta_url: ctaUrl,
       image_url: imageUrl,
       image_fit: imageFit,
@@ -597,11 +668,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       title_font_size: titleFontSize,
       description_font_size: descriptionFontSize,
       cta_font_size: ctaFontSize,
+      terms_font_size: termsFontSize,
       background_color: backgroundColor,
       text_color: textColor,
       cta_background_color: ctaBackgroundColor,
       cta_text_color: ctaTextColor,
       overlay_color: overlayColor,
+      show_overlay: showOverlay === 'true',
       placement,
       position,
       trigger_type: triggerType,
@@ -614,46 +687,109 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       terms_text: termsText,
     };
 
+    // Validate JSON string before saving
+    let jsonValue: string;
+    try {
+      jsonValue = JSON.stringify(settings);
+      // Validate JSON is valid and not too large (Shopify has a limit)
+      if (jsonValue.length > 50000) {
+        throw new Error("Popup settings JSON is too large (max 50KB)");
+      }
+      // Test that JSON can be parsed back
+      JSON.parse(jsonValue);
+    } catch (jsonError) {
+      console.error("Error creating JSON for popup settings:", jsonError);
+      throw new Error(`Invalid popup settings data: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
+    }
+
     // Save as JSON metafield
     const metafields = [
       {
         ownerId: shopId,
         namespace: "urgify",
         key: "popup_config",
-        value: JSON.stringify(settings),
+        value: jsonValue,
         type: "json"
       },
     ];
 
-    const response = await admin.graphql(`#graphql
-      mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
-        metafieldsSet(metafields: $metafields) {
-          metafields {
-            id
-            namespace
-            key
-            value
-            type
-          }
-          userErrors {
-            field
-            message
-            code
+    console.log("Attempting to save popup metafield:", {
+      shopId,
+      namespace: "urgify",
+      key: "popup_config",
+      valueLength: jsonValue.length,
+      type: "json"
+    });
+
+    let response;
+    try {
+      response = await admin.graphql(`#graphql
+        mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            metafields {
+              id
+              namespace
+              key
+              value
+              type
+            }
+            userErrors {
+              field
+              message
+              code
+            }
           }
         }
-      }
-    `, { variables: { metafields } });
+      `, { variables: { metafields } });
+    } catch (graphqlError) {
+      console.error("GraphQL request failed:", graphqlError);
+      throw new Error(`GraphQL request failed: ${graphqlError instanceof Error ? graphqlError.message : String(graphqlError)}`);
+    }
 
-    const data = await response.json();
+    interface MetafieldsSetResponse {
+      errors?: Array<{ message?: string }>;
+      data?: {
+        metafieldsSet?: {
+          userErrors?: Array<{ field?: string; message?: string; code?: string }>;
+          metafields?: Array<{ id: string }>;
+        };
+      };
+    }
+
+    const data = (await response.json()) as MetafieldsSetResponse;
+    console.log("Metafield mutation response:", JSON.stringify(data, null, 2));
+    
+    // Check for GraphQL errors first
+    if (data.errors) {
+      console.error("GraphQL errors in metafieldsSet:", data.errors);
+      const errorMessages = data.errors.map((err: any) => err.message || String(err)).join(', ');
+      throw new Error(`GraphQL error: ${errorMessages}`);
+    }
+    
+    // Check for user errors
     const userErrors = data?.data?.metafieldsSet?.userErrors || [];
     if (userErrors.length > 0) {
-      console.error("Metafield error:", userErrors);
-      throw new Error(`Failed to save metafields: ${userErrors[0]?.message || 'Unknown error'}`);
+      console.error("Metafield userErrors:", userErrors);
+      const errorMessages = userErrors.map((err: any) => `${err.field || 'unknown'}: ${err.message || String(err)} (code: ${err.code || 'unknown'})`).join(', ');
+      throw new Error(`Failed to save metafields: ${errorMessages}`);
+    }
+    
+    // Check if metafields were actually set
+    if (!data?.data?.metafieldsSet?.metafields || data.data.metafieldsSet.metafields.length === 0) {
+      console.error("No metafields returned from mutation:", JSON.stringify(data, null, 2));
+      throw new Error("Failed to save metafields: No metafields returned from mutation");
     }
 
     return json({ success: true }, { headers: { ...CORS_HEADERS } });
   } catch (error) {
     console.error("Error saving popup settings:", error);
+    
+    // Log full error details for debugging
+    if (error instanceof Error) {
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
     
     // Handle authentication errors
     if (error instanceof Response && error.status === 401) {
@@ -664,27 +800,40 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     }
     
     const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Handle authentication-related errors
     if (
       errorMessage.includes('Session token') ||
       errorMessage.includes('unauthorized') ||
       errorMessage.includes('authentication') ||
-      errorMessage.includes('Invalid session')
+      errorMessage.includes('Invalid session') ||
+      errorMessage.includes('401')
     ) {
       return json(
-        { error: "Authentication failed" },
+        { error: "Authentication failed. Please refresh the page and try again." },
         { status: 401, headers: { ...CORS_HEADERS } }
       );
     }
     
+    // Handle validation errors
     if (error instanceof z.ZodError) {
-      const errorMessage = error.issues?.map((err: any) => `${err.path?.join('.')}: ${err.message}`).join(', ') || 'Validation failed';
+      const validationMessage = error.issues?.map((err: any) => `${err.path?.join('.')}: ${err.message}`).join(', ') || 'Validation failed';
+      console.error("Validation errors:", error.issues);
       return json({
-        error: `Validation failed: ${errorMessage}`
+        error: `Validation failed: ${validationMessage}`
       }, { status: 400, headers: { ...CORS_HEADERS } });
     }
     
+    // Handle GraphQL errors
+    if (errorMessage.includes('GraphQL error') || errorMessage.includes('metafieldsSet')) {
+      return json({
+        error: "Failed to save settings. Please check your Shopify connection and try again."
+      }, { status: 500, headers: { ...CORS_HEADERS } });
+    }
+    
+    // Generic error response
     return json({
-      error: "Failed to save settings: " + errorMessage
+      error: "Failed to save settings. Please try again or contact support if the problem persists."
     }, { status: 500, headers: { ...CORS_HEADERS } });
   }
 };
@@ -705,7 +854,11 @@ export default function PopupSettings() {
     return <PopupAccessRequired message={message} />;
   }
 
-  return <PopupSettingsForm data={loaderData} />;
+  return (
+    <ServerSessionTokenProvider initialToken={null}>
+      <PopupSettingsForm data={loaderData} />
+    </ServerSessionTokenProvider>
+  );
 }
 
 function PopupAccessRequired({ message }: { message: string }) {
@@ -726,6 +879,7 @@ function PopupAccessRequired({ message }: { message: string }) {
 function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
   const revalidator = useRevalidator();
   const shopify = useAppBridge();
+  const { sessionToken: contextToken, refreshToken } = useSessionToken();
   const {
     settings,
     discountCodes: discountCodeOptions,
@@ -735,40 +889,52 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
     () => (discountCodeOptions ?? []) as DiscountCodeOption[],
     [discountCodeOptions],
   );
+  const hasPrimedSession = useRef(false);
+  const initialContextToken = useRef(contextToken);
+
   // Priming: Stelle sicher, dass ein Session-Token vorhanden ist, sobald die Seite geladen ist
   useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (hasPrimedSession.current) {
+      return;
+    }
+
     let cancelled = false;
+    hasPrimedSession.current = true;
+
     (async () => {
       try {
-        // Versuche zuerst aus sessionStorage
-        const existing = sessionStorage.getItem('shopify_session_token');
-        if (existing) {
-          return; // Token bereits vorhanden
+        if (cancelled) {
+          return;
         }
-        
-        // Wenn kein Token vorhanden, hole es von App Bridge
-        // In App Bridge v4 wurde getSessionToken() durch idToken() ersetzt
-        const appBridge = shopify as any;
-        if (appBridge?.idToken) {
+        const existing = sessionStorage.getItem("shopify_session_token");
+        if (existing) {
+          return;
+        }
+
+        if (!initialContextToken.current) {
           try {
-            const token = await appBridge.idToken();
-            if (!cancelled && token) {
-              sessionStorage.setItem('shopify_session_token', token);
-            }
+            await refreshToken();
           } catch (error) {
-            console.warn('Failed to prime session token:', error);
-            // still allow UI to render; fetch will try again on save
+            if (!cancelled) {
+              console.warn("Failed to prime session token:", error);
+            }
           }
         }
       } catch (error) {
-        console.warn('Error priming session token:', error);
-        // still allow UI to render; fetch will try again on save
+        if (!cancelled) {
+          console.warn("Error priming session token:", error);
+        }
       }
     })();
+
     return () => {
       cancelled = true;
     };
-  }, [shopify]);
+  }, [refreshToken]);
   
   // State management
   const [enabled, setEnabled] = useState(Boolean(settings.enabled));
@@ -776,8 +942,19 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
   const [description, setDescription] = useState(String(settings.description || ''));
   const [ctaText, setCtaText] = useState(String(settings.ctaText || 'Get Started'));
   const [newsletterButtonText, setNewsletterButtonText] = useState(String(settings.newsletterButtonText || 'Subscribe'));
+  const [emailPlaceholderText, setEmailPlaceholderText] = useState(String(settings.emailPlaceholderText || 'Enter your email'));
+  const [newsletterSuccessTitle, setNewsletterSuccessTitle] = useState(
+    String(settings.newsletterSuccessTitle || 'Thank you for subscribing!')
+  );
+  const [newsletterSuccessMessage, setNewsletterSuccessMessage] = useState(
+    String(settings.newsletterSuccessMessage || 'Please check your email to confirm your subscription.')
+  );
+  const [discountMessageText, setDiscountMessageText] = useState(
+    String(settings.discountMessageText || 'Use code {{code}} at checkout.')
+  );
   const [ctaUrl, setCtaUrl] = useState(String(settings.ctaUrl || 'https://'));
-  const [ctaUrlType, setCtaUrlType] = useState<'product' | 'collection' | 'external'>('external');
+  const [ctaUrlType, setCtaUrlType] =
+    useState<'product' | 'collection' | 'external'>('external');
   const [selectedResource, setSelectedResource] = useState<PopupResource | null>(
     (loadedResource ?? null) as PopupResource | null,
   );
@@ -789,11 +966,13 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
   const [titleFontSize, setTitleFontSize] = useState(String(settings.titleFontSize || '24px'));
   const [descriptionFontSize, setDescriptionFontSize] = useState(String(settings.descriptionFontSize || '16px'));
   const [ctaFontSize, setCtaFontSize] = useState(String(settings.ctaFontSize || '16px'));
+  const [termsFontSize, setTermsFontSize] = useState(String(settings.termsFontSize || '12px'));
   const [backgroundColor, setBackgroundColor] = useState(String(settings.backgroundColor || '#ffffff'));
   const [textColor, setTextColor] = useState(String(settings.textColor || '#000000'));
   const [ctaBackgroundColor, setCtaBackgroundColor] = useState(String(settings.ctaBackgroundColor || '#007bff'));
   const [ctaTextColor, setCtaTextColor] = useState(String(settings.ctaTextColor || '#ffffff'));
   const [overlayColor, setOverlayColor] = useState(String(settings.overlayColor || 'rgba(0, 0, 0, 0.5)'));
+  const [showOverlay, setShowOverlay] = useState(String(settings.showOverlay || 'true'));
   const [placement, setPlacement] = useState(String(settings.placement || 'all'));
   const [position, setPosition] = useState(String(settings.position || 'middle-center'));
   const [triggerType, setTriggerType] = useState(String(settings.triggerType || 'delay'));
@@ -803,6 +982,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
   const [enableNewsletter, setEnableNewsletter] = useState(Boolean(settings.enableNewsletter || false));
   const [discountCodeId, setDiscountCodeId] = useState(String(settings.discountCodeId || ''));
   const [termsText, setTermsText] = useState(String(settings.termsText || ''));
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   
   const [isDirty, setIsDirty] = useState(false);
   const [toastActive, setToastActive] = useState(false);
@@ -832,25 +1012,30 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
 
 
   // Update local state when loader data changes
+  const detectCtaUrlType = (url: string): 'product' | 'collection' | 'external' => {
+    const normalized = url?.trim() || '';
+    if (normalized.startsWith('/products/')) {
+      return 'product';
+    }
+    if (normalized.startsWith('/collections/')) {
+      return 'collection';
+    }
+    return 'external';
+  };
+
   useEffect(() => {
     setEnabled(Boolean(settings.enabled));
     setTitle(String(settings.title || ''));
     setDescription(String(settings.description || ''));
     setCtaText(String(settings.ctaText || 'Get Started'));
     setNewsletterButtonText(String(settings.newsletterButtonText || 'Subscribe'));
+    setEmailPlaceholderText(String(settings.emailPlaceholderText || 'Enter your email'));
+    setNewsletterSuccessTitle(String(settings.newsletterSuccessTitle || 'Thank you for subscribing!'));
+    setNewsletterSuccessMessage(String(settings.newsletterSuccessMessage || 'Please check your email to confirm your subscription.'));
+    setDiscountMessageText(String(settings.discountMessageText || 'Use code {{code}} at checkout.'));
     const url = String(settings.ctaUrl || 'https://');
     setCtaUrl(url);
-    
-    // Automatisch den Link-Typ basierend auf der URL erkennen
-    if (url.startsWith('/products/')) {
-      setCtaUrlType('product');
-    } else if (url.startsWith('/collections/')) {
-      setCtaUrlType('collection');
-    } else if (url.startsWith('http://') || url.startsWith('https://')) {
-      setCtaUrlType('external');
-    } else {
-      setCtaUrlType('external');
-    }
+    setCtaUrlType(detectCtaUrlType(url));
     
     setImageUrl(String(settings.imageUrl || ''));
     setImageFit(String(settings.imageFit || 'cover'));
@@ -860,11 +1045,13 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
     setTitleFontSize(String(settings.titleFontSize || '24px'));
     setDescriptionFontSize(String(settings.descriptionFontSize || '16px'));
     setCtaFontSize(String(settings.ctaFontSize || '16px'));
+    setTermsFontSize(String(settings.termsFontSize || '12px'));
     setBackgroundColor(String(settings.backgroundColor || '#ffffff'));
     setTextColor(String(settings.textColor || '#000000'));
     setCtaBackgroundColor(String(settings.ctaBackgroundColor || '#007bff'));
     setCtaTextColor(String(settings.ctaTextColor || '#ffffff'));
     setOverlayColor(String(settings.overlayColor || 'rgba(0, 0, 0, 0.5)'));
+    setShowOverlay(String(settings.showOverlay || 'true'));
     setPlacement(String(settings.placement || 'all'));
     setPosition(String(settings.position || 'middle-center'));
     setTriggerType(String(settings.triggerType || 'delay'));
@@ -1103,15 +1290,22 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
     setUploadError(null);
 
     try {
-      // Get session token
-      const appBridge = shopify as any;
+      // Get session token – always try to refresh first to avoid expired tokens
       let token: string | null = null;
+      
       try {
-        token = await appBridge.idToken();
-        if (!token) {
-          token = sessionStorage.getItem('shopify_session_token');
-        }
+        token = await refreshToken();
       } catch (error) {
+        console.error('Failed to refresh session token:', error);
+      }
+      
+      // Fallback: use token from context if refresh failed
+      if (!token && contextToken) {
+        token = contextToken;
+      }
+      
+      // Final fallback: try sessionStorage
+      if (!token) {
         token = sessionStorage.getItem('shopify_session_token');
       }
 
@@ -1152,7 +1346,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
     } finally {
       setIsUploading(false);
     }
-  }, [shopify]);
+  }, [contextToken, refreshToken]);
 
   const handleSaveSettings = useCallback(async () => {
     const selectedDiscount = discountCodes.find(
@@ -1166,6 +1360,10 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
       description,
       ctaText,
       newsletterButtonText,
+      emailPlaceholderText,
+      newsletterSuccessTitle,
+      newsletterSuccessMessage,
+      discountMessageText,
       ctaUrl,
       imageUrl,
       imageFit: imageFit.toString(),
@@ -1175,11 +1373,13 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
       titleFontSize,
       descriptionFontSize,
       ctaFontSize,
+      termsFontSize,
       backgroundColor,
       textColor,
       ctaBackgroundColor,
       ctaTextColor,
       overlayColor,
+      showOverlay,
       placement,
       position,
       triggerType,
@@ -1201,26 +1401,22 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
       setIsSaving(true);
       setToastMessage("Settings saved successfully!");
 
-      // Hole IMMER ein frisches Token von App Bridge (verhindert abgelaufene Tokens)
-      if (!shopify) {
-        throw new Error('App Bridge not available. Please refresh the page.');
-      }
-      const appBridge = shopify as any;
-      if (typeof appBridge.idToken !== 'function') {
-        console.error('shopify.idToken is not a function:', shopify);
-        throw new Error('Session token method not available. Please refresh the page.');
-      }
+      // Hole IMMER ein frisches Token (verhindert abgelaufene Tokens)
       let token: string | null = null;
+      
       try {
-        token = await appBridge.idToken();
-        if (token) {
-          sessionStorage.setItem('shopify_session_token', token);
-        } else {
-          throw new Error('Session token was empty');
-        }
+        token = await refreshToken();
       } catch (error) {
-        console.error('Failed to get session token from App Bridge:', error);
-        // Fallback: nutze evtl. vorhandenes Token aus sessionStorage
+        console.error('Failed to refresh session token:', error);
+      }
+      
+      // Fallback: Context-Token verwenden, falls Refresh fehlgeschlagen ist
+      if (!token && contextToken) {
+        token = contextToken;
+      }
+      
+      // Letzte Option: sessionStorage prüfen
+      if (!token) {
         token = sessionStorage.getItem('shopify_session_token');
       }
 
@@ -1252,7 +1448,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
     } finally {
       setIsSaving(false);
     }
-  }, [discountCodes, discountCodeId, enableNewsletter, backgroundColor, ctaBackgroundColor, ctaFontSize, ctaText, newsletterButtonText, ctaTextColor, ctaUrl, delaySeconds, description, descriptionFontSize, termsText, enabled, imageUrl, imageFit, imageAlt, imagePosition, overlayColor, placement, position, triggerType, revalidator, shopify, style, textColor, title, titleFontSize, cookieDays, ignoreCookie]);
+  }, [discountCodes, discountCodeId, enableNewsletter, backgroundColor, ctaBackgroundColor, ctaFontSize, ctaText, newsletterButtonText, emailPlaceholderText, newsletterSuccessTitle, newsletterSuccessMessage, discountMessageText, ctaTextColor, ctaUrl, delaySeconds, description, descriptionFontSize, termsText, termsFontSize, enabled, imageUrl, imageFit, imageAlt, imagePosition, overlayColor, showOverlay, placement, position, triggerType, revalidator, contextToken, refreshToken, style, textColor, title, titleFontSize, cookieDays, ignoreCookie]);
 
   // Preview component
   const PopupPreview = () => {
@@ -1303,7 +1499,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
     };
 
     const getTermsStyles = () => ({
-      fontSize: '12px',
+      fontSize: style === 'custom' ? termsFontSize : '12px',
       color: style === 'custom' ? textColor : 'rgba(26, 26, 26, 0.7)',
       marginTop: '16px',
       marginBottom: 0,
@@ -1406,7 +1602,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                 position: 'absolute',
                 top: '12px',
                 right: '12px',
-                background: style === 'spectacular' || style === 'brutalist' 
+                background: style === 'spectacular' || style === 'christmas' || style === 'blackweek' || style === 'brutalist' 
                   ? 'rgba(255, 255, 255, 0.2)' 
                   : style === 'glassmorphism'
                   ? 'rgba(255, 255, 255, 0.5)'
@@ -1415,7 +1611,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                 fontSize: '32px',
                 lineHeight: 1,
                 cursor: 'default',
-                color: style === 'spectacular' || style === 'brutalist' ? '#fff' : style === 'glassmorphism' ? '#1a1a1a' : '#666',
+                color: style === 'spectacular' || style === 'christmas' || style === 'blackweek' || style === 'brutalist' ? '#fff' : style === 'glassmorphism' ? '#1a1a1a' : '#666',
                 width: '36px',
                 height: '36px',
                 display: 'flex',
@@ -1476,7 +1672,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                   <input 
                     type="email" 
                     className="urgify-popup-newsletter-email"
-                    placeholder="Enter your email"
+                    placeholder={emailPlaceholderText || 'Enter your email'}
                     disabled
                     style={{ 
                       flex: 1,
@@ -1581,26 +1777,11 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                     rows={3}
                   />
                   
-                  <s-text-area
-                    label="Small print / terms (optional)"
-                    value={termsText}
-                    onChange={(e) => {
-                      setTermsText(e.currentTarget.value);
-                      setIsDirty(true);
-                    }}
-                    rows={3}
-                    placeholder="Terms: Code valid only during the promotion period. One use per order. Cannot be combined with other discounts. Not redeemable for cash. Valid on eligible items only. Adjustments after purchase not possible."
-                    details="Shown as fine print at the bottom of the PopUp."
-                  />
-                  
-                  <s-heading level="2">CTA Button or Newsletter Signup</s-heading>
-                  <s-paragraph color="subdued">
-                    Choose one: a CTA button with a link <strong>or</strong> a newsletter signup form. You can't use both.
-                  </s-paragraph>
+                  <s-heading level="2">Action</s-heading>
                   
                   <s-choice-list
                     name="cta-or-newsletter"
-                    label="Select type"
+                    label="Action Type"
                     values={enableNewsletter ? ["newsletter"] : ["cta"]}
                     onChange={(e) => {
                       const values = (e.currentTarget as any).values || [];
@@ -1614,141 +1795,46 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                   >
                     <s-choice value="cta" selected={!enableNewsletter}>
                       CTA Button (Link)
-                      <s-text slot="details">Shows a button with a configurable link</s-text>
                     </s-choice>
                     <s-choice value="newsletter" selected={enableNewsletter}>
                       Newsletter Signup (Email field)
-                      <s-text slot="details">Shows an email input field for newsletter subscription</s-text>
                     </s-choice>
                   </s-choice-list>
                   
                   {!enableNewsletter ? (
                     <s-stack gap="base" direction="block">
                       <s-text-field
-                        label="CTA Text"
+                        label="CTA Button Label"
                         value={ctaText}
                         onChange={(e) => {
                           setCtaText(e.currentTarget.value);
                           setIsDirty(true);
                         }}
                         autocomplete="off"
-                        details="Button text for the call-to-action"
+                        placeholder="e.g. Jetzt sparen, Shop now"
                       />
                       
-                      <s-select
-                        label="Link type"
-                        value={ctaUrlType}
-                        onChange={(e) => handleCtaUrlTypeChange(e.currentTarget.value)}
-                      >
-                        <s-option value="collection">Collection</s-option>
-                        <s-option value="product">Product</s-option>
-                        <s-option value="external">External link</s-option>
-                      </s-select>
-                      
-                      {(ctaUrlType === 'product' || ctaUrlType === 'collection') && (
-                        <div>
-                          <label htmlFor="resource-reference-field" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
-                            {ctaUrlType === 'product' ? 'Product' : 'Collection'}
-                          </label>
-                          <div
-                            id="resource-reference-field"
-                            onClick={handleResourceFieldClick}
-                            style={{
-                              border: '1px solid #d1d5db',
-                              borderRadius: '6px',
-                              padding: '8px 12px',
-                              cursor: 'pointer',
-                              backgroundColor: '#ffffff',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              minHeight: '36px',
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.borderColor = '#6366f1';
-                              e.currentTarget.style.backgroundColor = '#f9fafb';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.borderColor = '#d1d5db';
-                              e.currentTarget.style.backgroundColor = '#ffffff';
-                            }}
-                          >
-                            <span style={{ 
-                              color: selectedResource ? '#000000' : '#6b7280',
-                              fontSize: '14px',
-                              flex: 1,
-                            }}>
-                              {selectedResource ? selectedResource.title : `Select a ${ctaUrlType}`}
-                            </span>
-                            <svg 
-                              width="16" 
-                              height="16" 
-                              viewBox="0 0 16 16" 
-                              fill="none" 
-                              xmlns="http://www.w3.org/2000/svg"
-                              style={{ color: '#6b7280', flexShrink: 0, marginLeft: '8px' }}
-                            >
-                              <path 
-                                d="M6 12L10 8L6 4" 
-                                stroke="currentColor" 
-                                strokeWidth="2" 
-                                strokeLinecap="round" 
-                                strokeLinejoin="round"
-                              />
-                            </svg>
-                          </div>
-                          {selectedResource && (
-                            <s-button
-                              variant="tertiary"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedResource(null);
-                                setCtaUrl('/');
-                                setIsDirty(true);
-                              }}
-                              style={{ marginTop: '8px' }}
-                            >
-                              Remove {ctaUrlType}
-                            </s-button>
-                          )}
-                        </div>
-                      )}
-                      
-                      {ctaUrlType === 'external' && (
-                        <s-url-field
-                          label="CTA URL"
-                          value={ctaUrl}
-                          onChange={(e) => {
-                            setCtaUrl(e.currentTarget.value);
-                            setIsDirty(true);
-                          }}
-                          autocomplete="off"
-                          details="Enter external URL (e.g., https://example.com)"
-                        />
-                      )}
+                      <s-url-field
+                        label="CTA Button Link"
+                        value={ctaUrl}
+                        onChange={(e) => {
+                          setCtaUrl(e.currentTarget.value);
+                          setIsDirty(true);
+                        }}
+                        autocomplete="off"
+                      />
                     </s-stack>
                   ) : null}
                   
                   {enableNewsletter && (
                     <s-stack gap="base" direction="block">
-                      <s-text-field
-                        label="Newsletter button text"
-                        value={newsletterButtonText}
-                        onChange={(e) => {
-                          setNewsletterButtonText(e.currentTarget.value);
-                          setIsDirty(true);
-                        }}
-                        autocomplete="off"
-                        details="Label of the signup button inside the PopUp."
-                      />
                       <s-select
-                        label="Discount Code"
+                        label="Discount Code (optional)"
                         value={discountCodeId}
                         onChange={(e) => {
                           setDiscountCodeId(e.currentTarget.value);
                           setIsDirty(true);
                         }}
-                        details="Select a discount code to show after newsletter signup"
                       >
                         <s-option value="">No discount</s-option>
                         {discountCodes.map((dc: DiscountCodeOption) => (
@@ -1759,6 +1845,8 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                       </s-select>
                     </s-stack>
                   )}
+                  
+                  <s-heading level="2">Image</s-heading>
                   
                   <s-drop-zone
                     label="Upload Image"
@@ -1795,48 +1883,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                     </div>
                   )}
                   
-                  {imageUrl && (
-                    <>
-                      <s-select
-                        label="Image Fit"
-                        value={imageFit}
-                        onChange={(e) => {
-                          setImageFit(e.currentTarget.value);
-                          setIsDirty(true);
-                        }}
-                        details="Fill: Image fills the area (may be cropped). Contain: Image is fully displayed (may have empty areas)."
-                      >
-                        <s-option value="cover">Fill</s-option>
-                        <s-option value="contain">Contain</s-option>
-                      </s-select>
-                      
-                      <s-select
-                        label="Image Position in Popup"
-                        value={imagePosition}
-                        onChange={(e) => {
-                          setImagePosition(e.currentTarget.value);
-                          setIsDirty(true);
-                        }}
-                        details="Where to position the image within the popup: Top (above content), Bottom (below content), Left (beside content), or Right (beside content)."
-                      >
-                        <s-option value="top">Top</s-option>
-                        <s-option value="bottom">Bottom</s-option>
-                        <s-option value="left">Left</s-option>
-                        <s-option value="right">Right</s-option>
-                      </s-select>
-                      
-                      <s-text-field
-                        label="Alt Text"
-                        value={imageAlt}
-                        onChange={(e) => {
-                          setImageAlt(e.currentTarget.value);
-                          setIsDirty(true);
-                        }}
-                        autocomplete="off"
-                        details="Description of the image for accessibility and SEO. Used when the image cannot be loaded."
-                      />
-                    </>
-                  )}
+                  <s-heading level="2">Style</s-heading>
                   
                   <s-select
                     label="Style"
@@ -1847,120 +1894,18 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                     }}
                   >
                     <s-option value="spectacular">Spectacular</s-option>
-                    <s-option value="brutalist">Brutalist</s-option>
+                    <s-option value="christmas">Festive Christmas</s-option>
+                    <s-option value="blackweek">Blackweek</s-option>
+                    <s-option value="brutalist">Brutalist Bold</s-option>
                     <s-option value="glassmorphism">Glassmorphism</s-option>
                     <s-option value="neumorphism">Neumorphism</s-option>
                     <s-option value="minimal">Minimal</s-option>
                     <s-option value="custom">Custom</s-option>
                   </s-select>
                   
-                  <s-select
-                    label="Placement"
-                    value={placement}
-                    onChange={(e) => {
-                      setPlacement(e.currentTarget.value);
-                      setIsDirty(true);
-                    }}
-                  >
-                    <s-option value="all">All Pages</s-option>
-                    <s-option value="homepage">Homepage Only</s-option>
-                    <s-option value="products">Product Pages Only</s-option>
-                  </s-select>
-                  
-                  <s-select
-                    label="Position"
-                    value={position}
-                    onChange={(e) => {
-                      setPosition(e.currentTarget.value);
-                      setIsDirty(true);
-                    }}
-                  >
-                    <s-option value="top-left">Top Left</s-option>
-                    <s-option value="top-center">Top Center</s-option>
-                    <s-option value="top-right">Top Right</s-option>
-                    <s-option value="middle-left">Middle Left</s-option>
-                    <s-option value="middle-center">Middle Center</s-option>
-                    <s-option value="middle-right">Middle Right</s-option>
-                    <s-option value="bottom-left">Bottom Left</s-option>
-                    <s-option value="bottom-center">Bottom Center</s-option>
-                    <s-option value="bottom-right">Bottom Right</s-option>
-                  </s-select>
-                  
-                  <s-select
-                    label="Trigger Type"
-                    value={triggerType}
-                    onChange={(e) => {
-                      setTriggerType(e.currentTarget.value);
-                      setIsDirty(true);
-                    }}
-                  >
-                    <s-option value="immediate">Immediate</s-option>
-                    <s-option value="delay">After Delay</s-option>
-                    <s-option value="exit_intent">Exit Intent</s-option>
-                    <s-option value="always">Always Show</s-option>
-                  </s-select>
-                  
-                  {triggerType === 'delay' && (
-                    <s-number-field
-                      label="Delay (seconds)"
-                      value={delaySeconds}
-                      min={0}
-                      onChange={(e) => {
-                        const value = e.currentTarget.value;
-                        const numValue = parseInt(value, 10);
-                        // Ensure value is not negative
-                        const safeValue = isNaN(numValue) || numValue < 0 ? '0' : value;
-                        setDelaySeconds(safeValue);
-                        setIsDirty(true);
-                      }}
-                    />
-                  )}
-                  
-                  {!isAlwaysTrigger && (
-                    <>
-                      <div style={{ opacity: ignoreCookie ? 0.5 : 1, pointerEvents: ignoreCookie ? 'none' : 'auto' }}>
-                        <s-number-field
-                          label="Cookie Duration (days)"
-                          value={cookieDays}
-                          min={1}
-                          onChange={(e) => {
-                            if (ignoreCookie) return;
-                            const value = e.currentTarget.value;
-                            const numValue = parseInt(value, 10);
-                            // Ensure value is at least 1
-                            const safeValue = isNaN(numValue) || numValue < 1 ? '1' : value;
-                            setCookieDays(safeValue);
-                            setIsDirty(true);
-                          }}
-                        />
-                      </div>
-                      <s-paragraph color="subdued" style={{ marginTop: '-8px', marginBottom: '16px' }}>
-                        Days to hide popup after dismissal
-                      </s-paragraph>
-                    </>
-                  )}
-
-                  <div style={isAlwaysTrigger ? { opacity: 0.5, pointerEvents: 'none' } : undefined}>
-                    <s-checkbox
-                      label="Always show popup (ignore cookie)"
-                      checked={isAlwaysTrigger ? true : ignoreCookie}
-                      aria-disabled={isAlwaysTrigger ? 'true' : 'false'}
-                      onChange={(e) => {
-                        if (isAlwaysTrigger) return;
-                        setIgnoreCookie(e.currentTarget.checked);
-                        setIsDirty(true);
-                      }}
-                    />
-                  </div>
-                  <s-paragraph color="subdued" style={{ marginTop: '-8px', marginBottom: '16px' }}>
-                    {isAlwaysTrigger
-                      ? "Always Show trigger ignores cookie duration and forces the popup to appear on every page load."
-                      : "If enabled, the popup will always be shown, regardless of cookie duration. This overrides the cookie duration setting."}
-                  </s-paragraph>
-                  
                   {style === "custom" && (
                     <>
-                      <s-heading level="2">Typography</s-heading>
+                      <s-heading level="3">Typography</s-heading>
                       <s-stack gap="base" direction="inline">
                         <s-text-field
                           label="Title Font Size"
@@ -1991,8 +1936,20 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                           autocomplete="off"
                         />
                       </s-stack>
+                      {termsText && (
+                        <s-text-field
+                          label="Terms Font Size"
+                          value={termsFontSize}
+                          onChange={(e) => {
+                            setTermsFontSize(e.currentTarget.value);
+                            setIsDirty(true);
+                          }}
+                          autocomplete="off"
+                          details="e.g., 12px, 0.75rem"
+                        />
+                      )}
                       
-                      <s-heading level="2">Colors</s-heading>
+                      <s-heading level="3">Colors</s-heading>
                       <s-stack gap="base" direction="inline">
                         <s-color-field
                           label="Background Color"
@@ -2047,6 +2004,340 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
                       </s-stack>
                     </>
                   )}
+                  
+                  <s-heading level="2">Advanced Options</s-heading>
+                  
+                  <s-checkbox
+                    label="Activate Advanced Options"
+                    checked={showAdvancedOptions}
+                    onChange={(e) => {
+                      setShowAdvancedOptions(e.currentTarget.checked);
+                    }}
+                  />
+                  
+                  {showAdvancedOptions && (
+                    <s-stack gap="base" direction="block">
+                      <s-text-area
+                        label="Small print / terms (optional)"
+                        value={termsText}
+                        onChange={(e) => {
+                          setTermsText(e.currentTarget.value);
+                          setIsDirty(true);
+                        }}
+                        rows={3}
+                        placeholder="Terms: Code valid only during the promotion period. One use per order. Cannot be combined with other discounts. Not redeemable for cash. Valid on eligible items only. Adjustments after purchase not possible."
+                        details="Shown as fine print at the bottom of the PopUp."
+                      />
+                      
+                      {!enableNewsletter && (
+                        <>
+                          <s-select
+                            label="Link type"
+                            value={ctaUrlType}
+                            onChange={(e) => handleCtaUrlTypeChange(e.currentTarget.value)}
+                          >
+                            <s-option value="collection">Collection</s-option>
+                            <s-option value="product">Product</s-option>
+                            <s-option value="external">External link</s-option>
+                          </s-select>
+                          
+                          {(ctaUrlType === 'product' || ctaUrlType === 'collection') && (
+                            <div>
+                              <label htmlFor="resource-reference-field" style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+                                {ctaUrlType === 'product' ? 'Product' : 'Collection'}
+                              </label>
+                              <div
+                                id="resource-reference-field"
+                                onClick={handleResourceFieldClick}
+                                style={{
+                                  border: '1px solid #d1d5db',
+                                  borderRadius: '6px',
+                                  padding: '8px 12px',
+                                  cursor: 'pointer',
+                                  backgroundColor: '#ffffff',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  minHeight: '36px',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.borderColor = '#6366f1';
+                                  e.currentTarget.style.backgroundColor = '#f9fafb';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.borderColor = '#d1d5db';
+                                  e.currentTarget.style.backgroundColor = '#ffffff';
+                                }}
+                              >
+                                <span style={{ 
+                                  color: selectedResource ? '#000000' : '#6b7280',
+                                  fontSize: '14px',
+                                  flex: 1,
+                                }}>
+                                  {selectedResource ? selectedResource.title : `Select a ${ctaUrlType}`}
+                                </span>
+                                <svg 
+                                  width="16" 
+                                  height="16" 
+                                  viewBox="0 0 16 16" 
+                                  fill="none" 
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  style={{ color: '#6b7280', flexShrink: 0, marginLeft: '8px' }}
+                                >
+                                  <path 
+                                    d="M6 12L10 8L6 4" 
+                                    stroke="currentColor" 
+                                    strokeWidth="2" 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </div>
+                              {selectedResource && (
+                                <s-button
+                                  variant="tertiary"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedResource(null);
+                                    setCtaUrl('/');
+                                    setIsDirty(true);
+                                  }}
+                                  style={{ marginTop: '8px' }}
+                                >
+                                  Remove {ctaUrlType}
+                                </s-button>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
+                      
+                      {enableNewsletter && (
+                        <>
+                          <s-text-field
+                            label="Newsletter Button Label"
+                            value={newsletterButtonText}
+                            onChange={(e) => {
+                              setNewsletterButtonText(e.currentTarget.value);
+                              setIsDirty(true);
+                            }}
+                            autocomplete="off"
+                            placeholder="e.g. Abonnieren"
+                          />
+                          <s-text-field
+                            label="Email placeholder text"
+                            value={emailPlaceholderText}
+                            onChange={(e) => {
+                              setEmailPlaceholderText(e.currentTarget.value);
+                              setIsDirty(true);
+                            }}
+                            autocomplete="off"
+                            details="Placeholder text shown in the email input field."
+                          />
+                          <s-text-field
+                            label="Success headline"
+                            value={newsletterSuccessTitle}
+                            onChange={(e) => {
+                              setNewsletterSuccessTitle(e.currentTarget.value);
+                              setIsDirty(true);
+                            }}
+                            autocomplete="off"
+                            placeholder="e.g. You’re in!"
+                            details="Shown after a successful signup (with or without coupon)."
+                          />
+                          <s-text-area
+                            label="Success message"
+                            value={newsletterSuccessMessage}
+                            onChange={(e) => {
+                              setNewsletterSuccessMessage(e.currentTarget.value);
+                              setIsDirty(true);
+                            }}
+                            rows={3}
+                            placeholder="Thanks for joining! Check your inbox for the confirmation email."
+                            details="Use line breaks to control formatting. Displayed when no coupon is provided or above the coupon message."
+                          />
+                          <s-text-area
+                            label="Coupon message"
+                            value={discountMessageText}
+                            onChange={(e) => {
+                              setDiscountMessageText(e.currentTarget.value);
+                              setIsDirty(true);
+                            }}
+                            rows={2}
+                            placeholder="Use code {{code}} within 24 hours."
+                            details="Supports the placeholder {{code}} (or {{discount_code}}) which will be replaced by the generated coupon."
+                          />
+                        </>
+                      )}
+                      
+                      {imageUrl && (
+                        <>
+                          <s-heading level="3">Image</s-heading>
+                          
+                          <s-text-field
+                            label="Alt Text"
+                            value={imageAlt}
+                            onChange={(e) => {
+                              setImageAlt(e.currentTarget.value);
+                              setIsDirty(true);
+                            }}
+                            autocomplete="off"
+                            details="Description of the image for accessibility and SEO. Used when the image cannot be loaded."
+                          />
+                          
+                          <s-select
+                            label="Image Fit"
+                            value={imageFit}
+                            onChange={(e) => {
+                              setImageFit(e.currentTarget.value);
+                              setIsDirty(true);
+                            }}
+                            details="Fill: Image fills the area (may be cropped). Contain: Image is fully displayed (may have empty areas)."
+                          >
+                            <s-option value="cover">Fill</s-option>
+                            <s-option value="contain">Contain</s-option>
+                          </s-select>
+                          
+                          <s-select
+                            label="Image Position"
+                            value={imagePosition}
+                            onChange={(e) => {
+                              setImagePosition(e.currentTarget.value);
+                              setIsDirty(true);
+                            }}
+                            details="Where to position the image within the popup."
+                          >
+                            <s-option value="top">Top</s-option>
+                            <s-option value="bottom">Bottom</s-option>
+                            <s-option value="left">Left</s-option>
+                            <s-option value="right">Right</s-option>
+                          </s-select>
+                        </>
+                      )}
+                      
+                      <s-heading level="3">Style & Layout</s-heading>
+                      
+                      <s-select
+                        label="Placement"
+                        value={placement}
+                        onChange={(e) => {
+                          setPlacement(e.currentTarget.value);
+                          setIsDirty(true);
+                        }}
+                      >
+                        <s-option value="all">All Pages</s-option>
+                        <s-option value="homepage">Home Page only</s-option>
+                        <s-option value="products">Product Pages Only</s-option>
+                      </s-select>
+                      
+                      <s-select
+                        label="Position"
+                        value={position}
+                        onChange={(e) => {
+                          setPosition(e.currentTarget.value);
+                          setIsDirty(true);
+                        }}
+                      >
+                        <s-option value="top-left">Top Left</s-option>
+                        <s-option value="top-center">Top Center</s-option>
+                        <s-option value="top-right">Top Right</s-option>
+                        <s-option value="middle-left">Middle Left</s-option>
+                        <s-option value="middle-center">Middle Center</s-option>
+                        <s-option value="middle-right">Middle Right</s-option>
+                        <s-option value="bottom-left">Bottom Left</s-option>
+                        <s-option value="bottom-center">Bottom Center</s-option>
+                        <s-option value="bottom-right">Bottom Right</s-option>
+                      </s-select>
+                      
+                      <s-checkbox
+                        label="Enable Overlay"
+                        checked={showOverlay === 'true'}
+                        onChange={(e) => {
+                          setShowOverlay(e.currentTarget.checked ? 'true' : 'false');
+                          setIsDirty(true);
+                        }}
+                      />
+                      <s-paragraph color="subdued" style={{ marginTop: '-8px', marginBottom: '16px' }}>
+                        Dim the background while the popup is visible.
+                      </s-paragraph>
+                      
+                      <s-heading level="3">Trigger</s-heading>
+                      
+                      <s-select
+                        label="Trigger Type"
+                        value={triggerType}
+                        onChange={(e) => {
+                          setTriggerType(e.currentTarget.value);
+                          setIsDirty(true);
+                        }}
+                      >
+                        <s-option value="immediate">On Load</s-option>
+                        <s-option value="delay">After Delay</s-option>
+                        <s-option value="exit_intent">Exit Intent</s-option>
+                        <s-option value="always">Always Show</s-option>
+                      </s-select>
+                      
+                      {triggerType === 'delay' && (
+                        <s-number-field
+                          label="Delay (seconds)"
+                          value={delaySeconds}
+                          min={0}
+                          onChange={(e) => {
+                            const value = e.currentTarget.value;
+                            const numValue = parseInt(value, 10);
+                            // Ensure value is not negative
+                            const safeValue = isNaN(numValue) || numValue < 0 ? '0' : value;
+                            setDelaySeconds(safeValue);
+                            setIsDirty(true);
+                          }}
+                        />
+                      )}
+                      
+                      <s-heading level="3">Cookie Behavior</s-heading>
+                      
+                      {!isAlwaysTrigger && (
+                        <>
+                          <div style={{ opacity: ignoreCookie ? 0.5 : 1, pointerEvents: ignoreCookie ? 'none' : 'auto' }}>
+                            <s-number-field
+                              label="Cookie Duration (days)"
+                              value={cookieDays}
+                              min={1}
+                              onChange={(e) => {
+                                if (ignoreCookie) return;
+                                const value = e.currentTarget.value;
+                                const numValue = parseInt(value, 10);
+                                // Ensure value is at least 1
+                                const safeValue = isNaN(numValue) || numValue < 1 ? '1' : value;
+                                setCookieDays(safeValue);
+                                setIsDirty(true);
+                              }}
+                            />
+                          </div>
+                          <s-paragraph color="subdued" style={{ marginTop: '-8px', marginBottom: '16px' }}>
+                            Days to hide popup after dismissal.
+                          </s-paragraph>
+                        </>
+                      )}
+
+                      <div style={isAlwaysTrigger ? { opacity: 0.5, pointerEvents: 'none' } : undefined}>
+                        <s-checkbox
+                          label="Always show popup (ignore cookie)"
+                          checked={isAlwaysTrigger ? true : ignoreCookie}
+                          aria-disabled={isAlwaysTrigger ? 'true' : 'false'}
+                          onChange={(e) => {
+                            if (isAlwaysTrigger) return;
+                            setIgnoreCookie(e.currentTarget.checked);
+                            setIsDirty(true);
+                          }}
+                        />
+                      </div>
+                      <s-paragraph color="subdued" style={{ marginTop: '-8px', marginBottom: '16px' }}>
+                        {isAlwaysTrigger
+                          ? "Always Show trigger ignores cookie duration and forces the popup to appear on every page load."
+                          : "If enabled, the popup will always be shown, regardless of cookie duration."}
+                      </s-paragraph>
+                    </s-stack>
+                  )}
                 </s-stack>
           </s-section>
           
@@ -2077,7 +2368,14 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
             setDescription(String(settings.description || ''));
             setCtaText(String(settings.ctaText || 'Get Started'));
             setNewsletterButtonText(String(settings.newsletterButtonText || 'Subscribe'));
-            setCtaUrl(String(settings.ctaUrl || 'https://'));
+            setEmailPlaceholderText(String(settings.emailPlaceholderText || 'Enter your email'));
+            setNewsletterSuccessTitle(String(settings.newsletterSuccessTitle || 'Thank you for subscribing!'));
+            setNewsletterSuccessMessage(String(settings.newsletterSuccessMessage || 'Please check your email to confirm your subscription.'));
+            setDiscountMessageText(String(settings.discountMessageText || 'Use code {{code}} at checkout.'));
+            const originalUrl = String(settings.ctaUrl || 'https://');
+            setCtaUrl(originalUrl);
+            setCtaUrlType(detectCtaUrlType(originalUrl));
+            setSelectedResource((loadedResource ?? null) as PopupResource | null);
             setImageUrl(String(settings.imageUrl || ''));
             setImageFit(String(settings.imageFit || 'cover'));
             setImageAlt(String(settings.imageAlt || ''));
@@ -2086,6 +2384,7 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
             setTitleFontSize(String(settings.titleFontSize || '24px'));
             setDescriptionFontSize(String(settings.descriptionFontSize || '16px'));
             setCtaFontSize(String(settings.ctaFontSize || '16px'));
+            setTermsFontSize(String(settings.termsFontSize || '12px'));
             setBackgroundColor(String(settings.backgroundColor || '#ffffff'));
             setTextColor(String(settings.textColor || '#000000'));
             setCtaBackgroundColor(String(settings.ctaBackgroundColor || '#007bff'));
@@ -2100,6 +2399,8 @@ function PopupSettingsForm({ data }: { data: PopupLoaderSuccess }) {
             setEnableNewsletter(Boolean(settings.enableNewsletter || false));
             setDiscountCodeId(String(settings.discountCodeId || ''));
             setTermsText(String(settings.termsText || ''));
+            setShowOverlay(String(settings.showOverlay || 'true'));
+            setShowAdvancedOptions(false);
             setIsDirty(false);
           }}
         >

@@ -1,0 +1,1340 @@
+/* Base Styles */
+.urgify-limited-offer {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  padding: 40px 30px;
+  margin: 20px 0;
+  text-align: center;
+  background: linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+  animation: limitedOfferPulse 3s infinite;
+}
+
+/* Width Options */
+.urgify-limited-offer.offer-width-fullwidth {
+  width: 100%;
+  max-width: 100%;
+}
+
+.urgify-limited-offer.offer-width-container {
+  width: 100%;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.urgify-limited-offer.offer-width-narrow {
+  width: 100%;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.urgify-limited-offer.offer-width-super-narrow {
+  width: 100%;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Side-by-Side Layout (wrapper applied via JS) */
+.urgify-limited-offer-wrapper--side {
+  display: inline-block;
+  vertical-align: top;
+  box-sizing: border-box;
+  width: calc(50% - 6px);
+  max-width: calc(50% - 6px);
+  margin-right: 12px;
+  margin-bottom: 24px;
+}
+
+.urgify-limited-offer-wrapper--side:nth-of-type(2n) {
+  margin-right: 0;
+}
+
+.urgify-limited-offer-wrapper--side .urgify-limited-offer {
+  width: 100%;
+  max-width: 100%;
+}
+
+.urgify-limited-offer-wrapper--side-match {
+  display: inline-block;
+}
+
+.urgify-limited-offer-wrapper--side-match .urgify-limited-offer {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 768px) {
+  .urgify-limited-offer-wrapper--side {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    margin-right: 0;
+  }
+}
+
+[data-urgify="limited-offer"]:hover,
+.urgify-limited-offer:hover {
+  transform: none !important;
+}
+
+/* Background Elements */
+.offer-bg-elements {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.sparkle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  animation: sparkleFloat 3s infinite ease-in-out;
+}
+
+.sparkle:nth-child(1) {
+  top: 20%;
+  left: 20%;
+  animation-delay: 0s;
+}
+
+.sparkle:nth-child(2) {
+  top: 60%;
+  right: 20%;
+  animation-delay: 1s;
+}
+
+.sparkle:nth-child(3) {
+  bottom: 30%;
+  left: 60%;
+  animation-delay: 2s;
+}
+
+.pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px;
+  height: 100px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: pulseRing 2s infinite;
+}
+
+.pulse-ring:nth-child(4) {
+  animation-delay: 0s;
+}
+
+.pulse-ring:nth-child(5) {
+  animation-delay: 1s;
+  width: 150px;
+  height: 150px;
+}
+
+/* Content */
+.offer-content {
+  position: relative;
+  z-index: 2;
+}
+
+.urgify-limited-offer-external {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  margin: 20px 0;
+}
+
+.urgify-limited-offer-external.offer-extra-position-right {
+  flex-direction: row-reverse;
+}
+
+.urgify-limited-offer-external .offer-extra-media {
+  flex: 0 0 320px;
+  max-width: 360px;
+}
+
+.urgify-limited-offer-external .offer-extra-media-inner {
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
+}
+
+.urgify-limited-offer-external .offer-extra-media img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.offer-extra-media-inline {
+  margin: 30px auto;
+  max-width: 420px;
+  width: 100%;
+}
+
+.offer-extra-media-inline-inner {
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+}
+
+.offer-extra-media-inline img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.offer-badge {
+  display: inline-block;
+  padding: 10px 20px;
+  margin-bottom: 20px;
+  border-radius: 25px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: badgeBounce 2s infinite;
+}
+
+.badge-icon {
+  margin-right: 8px;
+  font-size: 1.1rem;
+}
+
+.offer-title {
+  margin: 20px 0;
+  font-size: 2.5rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.title-highlight {
+  position: relative;
+  display: inline-block;
+  animation: titleShimmer 3s infinite;
+}
+
+.title-underline {
+  height: 4px;
+  width: 100px;
+  margin: 10px auto;
+  border-radius: 2px;
+  animation: titleUnderline 2s infinite;
+}
+
+.offer-description {
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin: 20px 0;
+  opacity: 0.9;
+  white-space: pre-line;
+}
+
+/* Product Display */
+.offer-product {
+  margin: 30px 0;
+  position: relative;
+  z-index: 2;
+}
+
+.offer-product-link {
+  display: inline-block;
+  text-decoration: none;
+  transition: transform 0.3s ease;
+  max-width: 100%;
+  width: 100%;
+}
+
+.offer-product-link:hover {
+  transform: translateY(-5px);
+  text-decoration: none;
+}
+
+.offer-product-image {
+  margin: 0 auto 15px;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 300px;
+  width: 100%;
+  aspect-ratio: 1;
+  position: relative;
+}
+
+.offer-product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.offer-product-info {
+  text-align: center;
+}
+
+.offer-product-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 0 0 10px;
+  line-height: 1.3;
+}
+
+.offer-product-price {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.offer-product-price-compare {
+  text-decoration: line-through;
+  opacity: 0.7;
+  font-size: 0.9em;
+}
+
+.offer-product-price-sale {
+  font-weight: 700;
+  font-size: 1.2em;
+}
+
+.offer-product-price-regular {
+  font-weight: 700;
+  font-size: 1.2em;
+}
+
+.offer-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 25px;
+  border-radius: 30px;
+  font-weight: 600;
+  font-size: 1rem;
+  animation: timerPulse 2s infinite;
+}
+
+.timer-icon {
+  font-size: 1.2rem;
+  animation: timerTick 1s infinite;
+}
+
+.timer-text {
+  font-weight: 500;
+}
+
+.timer-countdown {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.offer-border-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: inherit;
+  padding: 2px;
+  background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57, #ff6b6b);
+  background-size: 400% 400%;
+  animation: borderRotate 3s linear infinite;
+  z-index: -1;
+}
+
+.offer-border-animation::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  background: inherit;
+  border-radius: inherit;
+}
+
+/* Spectacular Style (Default) */
+.urgify-limited-offer.offer-style-spectacular {
+  position: relative;
+  padding: 50px 40px;
+  text-align: center;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%);
+  animation: spectacularPulse 2s infinite, spectacularShimmer 3s infinite;
+}
+
+/* Spectacular Blue Style */
+.urgify-limited-offer.offer-style-spectacular-blue {
+  position: relative;
+  padding: 50px 40px;
+  text-align: center;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #1e40af 0%, #2563eb 50%, #3b82f6 100%);
+  animation: spectacularShimmer 3s infinite;
+}
+
+/* Spectacular Mint Style */
+.urgify-limited-offer.offer-style-spectacular-mint {
+  position: relative;
+  padding: 50px 40px;
+  text-align: center;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  background: linear-gradient(135deg, #00b4d8 0%, #48cae4 50%, #90e0ef 100%);
+  animation: spectacularShimmer 3s infinite;
+}
+
+/* Spectacular Purple Style */
+.urgify-limited-offer.offer-style-spectacular-purple {
+  position: relative;
+  padding: 50px 40px;
+  text-align: center;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(64, 38, 131, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 50%, #a855f7 100%);
+  animation: spectacularShimmer 3s infinite;
+}
+
+/* Spectacular Emerald Style */
+.urgify-limited-offer.offer-style-spectacular-emerald {
+  position: relative;
+  padding: 50px 40px;
+  text-align: center;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 
+    0 25px 50px rgba(15, 118, 110, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  background: linear-gradient(135deg, #0f766e 0%, #10b981 50%, #34d399 100%);
+  animation: spectacularShimmer 3s infinite;
+}
+
+/* Spectacular Christmas Style */
+.urgify-limited-offer.offer-style-spectacular-christmas {
+  position: relative;
+  padding: 50px 40px;
+  text-align: center;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow:
+    0 25px 50px rgba(11, 64, 46, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  background: linear-gradient(135deg, #0f5132 0%, #198754 45%, #b02a37 100%);
+  animation: spectacularShimmer 3s infinite, festiveSnow 12s linear infinite;
+}
+
+.urgify-limited-offer.offer-style-spectacular-christmas::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 140%;
+  height: 160%;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.45) 0, transparent 40%),
+    radial-gradient(circle at 60% 60%, rgba(255, 255, 255, 0.25) 0, transparent 50%),
+    radial-gradient(circle at 80% 30%, rgba(255, 255, 255, 0.35) 0, transparent 45%);
+  animation: festiveSnowDrift 18s linear infinite;
+  pointer-events: none;
+}
+
+/* Blackweek Style */
+.urgify-limited-offer.offer-style-blackweek {
+  position: relative;
+  padding: 50px 40px;
+  text-align: center;
+  border-radius: 16px;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  background: #000000 !important;
+  border: 2px solid #ffc107 !important;
+  animation: none !important;
+  color: #ffffff !important;
+}
+
+.urgify-limited-offer.offer-style-blackweek .offer-bg-elements {
+  display: none !important;
+}
+
+.urgify-limited-offer.offer-style-blackweek .offer-content {
+  position: relative;
+  z-index: 1;
+}
+
+.urgify-limited-offer.offer-style-blackweek .offer-title,
+.urgify-limited-offer.offer-style-blackweek .offer-description,
+.urgify-limited-offer.offer-style-blackweek .offer-product-title,
+.urgify-limited-offer.offer-style-blackweek .offer-product-price-sale,
+.urgify-limited-offer.offer-style-blackweek .offer-product-price-regular,
+.urgify-limited-offer.offer-style-blackweek .timer-text,
+.urgify-limited-offer.offer-style-blackweek .timer-countdown {
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
+.urgify-limited-offer.offer-style-blackweek .title-underline {
+  background: #ffc107 !important;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.4) !important;
+}
+
+.urgify-limited-offer.offer-style-blackweek .offer-badge,
+.urgify-limited-offer.offer-style-blackweek .offer-timer {
+  background: rgba(0, 0, 0, 0.6) !important;
+  color: #ffffff !important;
+  border: 2px solid #ffc107 !important;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3) !important;
+}
+
+.urgify-limited-offer.offer-style-blackweek .badge-icon,
+.urgify-limited-offer.offer-style-blackweek .timer-icon {
+  color: #ffc107 !important;
+}
+
+.urgify-limited-offer.offer-style-blackweek .offer-product-price-compare {
+  color: rgba(255, 255, 255, 0.6) !important;
+  text-decoration: line-through;
+}
+
+.urgify-limited-offer.offer-style-blackweek .offer-product-price-sale,
+.urgify-limited-offer.offer-style-blackweek .offer-product-price-regular {
+  color: #ffc107 !important;
+}
+
+/* Custom Style */
+.urgify-limited-offer.offer-style-custom {
+  --urgify-offer-bg-start: #0f172a;
+  --urgify-offer-bg-end: #312e81;
+  --urgify-offer-text-color: #f8fafc;
+  --urgify-offer-accent-color: #facc15;
+  --urgify-offer-surface-color: #1f2937;
+  --urgify-offer-button-bg: #facc15;
+  --urgify-offer-button-text: #0f172a;
+  background: linear-gradient(
+    135deg,
+    var(--urgify-offer-bg-start, #0f172a) 0%,
+    var(--urgify-offer-bg-end, #312e81) 100%
+  );
+  color: var(--urgify-offer-text-color, #f8fafc);
+  border-radius: 22px;
+  border: 1px solid var(--urgify-offer-accent-color, rgba(250, 204, 21, 0.5));
+  box-shadow:
+    0 25px 50px rgba(15, 23, 42, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+  animation: spectacularShimmer 4s infinite;
+}
+
+.urgify-limited-offer.offer-style-custom .offer-border-animation {
+  display: none;
+}
+
+.urgify-limited-offer.offer-style-custom .offer-title,
+.urgify-limited-offer.offer-style-custom .offer-description,
+.urgify-limited-offer.offer-style-custom .offer-product-title,
+.urgify-limited-offer.offer-style-custom .offer-product-price-sale,
+.urgify-limited-offer.offer-style-custom .offer-product-price-regular,
+.urgify-limited-offer.offer-style-custom .offer-product-price-compare,
+.urgify-limited-offer.offer-style-custom .timer-text,
+.urgify-limited-offer.offer-style-custom .timer-countdown {
+  color: var(--urgify-offer-text-color, #f8fafc);
+}
+
+.urgify-limited-offer.offer-style-custom .title-underline {
+  background: var(--urgify-offer-accent-color, #facc15);
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.6);
+}
+
+.urgify-limited-offer.offer-style-custom .offer-badge,
+.urgify-limited-offer.offer-style-custom .offer-timer {
+  background: var(--urgify-offer-surface-color, rgba(15, 23, 42, 0.65));
+  color: var(--urgify-offer-text-color, #f8fafc);
+  border: 1px solid var(--urgify-offer-accent-color, rgba(250, 204, 21, 0.5));
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+}
+
+.urgify-limited-offer.offer-style-custom .offer-badge {
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.urgify-limited-offer.offer-style-custom .badge-icon,
+.urgify-limited-offer.offer-style-custom .timer-icon {
+  color: var(--urgify-offer-accent-color, #facc15);
+}
+
+.urgify-limited-offer.offer-style-custom .offer-product-price-sale,
+.urgify-limited-offer.offer-style-custom .offer-product-price-regular {
+  text-shadow: 0 3px 12px rgba(0, 0, 0, 0.4);
+}
+
+.urgify-limited-offer.offer-style-custom .offer-product-price-compare {
+  opacity: 0.8;
+}
+
+.urgify-limited-offer.offer-style-custom .pulse-ring {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.urgify-limited-offer.offer-style-custom .sparkle {
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.offer-button.offer-button-custom {
+  background: var(--urgify-offer-button-bg, #facc15);
+  color: var(--urgify-offer-button-text, #0f172a);
+  border: 0;
+  box-shadow:
+    0 15px 30px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.offer-button.offer-button-custom:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 18px 35px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 255, 255, 0.25);
+  color: var(--urgify-offer-button-text, #0f172a);
+}
+
+/* Brutalist Bold Style */
+.urgify-limited-offer.offer-style-brutalist {
+  background: #000000;
+  border: 8px solid #ff0000;
+  border-radius: 0;
+  box-shadow: 
+    8px 8px 0px #ff0000,
+    16px 16px 0px #ffff00,
+    24px 24px 0px #00ff00;
+  font-family: 'Impact', 'Arial Black', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  position: relative;
+  overflow: visible;
+}
+
+.urgify-limited-offer.offer-style-brutalist .offer-bg-elements,
+.urgify-limited-offer.offer-style-brutalist .offer-border-animation {
+  display: none;
+}
+
+.urgify-limited-offer.offer-style-brutalist .offer-badge {
+  background: #ff0000;
+  color: #000000;
+  border: 4px solid #ffff00;
+  border-radius: 0;
+  font-family: 'Impact', sans-serif;
+  font-weight: 900;
+  font-size: 1.2rem;
+  letter-spacing: 4px;
+  padding: 15px 25px;
+  text-transform: uppercase;
+  box-shadow: 4px 4px 0px #ffff00;
+  position: relative;
+  z-index: 2;
+}
+
+.urgify-limited-offer.offer-style-brutalist .offer-title {
+  color: #ffff00;
+  text-shadow: 4px 4px 0px #ff0000;
+  font-family: 'Impact', sans-serif;
+  font-weight: 900;
+  font-size: 4rem;
+  text-transform: uppercase;
+  letter-spacing: 5px;
+  line-height: 0.9;
+  margin: 20px 0;
+}
+
+.urgify-limited-offer.offer-style-brutalist .offer-description {
+  font-family: 'Impact', sans-serif;
+  font-weight: 600;
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-size: 1.3rem;
+  line-height: 1.2;
+  text-shadow: 2px 2px 0px #ff0000;
+  white-space: pre-line;
+}
+
+.urgify-limited-offer.offer-style-brutalist .offer-product-title {
+  font-family: 'Impact', sans-serif;
+  font-weight: 900;
+  color: #ffff00;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  text-shadow: 4px 4px 0px #ff0000;
+}
+
+.urgify-limited-offer.offer-style-brutalist .offer-product-price-compare {
+  color: #ffffff;
+  text-shadow: 2px 2px 0px #ff0000;
+}
+
+.urgify-limited-offer.offer-style-brutalist .offer-product-price-sale,
+.urgify-limited-offer.offer-style-brutalist .offer-product-price-regular {
+  font-family: 'Impact', sans-serif;
+  font-weight: 900;
+  color: #ffff00;
+  text-shadow: 3px 3px 0px #ff0000;
+}
+
+.urgify-limited-offer.offer-style-brutalist .offer-timer {
+  background: #ffff00;
+  color: #000000;
+  border: 4px solid #ff0000;
+  border-radius: 0;
+  font-family: 'Impact', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  font-size: 1.1rem;
+  padding: 15px 30px;
+  box-shadow: 4px 4px 0px #ff0000;
+  position: relative;
+  z-index: 2;
+}
+
+/* Glassmorphism Style */
+.urgify-limited-offer.offer-style-glassmorphism {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(24px);
+  border: 1px solid rgba(226, 232, 240, 0.3);
+  border-radius: 20px;
+  box-shadow: 
+    0 12px 36px rgba(15, 23, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  font-family: 'SF Pro Display', 'Helvetica Neue', sans-serif;
+  font-weight: 300;
+  position: relative;
+  overflow: hidden;
+  color: rgba(15, 23, 42, 0.92);
+}
+
+.urgify-limited-offer.offer-style-glassmorphism .offer-bg-elements,
+.urgify-limited-offer.offer-style-glassmorphism .offer-border-animation {
+  display: none;
+}
+
+.urgify-limited-offer.offer-style-glassmorphism::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.1) 0%, 
+    rgba(255, 255, 255, 0.05) 50%, 
+    rgba(255, 255, 255, 0.1) 100%);
+  pointer-events: none;
+}
+
+.urgify-limited-offer.offer-style-glassmorphism .offer-badge {
+  background: rgba(15, 23, 42, 0.08);
+  color: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(15, 23, 42, 0.18);
+  border-radius: 50px;
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  backdrop-filter: blur(16px);
+}
+
+.urgify-limited-offer.offer-style-glassmorphism .offer-title {
+  color: rgba(15, 23, 42, 0.98);
+  text-shadow: none;
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 600;
+  font-size: 3.5rem;
+  letter-spacing: -1px;
+  line-height: 1.1;
+  margin: 20px 0;
+}
+
+.urgify-limited-offer.offer-style-glassmorphism .offer-description {
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 400;
+  color: rgba(15, 23, 42, 0.8);
+  font-size: 1.2rem;
+  line-height: 1.5;
+  letter-spacing: 0.3px;
+  white-space: pre-line;
+}
+
+.urgify-limited-offer.offer-style-glassmorphism .offer-product-title {
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.95);
+  text-shadow: none;
+}
+
+.urgify-limited-offer.offer-style-glassmorphism .offer-product-price-compare {
+  color: rgba(15, 23, 42, 0.55);
+}
+
+.urgify-limited-offer.offer-style-glassmorphism .offer-product-price-sale,
+.urgify-limited-offer.offer-style-glassmorphism .offer-product-price-regular {
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 600;
+  color: rgba(15, 23, 42, 0.95);
+  text-shadow: none;
+}
+
+.urgify-limited-offer.offer-style-glassmorphism .offer-timer {
+  background: rgba(15, 23, 42, 0.07);
+  color: rgba(15, 23, 42, 0.92);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 50px;
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  backdrop-filter: blur(16px);
+  text-shadow: none;
+}
+
+/* Neumorphism Style */
+.urgify-limited-offer.offer-style-neumorphism {
+  background: #e0e5ec;
+  border: none;
+  border-radius: 30px;
+  box-shadow: 
+    20px 20px 60px #bebebe,
+    -20px -20px 60px #ffffff,
+    inset 0 0 0 rgba(255, 255, 255, 0.1);
+  font-family: 'Poppins', 'Arial', sans-serif;
+  font-weight: 500;
+  position: relative;
+}
+
+.urgify-limited-offer.offer-style-neumorphism .offer-bg-elements,
+.urgify-limited-offer.offer-style-neumorphism .offer-border-animation {
+  display: none;
+}
+
+.urgify-limited-offer.offer-style-neumorphism .offer-badge {
+  background: #e0e5ec;
+  color: #4a5568;
+  border: none;
+  border-radius: 20px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  box-shadow: 
+    8px 8px 16px #bebebe,
+    -8px -8px 16px #ffffff;
+  text-transform: uppercase;
+}
+
+.urgify-limited-offer.offer-style-neumorphism .offer-title {
+  color: #2d3748;
+  text-shadow: none;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  font-size: 3rem;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin: 20px 0;
+}
+
+.urgify-limited-offer.offer-style-neumorphism .offer-description {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
+  color: #4a5568;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  letter-spacing: 0.2px;
+  white-space: pre-line;
+}
+
+.urgify-limited-offer.offer-style-neumorphism .offer-product-title {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.urgify-limited-offer.offer-style-neumorphism .offer-product-price-compare {
+  color: #718096;
+}
+
+.urgify-limited-offer.offer-style-neumorphism .offer-product-price-sale,
+.urgify-limited-offer.offer-style-neumorphism .offer-product-price-regular {
+  font-family: 'Poppins', sans-serif;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.urgify-limited-offer.offer-style-neumorphism .offer-timer {
+  background: #e0e5ec;
+  color: #2d3748;
+  border: none;
+  border-radius: 25px;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  padding: 15px 30px;
+  box-shadow: 
+    inset 8px 8px 16px #bebebe,
+    inset -8px -8px 16px #ffffff;
+  text-transform: uppercase;
+}
+
+/* Button Styles */
+.offer-button-container {
+  margin-top: 30px;
+  position: relative;
+  z-index: 2;
+}
+
+.offer-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 15px 30px;
+  border-radius: 50px;
+  font-weight: 700;
+  font-size: 1.1rem;
+  text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.offer-button:hover {
+  transform: translateY(-2px);
+  text-decoration: none;
+}
+
+.offer-button:active {
+  transform: translateY(0);
+}
+
+.button-text {
+  position: relative;
+  z-index: 2;
+}
+
+.button-icon {
+  font-size: 1.2rem;
+  position: relative;
+  z-index: 2;
+}
+
+/* Spectacular Button */
+.offer-button-spectacular,
+.offer-button-spectacular-blue,
+.offer-button-spectacular-mint,
+.offer-button-spectacular-purple,
+.offer-button-spectacular-emerald,
+.offer-button-spectacular-christmas,
+.offer-button-blackweek {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.offer-button-spectacular:hover,
+.offer-button-spectacular-blue:hover,
+.offer-button-spectacular-mint:hover,
+.offer-button-spectacular-purple:hover,
+.offer-button-spectacular-emerald:hover,
+.offer-button-spectacular-christmas:hover,
+.offer-button-blackweek:hover {
+  background: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.3);
+}
+.offer-button-spectacular-christmas {
+  box-shadow: 0 8px 25px rgba(25, 135, 84, 0.4);
+  border-color: rgba(255, 248, 225, 0.6);
+}
+
+.offer-button-spectacular-christmas:hover {
+  box-shadow: 0 12px 35px rgba(176, 42, 55, 0.35);
+}
+
+.offer-button-blackweek {
+  background: #ffc107 !important;
+  color: #000000 !important;
+  border: 2px solid #ffc107 !important;
+  box-shadow: 0 2px 8px rgba(255, 193, 7, 0.4) !important;
+}
+
+.offer-button-blackweek:hover {
+  background: #ffd700 !important;
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.6) !important;
+  transform: translateY(-1px);
+}
+
+.offer-button-spectacular-mint {
+  box-shadow: 0 8px 25px rgba(0, 180, 216, 0.25);
+}
+
+.offer-button-spectacular-mint:hover {
+  box-shadow: 0 12px 35px rgba(0, 180, 216, 0.35);
+}
+
+.offer-button-spectacular-purple {
+  box-shadow: 0 8px 25px rgba(91, 33, 182, 0.28);
+}
+
+.offer-button-spectacular-purple:hover {
+  box-shadow: 0 12px 35px rgba(91, 33, 182, 0.35);
+}
+
+.offer-button-spectacular-emerald {
+  box-shadow: 0 8px 25px rgba(16, 185, 129, 0.28);
+}
+
+.offer-button-spectacular-emerald:hover {
+  box-shadow: 0 12px 35px rgba(16, 185, 129, 0.36);
+}
+
+/* Brutalist Button */
+.offer-button-brutalist {
+  background: #ffff00;
+  color: #000000;
+  border: 4px solid #ff0000;
+  border-radius: 0;
+  box-shadow: 4px 4px 0px #ff0000;
+  font-family: 'Impact', sans-serif;
+  font-weight: 900;
+  letter-spacing: 3px;
+}
+
+.offer-button-brutalist:hover {
+  transform: translateY(-2px);
+  box-shadow: 6px 6px 0px #ff0000;
+}
+
+/* Glassmorphism Button */
+.offer-button-glassmorphism {
+  background: linear-gradient(135deg, rgba(30, 64, 175, 0.96) 0%, rgba(14, 116, 144, 0.92) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.25);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 16px 32px rgba(30, 64, 175, 0.22);
+  font-family: 'SF Pro Display', sans-serif;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.offer-button-glassmorphism:hover {
+  background: linear-gradient(135deg, rgba(30, 64, 175, 1) 0%, rgba(14, 116, 144, 0.98) 100%);
+  box-shadow: 0 22px 40px rgba(30, 64, 175, 0.28);
+}
+
+/* Neumorphism Button */
+.offer-button-neumorphism {
+  background: #e0e5ec;
+  color: #2d3748;
+  border: none;
+  box-shadow: 
+    8px 8px 16px #bebebe,
+    -8px -8px 16px #ffffff;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+
+.offer-button-neumorphism:hover {
+  box-shadow: 
+    12px 12px 24px #bebebe,
+    -12px -12px 24px #ffffff;
+}
+
+.offer-button-neumorphism:active {
+  box-shadow: 
+    inset 8px 8px 16px #bebebe,
+    inset -8px -8px 16px #ffffff;
+}
+
+/* Animations */
+@keyframes limitedOfferPulse {
+  0%, 100% {
+    box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(220, 53, 69, 0.5);
+    transform: scale(1.01);
+  }
+}
+
+@keyframes sparkleFloat {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateY(-20px) rotate(180deg);
+    opacity: 1;
+  }
+}
+
+@keyframes pulseRing {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2);
+    opacity: 0;
+  }
+}
+
+/* Spectacular Animations */
+@keyframes spectacularPulse {
+  0%, 100% { 
+    box-shadow: 
+      0 25px 50px rgba(0, 0, 0, 0.3),
+      0 0 0 1px rgba(255, 255, 255, 0.1),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% { 
+    box-shadow: 
+      0 30px 60px rgba(220, 53, 69, 0.4),
+      0 0 0 1px rgba(255, 255, 255, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+}
+
+@keyframes spectacularShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes badgeBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes titleShimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes titleUnderline {
+  0%, 100% { width: 100px; }
+  50% { width: 200px; }
+}
+
+@keyframes timerPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes timerTick {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(10deg); }
+}
+
+@keyframes borderRotate {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes festiveSnow {
+  0% { background-position: 0% 0%; }
+  100% { background-position: 200% 200%; }
+}
+
+@keyframes festiveSnowDrift {
+  0% { transform: translate3d(0, -10%, 0); }
+  100% { transform: translate3d(0, 10%, 0); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .urgify-limited-offer {
+    padding: 30px 20px;
+  }
+  .urgify-limited-offer-external {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .urgify-limited-offer-external .offer-extra-media {
+    width: 100%;
+    max-width: 100%;
+  }
+  
+  .offer-title {
+    font-size: 2rem;
+  }
+  
+  .offer-style-brutalist .offer-title {
+    font-size: 2.5rem;
+  }
+  
+  .offer-style-glassmorphism .offer-title {
+    font-size: 2.5rem;
+  }
+  
+  .offer-style-neumorphism .offer-title {
+    font-size: 2.2rem;
+  }
+  
+  .offer-timer {
+    flex-direction: column;
+    gap: 5px;
+  }
+  
+  .offer-product-image {
+    max-width: 250px;
+  }
+  
+  .offer-product-title {
+    font-size: 1.1rem;
+  }
+  
+  .offer-product-price-sale,
+  .offer-product-price-regular {
+    font-size: 1em;
+  }
+}
+
+/* Spectacular Shared Elements */
+.urgify-limited-offer.offer-style-spectacular .offer-badge,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-badge,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-badge,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-badge,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-badge,
+.urgify-limited-offer.offer-style-spectacular-christmas .offer-badge {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 25px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  backdrop-filter: blur(10px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  animation: badgeBounce 2s infinite;
+}
+
+.urgify-limited-offer.offer-style-spectacular .offer-title,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-title,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-title,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-title,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-title,
+.urgify-limited-offer.offer-style-spectacular-christmas .offer-title {
+  color: white;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  font-weight: 800;
+  font-size: 3rem;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin: 20px 0;
+  animation: titleShimmer 3s infinite;
+}
+
+.urgify-limited-offer.offer-style-spectacular .offer-description,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-description,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-description,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-description,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-description,
+.urgify-limited-offer.offer-style-spectacular-christmas .offer-description {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.2rem;
+  line-height: 1.6;
+  margin: 20px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  white-space: pre-line;
+}
+
+.urgify-limited-offer.offer-style-spectacular .offer-product-title,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-product-title,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-product-title,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-product-title,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-product-title,
+.urgify-limited-offer.offer-style-spectacular-christmas .offer-product-title {
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.urgify-limited-offer.offer-style-spectacular .offer-product-price-compare,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-product-price-compare,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-product-price-compare,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-product-price-compare,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-product-price-compare,
+.urgify-limited-offer.offer-style-spectacular-christmas .offer-product-price-compare {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.urgify-limited-offer.offer-style-spectacular .offer-product-price-sale,
+.urgify-limited-offer.offer-style-spectacular .offer-product-price-regular,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-product-price-sale,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-product-price-regular,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-product-price-sale,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-product-price-regular,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-product-price-sale,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-product-price-regular,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-product-price-sale,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-product-price-regular,
+.urgify-limited-offer.offer-style-spectacular-christmas .offer-product-price-sale,
+.urgify-limited-offer.offer-style-spectacular-christmas .offer-product-price-regular {
+  color: white;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.urgify-limited-offer.offer-style-spectacular .offer-timer,
+.urgify-limited-offer.offer-style-spectacular-blue .offer-timer,
+.urgify-limited-offer.offer-style-spectacular-mint .offer-timer,
+.urgify-limited-offer.offer-style-spectacular-purple .offer-timer,
+.urgify-limited-offer.offer-style-spectacular-emerald .offer-timer,
+.urgify-limited-offer.offer-style-spectacular-christmas .offer-timer {
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 25px;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  padding: 12px 24px;
+  backdrop-filter: blur(10px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  animation: timerPulse 2s infinite;
+}

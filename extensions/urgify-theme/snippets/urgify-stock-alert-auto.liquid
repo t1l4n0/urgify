@@ -63,7 +63,8 @@
        data-animation="{{ animation | escape }}"
        data-position="{{ position | escape }}"
        data-style="{{ style | escape }}"
-       data-tracks-inventory="{{ tracks_inventory }}">
+       data-tracks-inventory="{{ tracks_inventory }}"
+       data-location-id="{{ shop.metafields.urgify.selected_location_id.value | default: '' }}">
     <style>
       #urgify-stock-alert-auto {
         {% if style == 'custom' %}

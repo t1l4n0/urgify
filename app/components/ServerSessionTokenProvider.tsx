@@ -3,10 +3,10 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 import { useAppBridge } from "@shopify/app-bridge-react";
-import { getSessionToken as fetchAppBridgeToken } from "@shopify/app-bridge-utils";
 import { requestSessionToken } from "../utils/authenticatedFetch";
 
 interface SessionTokenContextType {
@@ -33,9 +33,14 @@ interface SessionTokenProviderProps {
 
 export function ServerSessionTokenProvider({ children, initialToken }: SessionTokenProviderProps) {
   const app = useAppBridge();
+  const appBridgeRef = useRef(app);
   const [sessionToken, setSessionToken] = useState<string | null>(initialToken || null);
   const [isLoading, setIsLoading] = useState(!initialToken);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    appBridgeRef.current = app;
+  }, [app]);
 
   const persistToken = useCallback((token: string) => {
     if (typeof window !== "undefined") {
@@ -53,22 +58,27 @@ export function ServerSessionTokenProvider({ children, initialToken }: SessionTo
       try {
         let token: string | null = null;
 
-        if (app) {
+        // Try to get token from App Bridge v4 via idToken()
+        const appBridgeInstance = appBridgeRef.current;
+        if (!token && appBridgeInstance && typeof (appBridgeInstance as any).idToken === "function") {
           try {
-            token = await fetchAppBridgeToken(app as any);
+            token = await (appBridgeInstance as any).idToken();
           } catch (appBridgeError) {
-            console.warn("Failed to obtain session token from App Bridge:", appBridgeError);
+            console.warn("App Bridge idToken() via useAppBridge failed:", appBridgeError);
           }
         }
 
+        // Fallback to shared helper (covers global App Bridge + sessionStorage)
         if (!token) {
           token = await requestSessionToken();
         }
 
+        // Fallback: Try to get from session storage
         if (!token && typeof window !== "undefined") {
           token = sessionStorage.getItem("shopify_session_token");
         }
 
+        // Fallback: Use initial token if provided
         if (!token && initialToken) {
           token = initialToken;
         }
@@ -92,7 +102,7 @@ export function ServerSessionTokenProvider({ children, initialToken }: SessionTo
         }
       }
     },
-    [app, initialToken, persistToken],
+    [initialToken, persistToken],
   );
 
   const refreshToken = useCallback(async () => {
@@ -172,3 +182,4 @@ export function ServerSessionTokenProvider({ children, initialToken }: SessionTo
     </SessionTokenContext.Provider>
   );
 }
+

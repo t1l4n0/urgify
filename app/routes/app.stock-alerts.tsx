@@ -11,7 +11,7 @@ import { z } from "zod";
 import { shouldRateLimit, checkShopifyRateLimit } from "../utils/rateLimiting";
 import { ViewPlansLink } from "../components/ViewPlansLink";
 // Polaris Web Components - no imports needed, components are global
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import stockAlertStyles from "../styles/stock-alert-preview.css?url";
 
 export const links = () => [
@@ -20,19 +20,20 @@ export const links = () => [
 
 // Validation schema for stock alert settings - simplified
 const stockAlertSettingsSchema = z.object({
-  globalThreshold: z.string().default('5'),
-  lowStockMessage: z.string().default('Only {{qty}} left in stock!'),
-  isEnabled: z.string().default('false'),
-  fontSize: z.string().default('18px'),
-  textColor: z.string().default('#ffffff'),
-  backgroundColor: z.string().default('#e74c3c'),
-  showForAllProducts: z.string().default('false'),
-  showBasedOnInventory: z.string().default('false'),
-  showOnlyBelowThreshold: z.string().default('false'),
-  customThreshold: z.string().default('100'),
-  stockCounterAnimation: z.string().default('pulse'),
-  stockCounterPosition: z.string().default('above'),
-  stockAlertStyle: z.string().default('spectacular'),
+  globalThreshold: z.string().default("5"),
+  lowStockMessage: z.string().default("Only {{qty}} left in stock!"),
+  isEnabled: z.string().default("false"),
+  fontSize: z.string().default("18px"),
+  textColor: z.string().default("#ffffff"),
+  backgroundColor: z.string().default("#e74c3c"),
+  showForAllProducts: z.string().default("false"),
+  showBasedOnInventory: z.string().default("false"),
+  showOnlyBelowThreshold: z.string().default("false"),
+  customThreshold: z.string().default("100"),
+  stockCounterAnimation: z.string().default("pulse"),
+  stockCounterPosition: z.string().default("above"),
+  stockAlertStyle: z.string().default("spectacular"),
+  locationId: z.string().optional().default(""),
 });
 
 type StockAlertsLoaderData = SerializeFrom<typeof loader>;
@@ -69,6 +70,9 @@ function StockAlertsAccessRequired({ message }: { message: string }) {
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
+  let primaryLocationId: string | null = null;
+  let primaryLocationName: string | null = null;
+  let shopId: string | null = null;
 
   // Sync subscription status to metafield first
   try {
@@ -76,12 +80,22 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       query getShop {
         shop {
           id
+          primaryLocation {
+            id
+            name
+          }
         }
       }
     `);
     
     const shopData = await shopResponse.json();
-    const shopId = shopData.data?.shop?.id;
+    const shop = shopData.data?.shop;
+    shopId = shop?.id || null;
+    
+    if (shop?.primaryLocation) {
+      primaryLocationId = shop.primaryLocation.id;
+      primaryLocationName = shop.primaryLocation.name || null;
+    }
     
     if (shopId) {
       const { syncSubscriptionStatusToMetafield } = await import("../utils/billing");
@@ -157,6 +171,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       show_based_on_inventory: false,
       show_only_below_threshold: false,
       custom_threshold: 100,
+      location_id: "",
     };
 
     if (configValue) {
@@ -169,57 +184,185 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       }
     }
 
-    // Fetch products with inventory levels
-    const response = await admin.graphql(`
-      query getProductsWithInventory {
-        products(first: 50) {
+    const locationsResponse = await admin.graphql(`
+      query getLocations {
+        locations(first: 250) {
           edges {
             node {
               id
-              title
-              handle
-              totalInventory
-              variants(first: 10) {
-                edges {
-                  node {
-                    id
-                    title
-                    inventoryQuantity
-                    availableForSale
-                  }
-                }
-              }
+              name
             }
           }
         }
       }
     `);
 
-    const data = await response.json();
-    
-    // Check for GraphQL errors
-    if ((data as any).errors) {
-      console.error("GraphQL errors:", (data as any).errors);
-      throw new Error(`GraphQL errors: ${(data as any).errors.map((e: any) => e.message).join(', ')}`);
+    const locationsData = await locationsResponse.json();
+    if ((locationsData as any)?.errors?.length) {
+      console.error(
+        "GraphQL errors while fetching locations:",
+        (locationsData as any).errors
+      );
     }
-    
-    const products = data.data?.products?.edges?.map((edge: any) => edge.node) || [];
+    const parsedLocations =
+      locationsData.data?.locations?.edges?.map((edge: any) => edge.node) || [];
+
+    let productsPayload: Array<any> = [];
+    const threshold = settings.global_threshold || 5;
+
+    let selectedLocationId =
+      settings.location_id ||
+      primaryLocationId ||
+      (parsedLocations[0]?.id ?? "");
+
+    if (
+      selectedLocationId &&
+      !parsedLocations.some((loc: any) => loc.id === selectedLocationId)
+    ) {
+      selectedLocationId = parsedLocations[0]?.id || primaryLocationId || "";
+    }
+
+    let persistedLocationId = selectedLocationId;
+    let responseLocationId = selectedLocationId;
+
+    let resolvedLocationName =
+      parsedLocations.find((loc: any) => loc.id === selectedLocationId)?.name ||
+      primaryLocationName;
+
+    if (selectedLocationId) {
+      try {
+        const locationInventory = await fetchInventoryByLocation(
+          admin,
+          selectedLocationId
+        );
+        if (!resolvedLocationName && locationInventory.locationName) {
+          resolvedLocationName = locationInventory.locationName;
+        }
+        productsPayload = locationInventory.products.map((product) => {
+          const variants = Array.isArray(product.variants) ? product.variants : [];
+          const locationInventoryValue =
+            typeof product.locationInventory === "number"
+              ? product.locationInventory
+              : variants.reduce((sum, variant) => {
+                  const qty = getVariantQuantity(variant);
+                  return sum + (Number.isFinite(qty) ? Math.max(qty, 0) : 0);
+                }, 0);
+          const lowStockVariants = variants.filter((variant) => {
+            const qty = getVariantQuantity(variant);
+            return qty > 0 && qty <= threshold;
+          });
+          const zeroInventory = locationInventoryValue <= 0;
+          const lowStockByProduct = locationInventoryValue > 0 && locationInventoryValue <= threshold;
+          return {
+            ...product,
+            variants,
+            locationInventory: locationInventoryValue,
+            lowStockVariantCount: lowStockVariants.length,
+            zeroInventory,
+            lowStockByProduct,
+          };
+        });
+      } catch (inventoryError) {
+        console.error("Error fetching location inventory:", inventoryError);
+        responseLocationId = "";
+        persistedLocationId = "";
+        resolvedLocationName = null;
+      }
+    }
+
+    if (productsPayload.length === 0) {
+      const response = await admin.graphql(`
+        query getProductsWithInventory {
+          products(first: 50) {
+            edges {
+              node {
+                id
+                title
+                handle
+                totalInventory
+                variants(first: 10) {
+                  edges {
+                    node {
+                      id
+                      title
+                      inventoryQuantity
+                      availableForSale
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `);
+
+      const data = await response.json();
+      
+      // Check for GraphQL errors
+      if ((data as any).errors) {
+        console.error("GraphQL errors:", (data as any).errors);
+        throw new Error(`GraphQL errors: ${(data as any).errors.map((e: any) => e.message).join(', ')}`);
+      }
+      
+      const products = data.data?.products?.edges?.map((edge: any) => edge.node) || [];
+      productsPayload = products.map((product: any) => {
+        const variantNodes = product.variants?.edges?.map((edge: any) => edge.node) || [];
+        const lowStockVariants = variantNodes.filter((variant: any) => {
+          const qty = getVariantQuantity(variant);
+          return qty > 0 && qty <= threshold;
+        });
+        const totalInventory = product.totalInventory || 0;
+        const zeroInventory = totalInventory <= 0;
+        const lowStockByProduct = totalInventory > 0 && totalInventory <= threshold;
+        return {
+          id: product.id,
+          title: product.title,
+          handle: product.handle,
+          totalInventory,
+          locationInventory: totalInventory,
+          variants: variantNodes,
+          lowStockVariantCount: lowStockVariants.length,
+          zeroInventory,
+          lowStockByProduct,
+        };
+      });
+    }
+
+    const inventorySummary = createInventorySummary(productsPayload, threshold);
+
+    settings = {
+      ...settings,
+      location_id: persistedLocationId ?? "",
+    };
+
+    if (
+      shopId &&
+      responseLocationId &&
+      productsPayload.length > 0
+    ) {
+      try {
+        await syncLowStockVariantCache(
+          admin,
+          shopId,
+          responseLocationId,
+          productsPayload,
+          threshold
+        );
+      } catch (cacheError) {
+        console.error("Failed to sync low stock variant cache:", cacheError);
+      }
+    }
 
     return json({
       settings,
       hasActiveSubscription,
       isTrialActive,
       hasAccess: true,
-      products: products
-        .filter((product: any) => (product.totalInventory || 0) > 0) // Nur Produkte mit Bestand > 0
-        .map((product: any) => ({
-          id: product.id,
-          title: product.title,
-          handle: product.handle,
-          totalInventory: product.totalInventory || 0,
-          variants: product.variants?.edges?.map((edge: any) => edge.node) || [],
-          lowStock: (product.totalInventory || 0) <= (settings.global_threshold || 5),
-        })),
+      products: productsPayload,
+      locationName: resolvedLocationName,
+      locations: parsedLocations,
+      selectedLocationId: responseLocationId,
+      inventorySummary,
     }, { 
       headers: { 
         "Cache-Control": "no-store" 
@@ -242,12 +385,17 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         show_based_on_inventory: false,
         show_only_below_threshold: true,
         custom_threshold: 5,
+        location_id: "",
       },
       hasActiveSubscription,
       isTrialActive,
       hasAccess: false,
       products: [], 
-      error: "Failed to fetch data" 
+      error: "Failed to fetch data",
+      locations: [],
+      selectedLocationId: "",
+      locationName: null,
+      inventorySummary: createInventorySummary([], 5),
     }, { 
       headers: { 
         "Cache-Control": "no-store" 
@@ -255,6 +403,311 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     });
   }
 };
+
+type LocationInventoryVariant = {
+  id: string;
+  title: string;
+  available: number;
+};
+
+type LocationInventoryProduct = {
+  id: string;
+  title: string;
+  handle: string;
+  totalInventory: number;
+  locationInventory: number;
+  variants: LocationInventoryVariant[];
+};
+
+async function fetchInventoryByLocation(admin: any, locationId: string) {
+  const productsMap = new Map<string, LocationInventoryProduct>();
+  let cursor: string | null = null;
+  let hasNextPage = true;
+  let locationName: string | null = null;
+
+  while (hasNextPage) {
+    const response: Response = await admin.graphql(
+      `#graphql
+        query inventoryLevelsByLocation($locationId: ID!, $cursor: String) {
+          location(id: $locationId) {
+            id
+            name
+            inventoryLevels(first: 250, after: $cursor) {
+              edges {
+                cursor
+                node {
+                  quantities(names: ["available"]) {
+                    name
+                    quantity
+                  }
+                  item {
+                    variant {
+                      id
+                      title
+                      product {
+                        id
+                        title
+                        handle
+                        totalInventory
+                      }
+                    }
+                  }
+                }
+              }
+              pageInfo {
+                hasNextPage
+                endCursor
+              }
+            }
+          }
+        }
+      `,
+      {
+        variables: {
+          locationId,
+          cursor,
+        },
+      }
+    );
+
+    const data: any = await response.json();
+
+    if (data?.errors?.length) {
+      throw new Error(
+        `GraphQL errors: ${data.errors.map((e: any) => e.message).join(", ")}`
+      );
+    }
+
+    const locationNode = data?.data?.location as any;
+    if (!locationNode) {
+      break;
+    }
+
+    if (!locationName) {
+      locationName = locationNode.name || null;
+    }
+
+    const edges: any[] = locationNode?.inventoryLevels?.edges || [];
+    edges.forEach((edge: any) => {
+      let availableQuantity = 0;
+      const quantitiesArr = edge?.node?.quantities;
+      if (Array.isArray(quantitiesArr)) {
+        const availableEntry = quantitiesArr.find(
+          (entry: any) => entry?.name === "available"
+        );
+        if (
+          availableEntry &&
+          typeof availableEntry.quantity === "number" &&
+          !Number.isNaN(availableEntry.quantity)
+        ) {
+          availableQuantity = availableEntry.quantity;
+        }
+      }
+
+      const variantNode = edge?.node?.item?.variant;
+      const product = variantNode?.product;
+
+      if (!product) {
+        return;
+      }
+
+      const productId = product.id;
+      const variantId = variantNode?.id;
+      if (!variantId) {
+        return;
+      }
+
+      const existing =
+        productsMap.get(productId) ||
+        ({
+          id: productId,
+          title: product.title,
+          handle: product.handle,
+          totalInventory: product.totalInventory || 0,
+          locationInventory: 0,
+          variants: [],
+        } as LocationInventoryProduct);
+
+      existing.locationInventory += availableQuantity;
+      const variantIndex = existing.variants.findIndex(
+        (variant) => variant.id === variantId
+      );
+      if (variantIndex >= 0) {
+        existing.variants[variantIndex].available = availableQuantity;
+      } else {
+        existing.variants.push({
+          id: variantId,
+          title: variantNode?.title || "Default",
+          available: availableQuantity,
+        });
+      }
+      productsMap.set(productId, existing);
+    });
+
+    const pageInfo = locationNode?.inventoryLevels?.pageInfo as any;
+    hasNextPage = Boolean(pageInfo?.hasNextPage);
+    cursor = pageInfo?.endCursor || null;
+  }
+
+  return {
+    products: Array.from(productsMap.values()),
+    locationName,
+  };
+}
+
+function getVariantQuantity(variant: any): number {
+  if (!variant || typeof variant !== "object") {
+    return 0;
+  }
+  if (typeof variant.available === "number") {
+    return variant.available;
+  }
+  if (typeof variant.availableQuantity === "number") {
+    return variant.availableQuantity;
+  }
+  if (typeof variant.inventoryQuantity === "number") {
+    return variant.inventoryQuantity;
+  }
+  if (typeof variant.inventory_quantity === "number") {
+    return variant.inventory_quantity;
+  }
+  return 0;
+}
+
+function getProductInventoryValue(product: any): number {
+  if (typeof product?.locationInventory === "number") {
+    return product.locationInventory;
+  }
+  if (typeof product?.totalInventory === "number") {
+    return product.totalInventory;
+  }
+  if (Array.isArray(product?.variants)) {
+    return product.variants.reduce((sum: number, variant: any) => {
+      const qty = getVariantQuantity(variant);
+      return sum + (Number.isFinite(qty) ? Math.max(qty, 0) : 0);
+    }, 0);
+  }
+  return 0;
+}
+
+function createInventorySummary(products: any[], threshold: number) {
+  const summary = {
+    totalProducts: products.length,
+    lowStockProducts: 0,
+    zeroInventoryProducts: 0,
+    lowStockVariants: 0,
+  };
+
+  products.forEach((product) => {
+    const inventoryValue = getProductInventoryValue(product);
+    if (inventoryValue <= 0) {
+      summary.zeroInventoryProducts += 1;
+    } else if (inventoryValue <= threshold) {
+      summary.lowStockProducts += 1;
+    }
+
+    const variants = Array.isArray(product?.variants) ? product.variants : [];
+    variants.forEach((variant: any) => {
+      const qty = getVariantQuantity(variant);
+      if (qty > 0 && qty <= threshold) {
+        summary.lowStockVariants += 1;
+      }
+    });
+  });
+
+  return summary;
+}
+
+function normalizeVariantId(rawId: any): string | null {
+  if (rawId === null || rawId === undefined) {
+    return null;
+  }
+  const idString = String(rawId);
+  if (!idString) {
+    return null;
+  }
+  const parts = idString.split("/");
+  return parts[parts.length - 1] || idString;
+}
+
+async function syncLowStockVariantCache(
+  admin: any,
+  shopId: string,
+  locationId: string,
+  products: any[],
+  threshold: number
+) {
+  if (!shopId || !locationId || products.length === 0) {
+    return;
+  }
+
+  const MAX_VARIANTS = 1000;
+  const variantEntries: Record<string, number> = {};
+
+  for (const product of products) {
+    if (Object.keys(variantEntries).length >= MAX_VARIANTS) {
+      break;
+    }
+
+    const variantList = Array.isArray(product?.variants) ? product.variants : [];
+    for (const variant of variantList) {
+      if (Object.keys(variantEntries).length >= MAX_VARIANTS) {
+        break;
+      }
+      const qty = getVariantQuantity(variant);
+      const variantId = normalizeVariantId(variant?.id);
+      if (!variantId || qty <= 0 || qty > threshold) {
+        continue;
+      }
+      variantEntries[variantId] = qty;
+    }
+  }
+
+  const payload = {
+    locationId,
+    threshold,
+    updatedAt: new Date().toISOString(),
+    variantCount: Object.keys(variantEntries).length,
+    variants: variantEntries,
+  };
+
+  const response = await admin.graphql(
+    `#graphql
+      mutation syncStockAlertVariantCache($metafields: [MetafieldsSetInput!]!) {
+        metafieldsSet(metafields: $metafields) {
+          userErrors {
+            field
+            message
+            code
+          }
+        }
+      }
+    `,
+    {
+      variables: {
+        metafields: [
+          {
+            ownerId: shopId,
+            namespace: "urgify",
+            key: "stock_alert_variant_cache",
+            value: JSON.stringify(payload),
+            type: "json",
+          },
+        ],
+      },
+    }
+  );
+
+  const result = await response.json();
+  const userErrors = result?.data?.metafieldsSet?.userErrors || [];
+  if (userErrors.length > 0) {
+    throw new Error(
+      `Failed to sync stock alert variant cache: ${userErrors
+        .map((error: any) => error.message)
+        .join(", ")}`
+    );
+  }
+}
 
 export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
@@ -326,6 +779,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       stockCounterAnimation: getStr("stockCounterAnimation", "pulse"),
       stockCounterPosition: getStr("stockCounterPosition", "above"),
       stockAlertStyle: getStr("stockAlertStyle", "spectacular"),
+      locationId: getStr("locationId", ""),
     };
 
     // Validate input
@@ -345,6 +799,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       stockCounterAnimation,
       stockCounterPosition,
       stockAlertStyle,
+      locationId,
     } = validatedData;
 
     console.log("Saving Stock Alert Settings to Shop Metafields:", {
@@ -394,6 +849,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       show_based_on_inventory: showBasedOnInventory === "true",
       show_only_below_threshold: showOnlyBelowThreshold === "true",
       custom_threshold: parseInt(customThreshold) || 100,
+      location_id: locationId,
     };
 
     // Speichere sowohl JSON-Metafield als auch individuelle Metafields für Liquid-Templates
@@ -495,6 +951,13 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         key: "custom_threshold",
         value: settings.custom_threshold.toString(),
         type: "number_integer"
+      },
+      {
+        ownerId: shopId,
+        namespace: "urgify",
+        key: "selected_location_id",
+        value: settings.location_id || "",
+        type: "single_line_text_field"
       }
     ];
 
@@ -544,7 +1007,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 function StockAlertsForm({ data }: { data: StockAlertsSuccess }) {
   const fetcher = useFetcher();
   const revalidator = useRevalidator();
-  const { settings, products } = data;
+  const { settings, products, locationName, locations, selectedLocationId, inventorySummary } = data;
   
   // Simple state management
   const [globalThreshold, setGlobalThreshold] = useState(String(settings.global_threshold || 5));
@@ -560,6 +1023,9 @@ function StockAlertsForm({ data }: { data: StockAlertsSuccess }) {
   const [showBasedOnInventory, setShowBasedOnInventory] = useState(Boolean(settings.show_based_on_inventory));
   const [showOnlyBelowThreshold, setShowOnlyBelowThreshold] = useState(Boolean(settings.show_only_below_threshold));
   const [customThreshold, setCustomThreshold] = useState(String(settings.custom_threshold || "5"));
+  const [locationId, setLocationId] = useState(
+    String(settings.location_id || selectedLocationId || "")
+  );
   
   const [isDirty, setIsDirty] = useState(false);
   const [toastActive, setToastActive] = useState(false);
@@ -590,7 +1056,8 @@ function StockAlertsForm({ data }: { data: StockAlertsSuccess }) {
     setShowBasedOnInventory(Boolean(settings.show_based_on_inventory));
     setShowOnlyBelowThreshold(Boolean(settings.show_only_below_threshold));
     setCustomThreshold(String(settings.custom_threshold || "5"));
-  }, [settings]);
+    setLocationId(String(settings.location_id || selectedLocationId || ""));
+  }, [settings, selectedLocationId]);
 
   // Control save bar visibility programmatically
   useEffect(() => {
@@ -700,11 +1167,64 @@ function StockAlertsForm({ data }: { data: StockAlertsSuccess }) {
   }, [isMobile]);
 
   const safeProducts = Array.isArray(products) ? products : [];
-  const lowStockProducts = safeProducts.filter((product: any) => {
-    const inventory = product?.totalInventory || 0;
-    const threshold = parseInt(globalThreshold) || 5;
-    return inventory <= threshold;
-  });
+  const availableLocations = Array.isArray(locations) ? locations : [];
+  const currentLocationLabel =
+    availableLocations.find((loc: any) => loc.id === locationId)?.name ||
+    locationName ||
+    (locationId ? "Selected location" : "All locations");
+  const parsedThresholdRaw = parseInt(globalThreshold, 10);
+  const parsedThreshold = Number.isNaN(parsedThresholdRaw) ? 5 : parsedThresholdRaw;
+  const getProductInventoryValue = useCallback((product: any) => {
+    if (typeof product?.locationInventory === "number") {
+      return product.locationInventory;
+    }
+    if (typeof product?.totalInventory === "number") {
+      return product.totalInventory;
+    }
+    if (Array.isArray(product?.variants)) {
+      return product.variants.reduce((sum: number, variant: any) => {
+        const qty = getVariantQuantity(variant);
+        return sum + (Number.isFinite(qty) ? Math.max(qty, 0) : 0);
+      }, 0);
+    }
+    return 0;
+  }, []);
+
+  const { lowStockList, zeroInventoryCount, lowStockVariantCount } = useMemo(() => {
+    const stats = {
+      lowStockList: [] as any[],
+      zeroInventoryCount: 0,
+      lowStockVariantCount: 0,
+    };
+
+    safeProducts.forEach((product: any) => {
+      const totalInventory = getProductInventoryValue(product);
+      if (totalInventory <= 0) {
+        stats.zeroInventoryCount += 1;
+      } else if (totalInventory <= parsedThreshold) {
+        stats.lowStockList.push(product);
+      }
+
+      const variants = Array.isArray(product?.variants) ? product.variants : [];
+      variants.forEach((variant: any) => {
+        const qty = getVariantQuantity(variant);
+        if (qty > 0 && qty <= parsedThreshold) {
+          stats.lowStockVariantCount += 1;
+        }
+      });
+    });
+
+    return stats;
+  }, [safeProducts, getProductInventoryValue, parsedThreshold]);
+
+  const lowStockProducts = lowStockList;
+  const serverInventorySummary =
+    inventorySummary ?? {
+      totalProducts: safeProducts.length,
+      lowStockProducts: lowStockProducts.length,
+      zeroInventoryProducts: zeroInventoryCount,
+      lowStockVariants: lowStockVariantCount,
+    };
 
   const handleGlobalThresholdChange = useCallback((value: string) => {
     setGlobalThreshold(value);
@@ -732,10 +1252,11 @@ function StockAlertsForm({ data }: { data: StockAlertsSuccess }) {
         showBasedOnInventory: showBasedOnInventory.toString(),
         showOnlyBelowThreshold: showOnlyBelowThreshold.toString(),
         customThreshold,
+        locationId,
       },
       { method: "POST", action: "/app/stock-alerts", encType: "application/x-www-form-urlencoded" }
     );
-  }, [globalThreshold, lowStockMessage, isEnabled, fontSize, textColor, backgroundColor, stockCounterAnimation, stockCounterPosition, stockAlertStyle, showForAllProducts, showBasedOnInventory, showOnlyBelowThreshold, customThreshold, fetcher]);
+  }, [globalThreshold, lowStockMessage, isEnabled, fontSize, textColor, backgroundColor, stockCounterAnimation, stockCounterPosition, stockAlertStyle, showForAllProducts, showBasedOnInventory, showOnlyBelowThreshold, customThreshold, locationId, fetcher]);
 
   // Show success toast when save is successful (nur Rising-Edge)
   useEffect(() => {
@@ -846,6 +1367,28 @@ function StockAlertsForm({ data }: { data: StockAlertsSuccess }) {
                       checked={isEnabled}
                       onChange={(e) => handleEnabledChange(e.currentTarget.checked)}
                     />
+
+                    {availableLocations.length > 0 ? (
+                      <s-select
+                        label="Inventory Location"
+                        value={locationId}
+                        onChange={(e) => {
+                          setLocationId(e.currentTarget.value);
+                          setIsDirty(true);
+                        }}
+                      >
+                        {availableLocations.map((loc: any) => (
+                          <s-option key={loc.id} value={loc.id}>
+                            {loc.name}
+                          </s-option>
+                        ))}
+                      </s-select>
+                    ) : (
+                      <s-paragraph>
+                        No locations available. Ensure the app has been granted the{" "}
+                        <code>read_inventory</code> and <code>read_locations</code> scopes.
+                      </s-paragraph>
+                    )}
                     
                     <s-number-field
                       label="Stock Alert Threshold"
@@ -858,7 +1401,30 @@ function StockAlertsForm({ data }: { data: StockAlertsSuccess }) {
                     
                     <s-paragraph>
                       <strong>Products Below Threshold ({lowStockProducts.length})</strong>
+                      <span
+                        style={{
+                          display: "block",
+                          color: "var(--p-color-text-subdued, #5c5f62)",
+                        }}
+                      >
+                        Location: {currentLocationLabel}
+                      </span>
                     </s-paragraph>
+                    <s-text
+                      tone="subdued"
+                      size="small"
+                      style={{ display: "block" }}
+                    >
+                      Zero inventory hidden: {zeroInventoryCount.toLocaleString()} · Variants ≤ threshold: {lowStockVariantCount.toLocaleString()}
+                    </s-text>
+                    {inventorySummary &&
+                      (serverInventorySummary.lowStockProducts !== lowStockProducts.length ||
+                        serverInventorySummary.zeroInventoryProducts !== zeroInventoryCount) && (
+                        <s-text tone="subdued" size="small" style={{ display: "block" }}>
+                          Snapshot (last sync): {serverInventorySummary.lowStockProducts.toLocaleString()} products ≤ threshold,{" "}
+                          {serverInventorySummary.zeroInventoryProducts.toLocaleString()} zero inventory.
+                        </s-text>
+                      )}
                     
                     <s-text-field
                       label="Stock Alert Message"
@@ -906,6 +1472,8 @@ function StockAlertsForm({ data }: { data: StockAlertsSuccess }) {
                       }}
                     >
                       <s-option value="spectacular">Spectacular</s-option>
+                      <s-option value="christmas">Festive Christmas</s-option>
+                      <s-option value="blackweek">Blackweek</s-option>
                       <s-option value="brutalist">Brutalist Bold</s-option>
                       <s-option value="glassmorphism">Glassmorphism</s-option>
                       <s-option value="neumorphism">Neumorphism</s-option>
@@ -984,6 +1552,7 @@ function StockAlertsForm({ data }: { data: StockAlertsSuccess }) {
             setShowBasedOnInventory(Boolean(settings.show_based_on_inventory));
             setShowOnlyBelowThreshold(Boolean(settings.show_only_below_threshold));
             setCustomThreshold(String(settings.custom_threshold || "5"));
+            setLocationId(String(settings.location_id || selectedLocationId || ""));
             setIsDirty(false);
           }}
         >

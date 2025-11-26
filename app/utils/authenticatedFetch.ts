@@ -19,13 +19,8 @@ export async function authenticatedFetch(
 ): Promise<Response> {
   const { method = 'GET', body, headers = {}, sessionToken: providedToken } = options;
   
-  // Use provided token, or get session token from App Bridge or fallback to session storage
-  let sessionToken = providedToken || await getSessionToken();
-  
-  // Fallback: try to get from session storage
-  if (!sessionToken) {
-    sessionToken = sessionStorage.getItem('shopify_session_token');
-  }
+  // Use provided token, or try to obtain a fresh token (falls back to sessionStorage internally)
+  const sessionToken = providedToken || await getSessionTokenInternal();
   
   if (!sessionToken) {
     throw new Error('Session token not available');
@@ -64,100 +59,31 @@ export async function authenticatedFetch(
   return fetch(url, requestOptions);
 }
 
-/**
- * Gets session token from App Bridge
- */
-async function getSessionToken(): Promise<string | null> {
+async function getSessionTokenInternal(): Promise<string | null> {
   try {
-    // Check if we're in an embedded app context
     if (typeof window === 'undefined') {
       return null;
     }
 
-    // Method 1: Try to get from session storage first (most reliable)
+    // Method 1: Use cached token to avoid extra App Bridge calls
     const storedToken = sessionStorage.getItem('shopify_session_token');
     if (storedToken) {
       return storedToken;
     }
 
-    // Method 2: Try to get from App Bridge React context (most reliable for v4)
-    // App Bridge v4 uses idToken() instead of getSessionToken()
-    // We need to try accessing it through the global context or window object
-    
-    // Try App Bridge v4 through @shopify/app-bridge-react
-    // The AppBridge instance is available through window.__shopify_app_bridge__
-    const appBridgeInstance = (window as any).__shopify_app_bridge__;
-    
-    if (appBridgeInstance?.idToken) {
-      try {
-        const token = await appBridgeInstance.idToken();
-        if (token) {
-          sessionStorage.setItem('shopify_session_token', token);
-          return token;
-        }
-      } catch (error) {
-        console.warn('Failed to get session token from App Bridge instance:', error);
-      }
+    // Method 2: Ask App Bridge for a fresh token (v4 idToken preferred)
+    const tokenFromAppBridge = await getTokenFromAppBridge();
+    if (tokenFromAppBridge) {
+      return tokenFromAppBridge;
     }
 
-    // Method 3: Try multiple methods to get session token from App Bridge v4
-    const appBridge = (window as any).shopify;
-    
-    if (appBridge) {
-      // Method 4: App Bridge v4 idToken method (replaces getSessionToken)
-      if (appBridge?.idToken) {
-        try {
-          const token = await appBridge.idToken();
-          if (token) {
-            sessionStorage.setItem('shopify_session_token', token);
-            return token;
-          }
-        } catch (error) {
-          console.warn('Failed to get session token from shopify.idToken:', error);
-        }
-      }
-      
-      // Fallback: Try getSessionToken for older versions
-      if (appBridge?.getSessionToken) {
-        try {
-          const token = await appBridge.getSessionToken();
-          if (token) {
-            sessionStorage.setItem('shopify_session_token', token);
-            return token;
-          }
-        } catch (error) {
-          console.warn('Failed to get session token from shopify.getSessionToken:', error);
-        }
-      }
-
-      // Method 5: Direct session token access
-      if (appBridge?.config?.sessionToken) {
-        const token = appBridge.config.sessionToken;
-        if (token) {
-          sessionStorage.setItem('shopify_session_token', token);
-          return token;
-        }
-      }
-
-      // Method 6: Try to get from App Bridge context
-      if (appBridge?.context?.sessionToken) {
-        const token = appBridge.context.sessionToken;
-        if (token) {
-          sessionStorage.setItem('shopify_session_token', token);
-          return token;
-        }
-      }
-
-      // Method 7: Fallback to global state
-      if (appBridge?.sessionToken) {
-        const token = appBridge.sessionToken;
-        if (token) {
-          sessionStorage.setItem('shopify_session_token', token);
-          return token;
-        }
-      }
+    // Method 3: Check remaining global fallbacks
+    const fallbackToken = getTokenFromLegacyGlobals();
+    if (fallbackToken) {
+      sessionStorage.setItem('shopify_session_token', fallbackToken);
+      return fallbackToken;
     }
-    
+
     return null;
   } catch (error) {
     console.error('Failed to get session token:', error);
@@ -166,7 +92,75 @@ async function getSessionToken(): Promise<string | null> {
 }
 
 export async function requestSessionToken(): Promise<string | null> {
-  return getSessionToken();
+  return getSessionTokenInternal();
+}
+
+async function getTokenFromAppBridge(): Promise<string | null> {
+  try {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+
+    const appBridgeInstance =
+      (window as any).__shopify_app_bridge__ ||
+      (window as any).shopify ||
+      null;
+
+    if (!appBridgeInstance) {
+      return null;
+    }
+
+    if (typeof appBridgeInstance.idToken === 'function') {
+      const token = await appBridgeInstance.idToken();
+      if (token) {
+        sessionStorage.setItem('shopify_session_token', token);
+        return token;
+      }
+    }
+
+    if (typeof appBridgeInstance.getSessionToken === 'function') {
+      const token = await appBridgeInstance.getSessionToken();
+      if (token) {
+        sessionStorage.setItem('shopify_session_token', token);
+        return token;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.warn('Unable to acquire session token from App Bridge:', error);
+    return null;
+  }
+}
+
+function getTokenFromLegacyGlobals(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const appBridgeInstance =
+    (window as any).__shopify_app_bridge__ ||
+    (window as any).shopify ||
+    null;
+
+  if (!appBridgeInstance) {
+    return null;
+  }
+
+  const candidates = [
+    appBridgeInstance?.config?.sessionToken,
+    appBridgeInstance?.context?.sessionToken,
+    appBridgeInstance?.sessionToken,
+  ];
+
+  for (const candidate of candidates) {
+    if (typeof candidate === 'string' && candidate.length > 0) {
+      sessionStorage.setItem('shopify_session_token', candidate);
+      return candidate;
+    }
+  }
+
+  return null;
 }
 
 /**

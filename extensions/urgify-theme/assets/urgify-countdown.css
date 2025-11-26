@@ -1,0 +1,809 @@
+/* Urgify Countdown Base Styles */
+.urgify-countdown {
+  position: relative;
+  transition: all 0.3s ease;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.urgify-countdown.hidden {
+  display: none !important;
+}
+
+/* Countdown Container */
+.countdown-container {
+  opacity: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 20px 0;
+  padding: 20px;
+  background: var(--urgify-countdown-background, linear-gradient(135deg, #ff6b35 0%, #f7931e 100%));
+  border-radius: var(--urgify-countdown-border-radius, 12px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  color: var(--urgify-countdown-font-color, #ffffff);
+  transition: opacity 0.2s ease;
+}
+
+.countdown-container.is-ready {
+  opacity: 1;
+}
+
+/* Minimal style should render inline without card background */
+.countdown-container.countdown-minimal {
+  margin: 0;
+  padding: 12px 16px;
+  background: var(--urgify-countdown-minimal-background, transparent) !important;
+  box-shadow: none !important;
+  border-radius: var(--urgify-countdown-border-radius, 12px);
+  color: var(--urgify-countdown-minimal-text, #ffffff);
+  display: inline-flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0;
+}
+
+.countdown-container.countdown-minimal .minimal-value,
+.countdown-container.countdown-minimal .minimal-label,
+.countdown-container.countdown-minimal .minimal-separator {
+  text-shadow: none;
+  color: inherit !important;
+}
+
+.countdown-container.countdown-minimal .minimal-label {
+  opacity: 0.75;
+}
+
+.countdown-container.countdown-minimal .minimal-separator {
+  opacity: 0.6;
+  color: var(--urgify-countdown-minimal-separator, #ffffff);
+}
+
+/* Color Themes */
+.countdown-container.countdown-theme-primary {
+  background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%) !important;
+}
+
+.countdown-container.countdown-theme-primary .countdown-value,
+.countdown-container.countdown-theme-primary .flip-value,
+.countdown-container.countdown-theme-primary .circular-value,
+.countdown-container.countdown-theme-primary .minimal-value {
+  color: #ffffff !important;
+}
+
+.countdown-container.countdown-theme-primary .countdown-label,
+.countdown-container.countdown-theme-primary .flip-label,
+.countdown-container.countdown-theme-primary .circular-label,
+.countdown-container.countdown-theme-primary .minimal-label {
+  color: #ffffff !important;
+}
+
+.countdown-container.countdown-theme-primary .countdown-unit,
+.countdown-container.countdown-theme-primary .flip-card-front,
+.countdown-container.countdown-theme-primary .flip-card-back {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.countdown-container.countdown-theme-primary .circular-progress-bar {
+  stroke: #ffffff !important;
+}
+
+.countdown-container.countdown-theme-primary.countdown-minimal {
+  --urgify-countdown-minimal-background: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
+  --urgify-countdown-minimal-text: #ffffff;
+}
+
+.countdown-container.countdown-theme-primary.countdown-minimal .minimal-value,
+.countdown-container.countdown-theme-primary.countdown-minimal .minimal-label,
+.countdown-container.countdown-theme-primary.countdown-minimal .minimal-separator {
+  color: var(--urgify-countdown-minimal-text, #ffffff) !important;
+}
+
+.countdown-container.countdown-theme-success {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+}
+
+.countdown-container.countdown-theme-success .countdown-value,
+.countdown-container.countdown-theme-success .flip-value,
+.countdown-container.countdown-theme-success .circular-value,
+.countdown-container.countdown-theme-success .minimal-value {
+  color: #ffffff !important;
+}
+
+.countdown-container.countdown-theme-success .countdown-label,
+.countdown-container.countdown-theme-success .flip-label,
+.countdown-container.countdown-theme-success .circular-label,
+.countdown-container.countdown-theme-success .minimal-label {
+  color: #ffffff !important;
+}
+
+.countdown-container.countdown-theme-success .countdown-unit,
+.countdown-container.countdown-theme-success .flip-card-front,
+.countdown-container.countdown-theme-success .flip-card-back {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.countdown-container.countdown-theme-success .circular-progress-bar {
+  stroke: #ffffff !important;
+}
+
+.countdown-container.countdown-theme-success.countdown-minimal {
+  --urgify-countdown-minimal-background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  --urgify-countdown-minimal-text: #ffffff;
+}
+
+.countdown-container.countdown-theme-warning {
+  background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%) !important;
+}
+
+.countdown-container.countdown-theme-warning .countdown-value,
+.countdown-container.countdown-theme-warning .flip-value,
+.countdown-container.countdown-theme-warning .circular-value,
+.countdown-container.countdown-theme-warning .minimal-value {
+  color: #ffffff !important;
+}
+
+.countdown-container.countdown-theme-warning .countdown-label,
+.countdown-container.countdown-theme-warning .flip-label,
+.countdown-container.countdown-theme-warning .circular-label,
+.countdown-container.countdown-theme-warning .minimal-label {
+  color: #ffffff !important;
+}
+
+.countdown-container.countdown-theme-warning .countdown-unit,
+.countdown-container.countdown-theme-warning .flip-card-front,
+.countdown-container.countdown-theme-warning .flip-card-back {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.countdown-container.countdown-theme-warning .circular-progress-bar {
+  stroke: #ffffff !important;
+}
+
+.countdown-container.countdown-theme-warning.countdown-minimal {
+  --urgify-countdown-minimal-background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+  --urgify-countdown-minimal-text: #1f2933;
+  --urgify-countdown-minimal-separator: #1f2933;
+}
+
+.countdown-container.countdown-theme-danger {
+  background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%) !important;
+}
+
+.countdown-container.countdown-theme-danger .countdown-value,
+.countdown-container.countdown-theme-danger .flip-value,
+.countdown-container.countdown-theme-danger .circular-value,
+.countdown-container.countdown-theme-danger .minimal-value {
+  color: #ffffff !important;
+}
+
+.countdown-container.countdown-theme-danger .countdown-label,
+.countdown-container.countdown-theme-danger .flip-label,
+.countdown-container.countdown-theme-danger .circular-label,
+.countdown-container.countdown-theme-danger .minimal-label {
+  color: #ffffff !important;
+}
+
+.countdown-container.countdown-theme-danger .countdown-unit,
+.countdown-container.countdown-theme-danger .flip-card-front,
+.countdown-container.countdown-theme-danger .flip-card-back {
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.countdown-container.countdown-theme-danger .circular-progress-bar {
+  stroke: #ffffff !important;
+}
+
+.countdown-container.countdown-theme-danger.countdown-minimal {
+  --urgify-countdown-minimal-background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+  --urgify-countdown-minimal-text: #ffffff;
+}
+
+.countdown-container.countdown-theme-custom {
+  background: var(--urgify-countdown-background, linear-gradient(135deg, #ff6b35 0%, #f7931e 100%)) !important;
+  color: var(--urgify-countdown-font-color, #ffffff) !important;
+}
+
+.countdown-container.countdown-theme-custom .countdown-value,
+.countdown-container.countdown-theme-custom .flip-value,
+.countdown-container.countdown-theme-custom .circular-value,
+.countdown-container.countdown-theme-custom .minimal-value {
+  color: var(--urgify-countdown-value-color, #ffffff) !important;
+}
+
+.countdown-container.countdown-theme-custom .countdown-label,
+.countdown-container.countdown-theme-custom .flip-label,
+.countdown-container.countdown-theme-custom .circular-label,
+.countdown-container.countdown-theme-custom .minimal-label {
+  color: var(--urgify-countdown-label-color, #ffffff) !important;
+}
+
+.countdown-container.countdown-theme-custom .countdown-unit,
+.countdown-container.countdown-theme-custom .flip-card-front,
+.countdown-container.countdown-theme-custom .flip-card-back {
+  background: var(--urgify-countdown-unit-bg, rgba(255, 255, 255, 0.2)) !important;
+  border-color: var(--urgify-countdown-unit-border, rgba(255, 255, 255, 0.3)) !important;
+}
+
+.countdown-container.countdown-theme-custom .circular-progress-bar {
+  stroke: var(--urgify-countdown-progress-color, #ffffff) !important;
+}
+
+.countdown-container.countdown-theme-custom.countdown-minimal {
+  --urgify-countdown-minimal-background: var(--urgify-countdown-background, linear-gradient(135deg, #ff6b35 0%, #f7931e 100%));
+  --urgify-countdown-minimal-text: var(--urgify-countdown-value-color, #ffffff);
+}
+
+.countdown-container.countdown-theme-custom.countdown-minimal .minimal-value,
+.countdown-container.countdown-theme-custom.countdown-minimal .minimal-label,
+.countdown-container.countdown-theme-custom.countdown-minimal .minimal-separator {
+  color: var(--urgify-countdown-minimal-text, #ffffff) !important;
+}
+
+/* Festive Christmas Theme */
+.countdown-container.countdown-theme-christmas {
+  position: relative;
+  background: linear-gradient(135deg, #0f5132 0%, #198754 55%, #b02a37 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 20px 45px rgba(15, 81, 50, 0.35),
+    inset 0 0 12px rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.countdown-container.countdown-theme-christmas::before,
+.countdown-container.countdown-theme-christmas::after {
+  content: '';
+  position: absolute;
+  top: -40%;
+  left: -20%;
+  width: 160%;
+  height: 180%;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.35) 0, transparent 45%),
+    radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.25) 0, transparent 50%),
+    radial-gradient(circle at 40% 70%, rgba(255, 255, 255, 0.2) 0, transparent 40%);
+  animation: countdownChristmasSnow 14s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.countdown-container.countdown-theme-christmas::after {
+  animation-duration: 20s;
+  opacity: 0.6;
+  transform: rotate(15deg);
+}
+
+.countdown-container.countdown-theme-christmas .countdown-value,
+.countdown-container.countdown-theme-christmas .flip-value,
+.countdown-container.countdown-theme-christmas .circular-value,
+.countdown-container.countdown-theme-christmas .minimal-value {
+  color: #fff8e1 !important;
+  text-shadow: 0 4px 12px rgba(0, 0, 0, 0.35), 0 0 15px rgba(255, 248, 225, 0.5);
+}
+
+.countdown-container.countdown-theme-christmas .countdown-label,
+.countdown-container.countdown-theme-christmas .flip-label,
+.countdown-container.countdown-theme-christmas .circular-label,
+.countdown-container.countdown-theme-christmas .minimal-label {
+  color: #f8f9fa !important;
+  letter-spacing: 0.2rem;
+  text-transform: uppercase;
+}
+
+.countdown-container.countdown-theme-christmas .countdown-unit,
+.countdown-container.countdown-theme-christmas .flip-card-front,
+.countdown-container.countdown-theme-christmas .flip-card-back {
+  background: rgba(248, 249, 250, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(12px);
+}
+
+.countdown-container.countdown-theme-christmas .circular-progress-bar {
+  stroke: #fff8e1 !important;
+}
+
+.countdown-container.countdown-theme-christmas .minimal-separator {
+  color: #fff8e1 !important;
+}
+
+.countdown-container.countdown-theme-christmas.countdown-minimal {
+  --urgify-countdown-minimal-background: linear-gradient(135deg, #0f5132 0%, #198754 55%, #b02a37 100%);
+  --urgify-countdown-minimal-text: #fff8e1;
+  --urgify-countdown-minimal-separator: #fff8e1;
+}
+
+.countdown-container.countdown-theme-christmas > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Blackweek Theme */
+.countdown-container.countdown-theme-blackweek {
+  background: #000000 !important;
+  border: 2px solid #dc3545;
+  box-shadow:
+    0 8px 24px rgba(220, 53, 69, 0.3),
+    0 0 0 1px rgba(220, 53, 69, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
+}
+
+.countdown-container.countdown-theme-blackweek .countdown-value,
+.countdown-container.countdown-theme-blackweek .flip-value,
+.countdown-container.countdown-theme-blackweek .circular-value,
+.countdown-container.countdown-theme-blackweek .minimal-value {
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.countdown-container.countdown-theme-blackweek .countdown-label,
+.countdown-container.countdown-theme-blackweek .flip-label,
+.countdown-container.countdown-theme-blackweek .circular-label,
+.countdown-container.countdown-theme-blackweek .minimal-label {
+  color: #ffffff !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.countdown-container.countdown-theme-blackweek .countdown-unit,
+.countdown-container.countdown-theme-blackweek .flip-card-front,
+.countdown-container.countdown-theme-blackweek .flip-card-back {
+  background: rgba(220, 53, 69, 0.2) !important;
+  border-color: rgba(255, 193, 7, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+.countdown-container.countdown-theme-blackweek .circular-progress-bar {
+  stroke: #dc3545 !important;
+}
+
+.countdown-container.countdown-theme-blackweek .minimal-separator {
+  color: #ffc107 !important;
+}
+
+.countdown-container.countdown-theme-blackweek.countdown-minimal {
+  --urgify-countdown-minimal-background: #000000;
+  --urgify-countdown-minimal-text: #ffffff;
+  border: 2px solid #dc3545;
+}
+
+.countdown-container.countdown-theme-blackweek > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* Animations */
+.countdown-container.pulse {
+  animation: countdownPulse 2s infinite;
+}
+
+.countdown-container.fadeInUp {
+  animation: countdownFadeInUp 1s ease-out;
+}
+
+.countdown-container.slideIn {
+  animation: countdownSlideIn 0.8s ease-out;
+}
+
+@keyframes countdownPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes countdownFadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes countdownSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes countdownChristmasSnow {
+  0% {
+    transform: translate3d(0, -10%, 0);
+  }
+  100% {
+    transform: translate3d(0, 10%, 0);
+  }
+}
+
+
+@keyframes flipDown {
+  0% { transform: rotateX(0deg); }
+  50% { transform: rotateX(-90deg); }
+  100% { transform: rotateX(-180deg); }
+}
+
+.countdown-container.expired {
+  background: var(--urgify-countdown-expired-bg, rgba(255, 0, 0, 0.1));
+  color: var(--urgify-countdown-expired-text, #d32f2f);
+  font-weight: bold;
+}
+
+/* Digital Style */
+.countdown-digital {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.countdown-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 80px;
+  padding: 20px;
+  background: var(--urgify-countdown-unit-bg, rgba(255, 255, 255, 0.15));
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  border: 2px solid var(--urgify-countdown-unit-border, rgba(255, 255, 255, 0.2));
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+}
+
+.countdown-unit::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+}
+
+.countdown-value {
+  font-size: var(--urgify-countdown-value-font-size, 2.8rem);
+  font-weight: 900;
+  color: var(--urgify-countdown-value-color, #ffffff);
+  line-height: 1;
+  font-family: 'Courier New', monospace;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.4), 0 0 20px rgba(255, 255, 255, 0.1);
+  letter-spacing: 2px;
+}
+
+.countdown-label {
+  font-size: var(--urgify-countdown-label-font-size, 0.875rem);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 8px;
+  opacity: 0.9;
+  font-weight: 500;
+  color: var(--urgify-countdown-label-color, #ffffff);
+}
+
+/* Flip Card Style */
+.countdown-flip {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.flip-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.flip-card {
+  position: relative;
+  width: 90px;
+  height: 100px;
+  perspective: 600px;
+  cursor: pointer;
+}
+
+.flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  transform-style: preserve-3d;
+  transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.flip-card.flipped .flip-card-inner {
+  transform: rotateX(180deg);
+}
+
+.flip-card.animating .flip-card-inner {
+  animation: flipDown 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+
+.flip-card-front,
+.flip-card-back {
+  border-radius: 16px;
+  background: linear-gradient(145deg,
+    var(--urgify-countdown-unit-bg, rgba(255, 255, 255, 0.25)),
+    var(--urgify-countdown-unit-bg, rgba(255, 255, 255, 0.1)));
+  box-shadow:
+    0 8px 25px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--urgify-countdown-unit-border, rgba(255, 255, 255, 0.3));
+  overflow: hidden;
+}
+
+.flip-card {
+  perspective: 1000px;
+  display: inline-block;
+}
+
+.flip-card .flip-card-front,
+.flip-card .flip-card-back {
+  backface-visibility: hidden;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flip-card .flip-card-back {
+  transform: rotateX(180deg);
+}
+
+.flip-card-front::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.1) 50%, transparent 70%);
+  transform: translateX(-100%);
+  transition: transform 0.6s;
+}
+
+.flip-card:hover .flip-card-front::before {
+  transform: translateX(100%);
+}
+
+.flip-value {
+  font-size: var(--urgify-countdown-value-font-size, 2.2rem);
+  font-weight: 800;
+  color: var(--urgify-countdown-value-color, #ffffff);
+  line-height: 1;
+  font-family: 'Arial Black', sans-serif;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.4), 0 0 15px rgba(255, 255, 255, 0.2);
+  letter-spacing: 1px;
+  position: relative;
+  z-index: 2;
+}
+
+.flip-label {
+  font-size: var(--urgify-countdown-label-font-size, 0.75rem);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 5px;
+  opacity: 0.9;
+  color: var(--urgify-countdown-label-color, #ffffff);
+  text-align: center;
+}
+
+/* Circular Style */
+.countdown-circular {
+  display: flex;
+  gap: 30px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.circular-progress {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.circular-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.circular-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 8;
+}
+
+.circular-progress-bar {
+  fill: none;
+  stroke: var(--urgify-countdown-progress-color, #ffffff);
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 326.73;
+  stroke-dashoffset: 326.73;
+  transition: stroke-dashoffset 0.4s linear;
+}
+
+.circular-progress-bar circle {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+  transition: stroke-dashoffset 0.4s linear;
+  stroke-linecap: round;
+}
+
+.circular-content {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
+
+.circular-value {
+  font-size: var(--urgify-countdown-value-font-size, 1.5rem);
+  font-weight: bold;
+  color: var(--urgify-countdown-value-color, #ffffff);
+  line-height: 1;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.circular-label {
+  font-size: var(--urgify-countdown-label-font-size, 0.75rem);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-top: 5px;
+  opacity: 0.9;
+  color: var(--urgify-countdown-label-color, #ffffff);
+}
+
+/* Minimal Style */
+.countdown-minimal {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+}
+
+.minimal-unit {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.minimal-value {
+  font-size: var(--urgify-countdown-value-font-size, 1.5rem);
+  font-weight: bold;
+  color: var(--urgify-countdown-minimal-text, #ffffff);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.minimal-label {
+  font-size: var(--urgify-countdown-label-font-size, 0.875rem);
+  opacity: 0.9;
+  color: var(--urgify-countdown-minimal-text, #ffffff);
+}
+
+.minimal-separator {
+  font-size: 1.2rem;
+  opacity: 0.7;
+  margin: 0 5px;
+  color: var(--urgify-countdown-minimal-separator, #ffffff);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .countdown-digital {
+    gap: 15px;
+  }
+
+  .countdown-unit {
+    min-width: 60px;
+    padding: 12px;
+  }
+
+  .countdown-value {
+    font-size: calc(var(--urgify-countdown-value-font-size, 2.8rem) * 0.7);
+  }
+
+  .flip-card-wrapper {
+    gap: 6px;
+  }
+
+  .flip-card {
+    width: 70px;
+    height: 80px;
+  }
+
+  .flip-value {
+    font-size: calc(var(--urgify-countdown-value-font-size, 2.8rem) * 0.6);
+  }
+
+  .flip-label {
+    font-size: calc(var(--urgify-countdown-label-font-size, 0.75rem) * 0.9);
+  }
+
+  .circular-progress {
+    width: 100px;
+    height: 100px;
+  }
+
+  .circular-value {
+    font-size: calc(var(--urgify-countdown-value-font-size, 1.5rem) * 0.85);
+  }
+
+  .minimal-value {
+    font-size: calc(var(--urgify-countdown-value-font-size, 1.5rem) * 0.85);
+  }
+}
+
+@media (max-width: 480px) {
+  .countdown-container {
+    padding: 15px;
+  }
+
+  .countdown-digital {
+    gap: 10px;
+  }
+
+  .countdown-unit {
+    min-width: 55px;
+    padding: 10px;
+  }
+
+  .countdown-value {
+    font-size: calc(var(--urgify-countdown-value-font-size, 2.8rem) * 0.55);
+  }
+
+  .flip-card-wrapper {
+    gap: 5px;
+  }
+
+  .flip-card {
+    width: 60px;
+    height: 70px;
+  }
+
+  .flip-value {
+    font-size: calc(var(--urgify-countdown-value-font-size, 2.8rem) * 0.45);
+  }
+
+  .flip-label {
+    font-size: calc(var(--urgify-countdown-label-font-size, 0.75rem) * 0.75);
+  }
+
+  .circular-progress {
+    width: 80px;
+    height: 80px;
+  }
+
+  .circular-value {
+    font-size: calc(var(--urgify-countdown-value-font-size, 1.5rem) * 0.7);
+  }
+
+  .minimal-value {
+    font-size: calc(var(--urgify-countdown-value-font-size, 1.5rem) * 0.7);
+  }
+}
+

@@ -59,6 +59,7 @@
       this.previouslyFocusedElement = null;
       this.focusableSelector = 'a[href], area[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
       this.htmlDecoder = null;
+      this.successCopy = null;
 
       this.boundClose = this.close.bind(this);
       this.handleDocumentKeydown = this.handleDocumentKeydown.bind(this);
@@ -219,9 +220,20 @@
       const style = this.config.style || 'spectacular';
       content.classList.add(`urgify-popup--style-${style}`);
       
-      // Set overlay color
-      if (overlay && this.config.overlay_color) {
-        overlay.style.backgroundColor = this.config.overlay_color;
+      // Set overlay visibility and color
+      if (overlay) {
+        const showOverlay = this.config.show_overlay !== undefined 
+          ? this.config.show_overlay 
+          : (this.config.showOverlay !== undefined ? this.config.showOverlay : true);
+        
+        if (showOverlay === false || showOverlay === 'false') {
+          overlay.style.display = 'none';
+        } else {
+          overlay.style.display = 'block';
+          if (this.config.overlay_color) {
+            overlay.style.backgroundColor = this.config.overlay_color;
+          }
+        }
       }
       
       // Set custom styles if style is custom
@@ -407,6 +419,14 @@
           if (newsletterSubmitButton) {
             newsletterSubmitButton.textContent = newsletterButtonText;
           }
+          // Set email placeholder text
+          const emailInput = this.container.querySelector('.urgify-popup-newsletter-email');
+          if (emailInput) {
+            emailInput.placeholder =
+              this.config.email_placeholder_text ||
+              this.config.emailPlaceholderText ||
+              'Enter your email';
+          }
         }
         // Always hide CTA when newsletter is enabled - they are mutually exclusive
         if (ctaEl) {
@@ -539,7 +559,11 @@
             }
             const descriptionEl = this.container.querySelector('.urgify-popup-description');
             if (descriptionEl) {
-              descriptionEl.textContent = 'Thank you for subscribing! Please check your email to confirm.';
+              const { message } = this.getSuccessCopy();
+              this.setTextWithLineBreaks(
+                descriptionEl,
+                message || 'Thank you for subscribing! Please check your email to confirm.'
+              );
             }
             // Don't auto-close - let user manually close the popup
           }
@@ -567,7 +591,11 @@
         } else {
           const descriptionEl = this.container.querySelector('.urgify-popup-description');
           if (descriptionEl) {
-            descriptionEl.textContent = 'Thank you! Please check your email to confirm your subscription.';
+            const { message } = this.getSuccessCopy();
+            this.setTextWithLineBreaks(
+              descriptionEl,
+              message || 'Thank you! Please check your email to confirm your subscription.'
+            );
           }
         }
         
@@ -595,9 +623,12 @@
       const discountContainer = this.container.querySelector('.urgify-popup-discount-container');
       const discountCodeEl = this.container.querySelector('.urgify-popup-discount-code');
       const ctaEl = this.container.querySelector('.urgify-popup-cta');
+      const discountMessageHeading = this.container.querySelector('.urgify-popup-discount-message strong');
+      const discountMessageCopyEl = this.container.querySelector('.urgify-popup-discount-message p');
       
       // Get discount code (support both snake_case and camelCase)
       const discountCode = this.config.discount_code || this.config.discountCode || '';
+      const successCopy = this.getSuccessCopy();
       
       if (newsletterContainer) {
         newsletterContainer.style.display = 'none';
@@ -605,6 +636,16 @@
       
       if (discountContainer && discountCodeEl && discountCode) {
         discountCodeEl.textContent = discountCode;
+
+        if (discountMessageHeading) {
+          this.setTextWithLineBreaks(discountMessageHeading, successCopy.title);
+        }
+
+        if (discountMessageCopyEl) {
+          const resolvedMessage = this.resolveDiscountMessage(successCopy.discountMessage, discountCode);
+          this.setTextWithLineBreaks(discountMessageCopyEl, resolvedMessage);
+        }
+
         discountContainer.style.display = 'block';
         
         // Don't show CTA when newsletter is enabled - they are mutually exclusive
@@ -1003,6 +1044,71 @@
 
       this.htmlDecoder.innerHTML = value;
       return this.htmlDecoder.value;
+    }
+
+    getSuccessCopy() {
+      if (this.successCopy) {
+        return this.successCopy;
+      }
+
+      const title =
+        (this.config && (this.config.newsletter_success_title || this.config.newsletterSuccessTitle)) ||
+        'Thank you for subscribing!';
+      const message =
+        (this.config && (this.config.newsletter_success_message || this.config.newsletterSuccessMessage)) ||
+        'Please check your email to confirm your subscription.';
+      const discountMessage =
+        (this.config && (this.config.discount_message_text || this.config.discountMessageText)) ||
+        'Use code {{code}} at checkout.';
+
+      this.successCopy = {
+        title: String(title || 'Thank you for subscribing!'),
+        message: String(message || 'Please check your email to confirm your subscription.'),
+        discountMessage: String(discountMessage || 'Use code {{code}} at checkout.'),
+      };
+
+      return this.successCopy;
+    }
+
+    setTextWithLineBreaks(target, value) {
+      if (!target) {
+        return;
+      }
+      const stringValue = value == null ? '' : String(value);
+      target.innerHTML = '';
+      const parts = stringValue.split(/\r?\n/);
+      parts.forEach((part, index) => {
+        target.appendChild(document.createTextNode(part));
+        if (index < parts.length - 1) {
+          target.appendChild(document.createElement('br'));
+        }
+      });
+    }
+
+    resolveDiscountMessage(template, discountCode) {
+      const normalizedTemplate = (template || '').toString();
+      const placeholderMarker = /\{\{\s*(?:code|discount_code)\s*\}\}/i;
+      const placeholderReplace = /\{\{\s*(?:code|discount_code)\s*\}\}/gi;
+      const normalizeSpacing = (value) =>
+        value
+          .replace(/\s{2,}/g, ' ')
+          .replace(/\s+([,.;!?])/g, '$1')
+          .trim();
+
+      if (!discountCode) {
+        if (placeholderMarker.test(normalizedTemplate)) {
+          const cleaned = normalizedTemplate.replace(placeholderReplace, '');
+          return normalizeSpacing(cleaned);
+        }
+        return normalizeSpacing(normalizedTemplate);
+      }
+
+      if (placeholderMarker.test(normalizedTemplate)) {
+        const replaced = normalizedTemplate.replace(placeholderReplace, discountCode);
+        return normalizeSpacing(replaced);
+      }
+
+      return normalizeSpacing(`${normalizedTemplate} ${discountCode}`);
     }
 
     getFocusableElements() {

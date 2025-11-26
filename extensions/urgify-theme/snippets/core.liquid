@@ -22,6 +22,16 @@
 {% else %}
 {{ 'urgify.min.css' | asset_url | stylesheet_tag }}
 {{ 'urgify-stock-alert.css' | asset_url | stylesheet_tag }}
+{% assign stock_alert_config = shop.metafields.urgify.stock_alert_config.value | default: '{}' %}
+{% assign stock_alert_variant_cache = shop.metafields.urgify.stock_alert_variant_cache.value | default: '{}' %}
+<script>
+  window.__urgifyConfig = Object.assign(
+    {},
+    window.__urgifyConfig || {},
+    {{ stock_alert_config }}
+  );
+  window.__urgifyConfig.low_stock_cache = {{ stock_alert_variant_cache }};
+</script>
 <script src="{{ 'urgify.js' | asset_url }}" defer></script>
 <script src="{{ 'urgify-stock-alert.js' | asset_url }}" defer></script>
 {% render 'urgify-stock-alert-auto' %}

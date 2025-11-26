@@ -487,6 +487,129 @@
   color: #667eea;
 }
 
+/* Festive Christmas */
+.urgify-popup-content.urgify-popup--style-christmas,
+.urgify-popup--style-christmas .urgify-popup-content {
+  background: linear-gradient(135deg, #0f5132 0%, #198754 55%, #b02a37 100%);
+  color: #fff8e1;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 25px 50px rgba(15, 81, 50, 0.35);
+  position: relative;
+  overflow: hidden;
+}
+
+.urgify-popup-content.urgify-popup--style-christmas::before,
+.urgify-popup-content.urgify-popup--style-christmas::after,
+.urgify-popup--style-christmas .urgify-popup-content::before,
+.urgify-popup--style-christmas .urgify-popup-content::after {
+  content: '';
+  position: absolute;
+  top: -35%;
+  left: -15%;
+  width: 150%;
+  height: 170%;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.35) 0, transparent 45%),
+    radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.25) 0, transparent 50%),
+    radial-gradient(circle at 40% 70%, rgba(255, 255, 255, 0.2) 0, transparent 40%);
+  animation: urgifyChristmasSnow 14s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.urgify-popup-content.urgify-popup--style-christmas::after,
+.urgify-popup--style-christmas .urgify-popup-content::after {
+  animation-duration: 20s;
+  opacity: 0.6;
+  transform: rotate(12deg);
+}
+
+.urgify-popup-content.urgify-popup--style-christmas > *,
+.urgify-popup--style-christmas .urgify-popup-content > * {
+  position: relative;
+  z-index: 2;
+}
+
+.urgify-popup-content.urgify-popup--style-christmas .urgify-popup-close,
+.urgify-popup--style-christmas .urgify-popup-close {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.urgify-popup-content.urgify-popup--style-christmas .urgify-popup-close:hover,
+.urgify-popup--style-christmas .urgify-popup-close:hover {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+
+.urgify-popup-content.urgify-popup--style-christmas .urgify-popup-cta,
+.urgify-popup--style-christmas .urgify-popup-cta {
+  background-color: #fff8e1;
+  color: #0f5132;
+}
+
+/* Blackweek */
+.urgify-popup-content.urgify-popup--style-blackweek,
+.urgify-popup--style-blackweek .urgify-popup-content {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #dc3545 !important;
+  box-shadow: 
+    0 8px 24px rgba(220, 53, 69, 0.3),
+    0 0 0 1px rgba(220, 53, 69, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  position: relative;
+}
+
+.urgify-popup-content.urgify-popup--style-blackweek > *,
+.urgify-popup--style-blackweek .urgify-popup-content > * {
+  position: relative;
+  z-index: 1;
+}
+
+.urgify-popup-content.urgify-popup--style-blackweek .urgify-popup-title,
+.urgify-popup--style-blackweek .urgify-popup-title {
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.urgify-popup-content.urgify-popup--style-blackweek .urgify-popup-description,
+.urgify-popup--style-blackweek .urgify-popup-description {
+  color: #f8f9fa !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+
+.urgify-popup-content.urgify-popup--style-blackweek .urgify-popup-close,
+.urgify-popup--style-blackweek .urgify-popup-close {
+  color: #ffffff !important;
+  background: rgba(220, 53, 69, 0.3) !important;
+  border: 1px solid rgba(220, 53, 69, 0.5) !important;
+}
+
+.urgify-popup-content.urgify-popup--style-blackweek .urgify-popup-close:hover,
+.urgify-popup--style-blackweek .urgify-popup-close:hover {
+  background-color: rgba(220, 53, 69, 0.5) !important;
+  box-shadow: 0 0 15px rgba(220, 53, 69, 0.6) !important;
+}
+
+.urgify-popup-content.urgify-popup--style-blackweek .urgify-popup-cta,
+.urgify-popup--style-blackweek .urgify-popup-cta {
+  background: #dc3545 !important;
+  color: #ffffff !important;
+  border: 1px solid #ffc107 !important;
+  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4) !important;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.urgify-popup-content.urgify-popup--style-blackweek .urgify-popup-cta:hover,
+.urgify-popup--style-blackweek .urgify-popup-cta:hover {
+  background: #c82333 !important;
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.5) !important;
+  transform: translateY(-1px);
+}
+
 /* Brutalist */
 .urgify-popup-content.urgify-popup--style-brutalist,
 .urgify-popup--style-brutalist .urgify-popup-content {
@@ -666,6 +789,16 @@
     transform: scale(0.9);
   }
 }
+
+@keyframes urgifyChristmasSnow {
+  0% {
+    transform: translate3d(0, -10%, 0);
+  }
+  100% {
+    transform: translate3d(0, 15%, 0);
+  }
+}
+
 
 /* Newsletter Form Styles */
 .urgify-popup-newsletter-container {

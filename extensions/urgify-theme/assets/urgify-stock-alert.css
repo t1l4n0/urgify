@@ -26,10 +26,14 @@
 
 /* Override CSS variables for predefined styles */
 #urgify-stock-alert-auto.urgify-stock-alert--spectacular,
+#urgify-stock-alert-auto.urgify-stock-alert--christmas,
+#urgify-stock-alert-auto.urgify-stock-alert--blackweek,
 #urgify-stock-alert-auto.urgify-stock-alert--brutalist,
 #urgify-stock-alert-auto.urgify-stock-alert--glassmorphism,
 #urgify-stock-alert-auto.urgify-stock-alert--neumorphism,
 .urgify-stock-alert--spectacular,
+.urgify-stock-alert--christmas,
+.urgify-stock-alert--blackweek,
 .urgify-stock-alert--brutalist,
 .urgify-stock-alert--glassmorphism,
 .urgify-stock-alert--neumorphism {
@@ -109,6 +113,88 @@ div#urgify-stock-alert-auto.urgify-stock-alert.urgify-stock-alert--spectacular {
   font-style: normal !important;
   -webkit-font-smoothing: auto !important;
   font-variation-settings: normal !important;
+}
+
+#urgify-stock-alert-auto.urgify-stock-alert--christmas,
+.urgify-stock-alert--christmas {
+  position: relative !important;
+  padding: 1.5rem 2rem !important;
+  border-radius: 22px !important;
+  background: linear-gradient(135deg, #0f5132 0%, #198754 55%, #b02a37 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.35) !important;
+  color: #fff8e1 !important;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 
+    0 20px 45px rgba(15, 81, 50, 0.35),
+    inset 0 0 12px rgba(255, 255, 255, 0.15) !important;
+  letter-spacing: 1.5px !important;
+  font-size: 1.2rem !important;
+  overflow: hidden !important;
+}
+
+div#urgify-stock-alert-auto.urgify-stock-alert.urgify-stock-alert--christmas {
+  background: linear-gradient(135deg, #0f5132 0%, #198754 55%, #b02a37 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.35) !important;
+  color: #fff8e1 !important;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 
+    0 20px 45px rgba(15, 81, 50, 0.35),
+    inset 0 0 12px rgba(255, 255, 255, 0.15) !important;
+}
+
+#urgify-stock-alert-auto.urgify-stock-alert--christmas::before,
+#urgify-stock-alert-auto.urgify-stock-alert--christmas::after,
+.urgify-stock-alert--christmas::before,
+.urgify-stock-alert--christmas::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  left: -10%;
+  width: 140%;
+  height: 160%;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.35) 0, transparent 45%),
+    radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.25) 0, transparent 50%),
+    radial-gradient(circle at 40% 70%, rgba(255, 255, 255, 0.2) 0, transparent 40%);
+  animation: urgifyStockAlertChristmasSnow 14s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+#urgify-stock-alert-auto.urgify-stock-alert--christmas::after,
+.urgify-stock-alert--christmas::after {
+  animation-duration: 20s;
+  opacity: 0.6;
+  transform: rotate(10deg);
+}
+
+#urgify-stock-alert-auto.urgify-stock-alert--blackweek,
+.urgify-stock-alert--blackweek {
+  position: relative !important;
+  padding: 1.5rem 2rem !important;
+  border-radius: 12px !important;
+  background: #000000 !important;
+  border: 2px solid #dc3545 !important;
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
+  box-shadow: 
+    0 8px 24px rgba(220, 53, 69, 0.3),
+    0 0 0 1px rgba(220, 53, 69, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  letter-spacing: 0.5px !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+}
+
+div#urgify-stock-alert-auto.urgify-stock-alert.urgify-stock-alert--blackweek {
+  background: #000000 !important;
+  border: 2px solid #dc3545 !important;
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
+  box-shadow: 
+    0 8px 24px rgba(220, 53, 69, 0.3),
+    0 0 0 1px rgba(220, 53, 69, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
 }
 
 #urgify-stock-alert-auto.urgify-stock-alert--brutalist,
@@ -418,6 +504,16 @@ div#urgify-stock-alert-auto.urgify-stock-alert.urgify-stock-alert--neumorphism {
   75% { background-position: 50% 100%; }
   100% { background-position: 0% 50%; }
 }
+
+@keyframes urgifyStockAlertChristmasSnow {
+  0% {
+    transform: translate3d(0, -10%, 0);
+  }
+  100% {
+    transform: translate3d(0, 10%, 0);
+  }
+}
+
 
 /* Style Rotation Animations removed - they were overriding custom background colors */
 

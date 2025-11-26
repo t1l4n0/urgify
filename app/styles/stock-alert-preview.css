@@ -186,6 +186,16 @@
   100% { background-position: 0% 50%; }
 }
 
+@keyframes stockAlertChristmasSnow {
+  0% {
+    transform: translate3d(0, -10%, 0);
+  }
+  100% {
+    transform: translate3d(0, 10%, 0);
+  }
+}
+
+
 /* Spectacular Animations */
 @keyframes spectacularPulse {
   0%, 100% { 
@@ -290,6 +300,76 @@
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+}
+
+/* Festive Christmas Style */
+.urgify-stock-alert--christmas {
+  position: relative !important;
+  padding: 1.5rem 2rem !important;
+  border-radius: 22px !important;
+  background: linear-gradient(135deg, #0f5132 0%, #198754 55%, #b02a37 100%) !important;
+  border: 2px solid rgba(255, 255, 255, 0.35) !important;
+  color: #fff8e1 !important;
+  text-shadow: 0 3px 6px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 20px 45px rgba(15, 81, 50, 0.35) !important;
+  letter-spacing: 1.5px !important;
+  font-size: 1.2rem !important;
+  overflow: hidden !important;
+}
+
+.urgify-stock-alert--christmas::before,
+.urgify-stock-alert--christmas::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  left: -10%;
+  width: 140%;
+  height: 160%;
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.35) 0, transparent 45%),
+    radial-gradient(circle at 70% 30%, rgba(255, 255, 255, 0.25) 0, transparent 50%),
+    radial-gradient(circle at 40% 70%, rgba(255, 255, 255, 0.2) 0, transparent 40%);
+  animation: stockAlertChristmasSnow 14s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.urgify-stock-alert--christmas::after {
+  animation-duration: 20s;
+  opacity: 0.6;
+  transform: rotate(10deg);
+}
+
+.urgify-stock-alert--christmas .urgify-stock-alert__text {
+  position: relative;
+  z-index: 2;
+}
+
+/* Blackweek Style */
+.urgify-stock-alert--blackweek {
+  position: relative !important;
+  padding: 1.5rem 2rem !important;
+  border-radius: 12px !important;
+  background: #000000 !important;
+  border: 2px solid #dc3545 !important;
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
+  box-shadow: 
+    0 8px 24px rgba(220, 53, 69, 0.3),
+    0 0 0 1px rgba(220, 53, 69, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  letter-spacing: 0.5px !important;
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+}
+
+.urgify-stock-alert--blackweek * {
+  color: #ffffff !important;
+}
+
+.urgify-stock-alert--blackweek .urgify-stock-alert__text {
+  position: relative;
+  z-index: 1;
 }
 
 /* Brutalist Style - Exact Frontend Match */

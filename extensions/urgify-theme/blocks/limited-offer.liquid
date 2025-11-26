@@ -334,6 +334,45 @@ function urgifyEqualizeLimitedOfferHeights(root) {
   });
 }
 
+function urgifyApplySideWrapperParity(parent) {
+  if (!parent || !parent.children) {
+    return;
+  }
+  const wrappers = Array.from(parent.children).filter(
+    (child) =>
+      child.classList &&
+      child.classList.contains('urgify-limited-offer-wrapper--side')
+  );
+  if (!wrappers.length) {
+    return;
+  }
+  if (wrappers.length < 2) {
+    wrappers.forEach((wrapper) => {
+      wrapper.classList.remove(
+        'urgify-limited-offer-wrapper--side--odd',
+        'urgify-limited-offer-wrapper--side--even'
+      );
+    });
+    return;
+  }
+  wrappers.forEach((wrapper, index) => {
+    wrapper.classList.remove(
+      'urgify-limited-offer-wrapper--side--odd',
+      'urgify-limited-offer-wrapper--side--even'
+    );
+    const hasSideChild = wrapper.querySelector(
+      '.urgify-limited-offer[data-layout="side-by-side"]'
+    );
+    if (hasSideChild) {
+      if (index % 2 === 0) {
+        wrapper.classList.add('urgify-limited-offer-wrapper--side--odd');
+      } else {
+        wrapper.classList.add('urgify-limited-offer-wrapper--side--even');
+      }
+    }
+  });
+}
+
 function urgifyApplyLimitedOfferLayout(root) {
   const scope = root || document;
   const existingWrappers = scope.querySelectorAll('.urgify-limited-offer-wrapper--side');
@@ -378,6 +417,7 @@ function urgifyApplyLimitedOfferLayout(root) {
       container.classList.remove('urgify-limited-offer-side-container');
       container.style.removeProperty('--urgify-side-gap');
     }
+    urgifyApplySideWrapperParity(container);
   });
 
   parentDetails.forEach((details, parent) => {
@@ -392,6 +432,7 @@ function urgifyApplyLimitedOfferLayout(root) {
       parent.classList.remove('urgify-limited-offer-side-container');
       parent.style.removeProperty('--urgify-side-gap');
     }
+    urgifyApplySideWrapperParity(parent);
   });
 
   urgifyScheduleLimitedOfferMatchHeights(scope);

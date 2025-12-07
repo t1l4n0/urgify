@@ -16,7 +16,7 @@ import { useState, useCallback, useEffect, useRef, useMemo, Fragment } from "rea
 import { useAppBridge } from "@shopify/app-bridge-react";
 import popupPreviewStyles from "../styles/popup-preview.css?url";
 import { authenticatedFetch } from "../utils/authenticatedFetch";
-import { ensureShopMetafieldDefinitions } from "../utils/metafieldDefinitions";
+import { ensureShopMetafieldDefinitions, ensureProductMetafieldDefinitions } from "../utils/metafieldDefinitions";
 import {
   ServerSessionTokenProvider,
   useSessionToken,
@@ -82,6 +82,7 @@ const popupSettingsSchema = z.object({
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
   await ensureShopMetafieldDefinitions(admin);
+  await ensureProductMetafieldDefinitions(admin);
 
   // Sync subscription status to metafield first
   try {
@@ -509,6 +510,7 @@ export const action = async ({ request }: ActionFunctionArgs) => {
     // Ensure metafield definitions exist before saving
     try {
       await ensureShopMetafieldDefinitions(admin);
+      await ensureProductMetafieldDefinitions(admin);
       console.log("Metafield definitions ensured");
     } catch (metafieldDefError) {
       console.error("Error ensuring metafield definitions:", metafieldDefError);

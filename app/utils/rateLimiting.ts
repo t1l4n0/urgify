@@ -63,8 +63,9 @@ export const rateLimitConfigs = {
   },
   
   // Webhook endpoints - less restrictive (Shopify sends many)
+  // Per shop: 500 requests per minute (Shopify's limit is ~1000/min globally)
   webhook: {
-    points: 100, // Number of requests
+    points: 500, // Number of requests
     duration: 60, // Per 60 seconds
   },
   
@@ -174,6 +175,21 @@ export async function shouldRateLimit(
   const key = getClientIdentifier(request);
   const rateLimiter = createRateLimiter(type);
   const result = await rateLimiter(key);
+  
+  return {
+    limited: !result.success,
+    error: result.error,
+    retryAfter: result.retryAfter,
+  };
+}
+
+// Shop-based rate limiting for webhooks (after authentication)
+export async function shouldRateLimitByShop(
+  shop: string,
+  type: keyof typeof rateLimiters = 'webhook'
+): Promise<{ limited: boolean; error?: string; retryAfter?: number }> {
+  const rateLimiter = createRateLimiter(type);
+  const result = await rateLimiter(shop);
   
   return {
     limited: !result.success,

@@ -2,11 +2,11 @@
   "name": "urgify",
   "private": true,
   "scripts": {
-    "build": "remix vite:build",
+    "build": "node scripts/update-version.js && remix vite:build",
     "dev": "shopify app dev",
     "config:link": "shopify app config link",
     "generate": "shopify app generate",
-    "deploy": "shopify app deploy",
+    "deploy": "node scripts/increment-version.js && shopify app deploy --force",
     "config:use": "shopify app config use",
     "env": "shopify app env",
     "start": "node server.js",
@@ -18,7 +18,9 @@
     "shopify": "shopify",
     "prisma": "prisma",
     "graphql-codegen": "graphql-codegen",
-    "vite": "vite"
+    "vite": "vite",
+    "version:update": "node scripts/update-version.js",
+    "version:increment": "node scripts/increment-version.js"
   },
   "type": "module",
   "packageManager": "npm@10.9.0",

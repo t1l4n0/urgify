@@ -1,0 +1,536 @@
+/* Urgify Image Grid - Responsive Grid with Hover Effects */
+
+/* Heading with Parallelogram Background - Positioned absolutely over grid */
+.urgify-image-grid-heading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 100;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  height: 50%;
+  width: 100%;
+}
+
+.urgify-image-grid-heading-text {
+  display: inline-block;
+  position: relative;
+  padding: 1.5rem 4rem;
+  background-color: var(--urgify-grid-heading-bg, var(--urgify-grid-default-hover-bg, #000000));
+  color: var(--urgify-grid-default-hover-text, #ffffff);
+  transform: skew(-15deg);
+  font-weight: 600;
+  font-size: var(--urgify-grid-label-font-size, 18px);
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  pointer-events: auto;
+}
+
+.urgify-image-grid-heading-text > * {
+  display: inline-block;
+  transform: skew(15deg);
+}
+
+@media screen and (max-width: 768px) {
+  .urgify-image-grid-heading-text {
+    padding: 1.2rem 3rem;
+    font-size: calc(var(--urgify-grid-label-font-size, 18px) * 0.9);
+  }
+}
+
+/* Ensure app block container takes full width */
+.shopify-app-block:has(.urgify-image-grid),
+.shopify-block:has(.urgify-image-grid),
+.shopify-app-block .urgify-image-grid,
+.shopify-block .urgify-image-grid {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+}
+
+.shopify-app-block:has(.urgify-image-grid),
+.shopify-block:has(.urgify-image-grid) {
+  flex: 0 0 100% !important;
+  flex-basis: 100% !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  max-height: none !important;
+  clear: both !important;
+  margin-bottom: var(--urgify-grid-block-gap, 0px) !important;
+}
+
+/* Ensure multiple blocks stack vertically */
+.shopify-section > .shopify-app-block:has(.urgify-image-grid) + .shopify-app-block:has(.urgify-image-grid),
+.shopify-section > .shopify-block:has(.urgify-image-grid) + .shopify-block:has(.urgify-image-grid),
+.shopify-section > .shopify-app-block:has(.urgify-image-grid) + .shopify-block:has(.urgify-image-grid),
+.shopify-section > .shopify-block:has(.urgify-image-grid) + .shopify-app-block:has(.urgify-image-grid) {
+  margin-top: var(--urgify-grid-block-gap, 0px) !important;
+  clear: both !important;
+  display: block !important;
+  flex: 0 0 100% !important;
+  flex-basis: 100% !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Force blocks to stack vertically even in flex row containers */
+.layout-panel-flex--row .shopify-app-block:has(.urgify-image-grid),
+.layout-panel-flex--row .shopify-block:has(.urgify-image-grid),
+[style*="--flex-direction: row"] .shopify-app-block:has(.urgify-image-grid),
+[style*="--flex-direction: row"] .shopify-block:has(.urgify-image-grid),
+.section-content-wrapper .shopify-app-block:has(.urgify-image-grid),
+.section-content-wrapper .shopify-block:has(.urgify-image-grid),
+.layout-panel-flex .shopify-app-block:has(.urgify-image-grid),
+.layout-panel-flex .shopify-block:has(.urgify-image-grid),
+.section-content-wrapper.layout-panel-flex--row .shopify-app-block:has(.urgify-image-grid),
+.section-content-wrapper.layout-panel-flex--row .shopify-block:has(.urgify-image-grid) {
+  flex: 0 0 100% !important;
+  flex-basis: 100% !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  align-self: stretch !important;
+  order: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  position: relative !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  display: block !important;
+}
+
+/* Force parent container to wrap when it contains image grid blocks */
+.section-content-wrapper:has(.shopify-app-block:has(.urgify-image-grid)),
+.section-content-wrapper:has(.shopify-block:has(.urgify-image-grid)),
+.layout-panel-flex:has(.shopify-app-block:has(.urgify-image-grid)),
+.layout-panel-flex:has(.shopify-block:has(.urgify-image-grid)),
+[style*="--flex-wrap: nowrap"]:has(.shopify-app-block:has(.urgify-image-grid)),
+[style*="--flex-wrap: nowrap"]:has(.shopify-block:has(.urgify-image-grid)),
+.layout-panel-flex--row:has(.shopify-app-block:has(.urgify-image-grid)),
+.layout-panel-flex--row:has(.shopify-block:has(.urgify-image-grid)),
+.section-content-wrapper.layout-panel-flex--row:has(.shopify-app-block:has(.urgify-image-grid)),
+.section-content-wrapper.layout-panel-flex--row:has(.shopify-block:has(.urgify-image-grid)) {
+  flex-wrap: wrap !important;
+  --flex-wrap: wrap !important;
+  flex-direction: column !important;
+  --flex-direction: column !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  height: auto !important;
+  max-height: none !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+}
+
+/* Additional override for section-content-wrapper - highest specificity */
+.section-content-wrapper.section-content-wrapper:has(.shopify-app-block:has(.urgify-image-grid)),
+.section-content-wrapper.section-content-wrapper:has(.shopify-block:has(.urgify-image-grid)),
+.section-content-wrapper.layout-panel-flex--row.section-content-wrapper:has(.shopify-app-block:has(.urgify-image-grid)),
+.section-content-wrapper.layout-panel-flex--row.section-content-wrapper:has(.shopify-block:has(.urgify-image-grid)) {
+  flex-wrap: wrap !important;
+  flex-direction: column !important;
+  --flex-direction: column !important;
+  --flex-wrap: wrap !important;
+  overflow-x: hidden !important;
+  overflow-y: visible !important;
+  height: auto !important;
+  max-height: none !important;
+  display: flex !important;
+}
+
+/* Force blocks to break to new line */
+.shopify-app-block:has(.urgify-image-grid),
+.shopify-block:has(.urgify-image-grid) {
+  break-inside: avoid !important;
+  page-break-inside: avoid !important;
+  overflow: visible !important;
+  position: relative !important;
+  z-index: auto !important;
+}
+
+.urgify-image-grid {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto 0 auto !important;
+  padding: 0 !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 200px;
+  box-sizing: border-box !important;
+  flex: 0 0 100% !important;
+  flex-basis: 100% !important;
+  flex-shrink: 0 !important;
+  flex-grow: 0 !important;
+  clear: both !important;
+  overflow: visible !important;
+  position: relative !important;
+  left: 0 !important;
+  right: 0 !important;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+.urgify-image-grid:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Remove margin-bottom from last block */
+.shopify-app-block:has(.urgify-image-grid):last-child,
+.shopify-block:has(.urgify-image-grid):last-child {
+  margin-bottom: 0 !important;
+}
+
+@media screen and (max-width: 768px) {
+  .urgify-image-grid {
+    margin-bottom: 0 !important;
+    position: relative !important;
+    z-index: auto !important;
+  }
+  
+  .shopify-app-block:has(.urgify-image-grid),
+  .shopify-block:has(.urgify-image-grid) {
+    margin-bottom: var(--urgify-grid-block-gap, 0px) !important;
+    position: relative !important;
+    z-index: auto !important;
+  }
+  
+  /* Prevent overlay issues on mobile */
+  .urgify-image-grid-container {
+    position: relative !important;
+    z-index: auto !important;
+  }
+}
+
+/* Width Options */
+.urgify-image-grid-width-fullwidth {
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  flex: 1 1 100% !important;
+}
+
+.urgify-image-grid-width-container {
+  width: 100% !important;
+  max-width: 1200px !important;
+  min-width: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  flex: 0 1 1200px !important;
+}
+
+.urgify-image-grid-width-narrow {
+  width: 100% !important;
+  max-width: 800px !important;
+  min-width: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  flex: 0 1 800px !important;
+}
+
+.urgify-image-grid-width-super-narrow {
+  width: 100% !important;
+  max-width: 600px !important;
+  min-width: 0 !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  flex: 0 1 600px !important;
+}
+
+/* Ensure app block container respects width settings */
+.shopify-app-block:has(.urgify-image-grid-width-container),
+.shopify-block:has(.urgify-image-grid-width-container) {
+  flex: 0 1 1200px !important;
+  max-width: 1200px !important;
+  width: 100% !important;
+}
+
+.shopify-app-block:has(.urgify-image-grid-width-narrow),
+.shopify-block:has(.urgify-image-grid-width-narrow) {
+  flex: 0 1 800px !important;
+  max-width: 800px !important;
+  width: 100% !important;
+}
+
+.shopify-app-block:has(.urgify-image-grid-width-super-narrow),
+.shopify-block:has(.urgify-image-grid-width-super-narrow) {
+  flex: 0 1 600px !important;
+  max-width: 600px !important;
+  width: 100% !important;
+}
+
+.urgify-image-grid-container {
+  display: grid;
+  grid-template-columns: repeat(var(--urgify-grid-columns-desktop, 3), 1fr);
+  gap: var(--urgify-grid-gap, 16px);
+  width: 100% !important;
+  min-width: 100% !important;
+  max-width: 100% !important;
+  min-height: 200px;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  position: relative !important;
+}
+
+/* Mobile Responsive */
+@media screen and (max-width: 768px) {
+  .urgify-image-grid-container {
+    grid-template-columns: repeat(var(--urgify-grid-columns-mobile, 2), 1fr);
+  }
+}
+
+/* Single column on very small screens */
+@media screen and (max-width: 480px) {
+  .urgify-image-grid-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Tile Container */
+.urgify-image-grid-tile {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: var(--urgify-grid-border-radius, 8px);
+  background-color: #f5f5f5;
+  display: block;
+}
+
+/* Aspect Ratio Handling */
+.urgify-image-grid-tile-inner {
+  position: relative;
+  width: 100%;
+  min-height: 200px;
+  aspect-ratio: var(--urgify-grid-aspect-ratio, 1 / 1);
+  overflow: hidden;
+  display: block;
+}
+
+.urgify-image-grid-tile[style*="--urgify-grid-aspect-ratio: auto"] .urgify-image-grid-tile-inner {
+  aspect-ratio: auto;
+  height: auto;
+}
+
+/* Image Styling */
+.urgify-image-grid-image {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  display: block;
+}
+
+.urgify-image-grid-image img {
+  width: 100%;
+  height: 100%;
+  min-height: 200px;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+/* Link Styling */
+.urgify-image-grid-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+  color: inherit;
+  position: relative;
+}
+
+.urgify-image-grid-link:focus {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+/* Overlay - Hidden by default, shown on hover/focus */
+.urgify-image-grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--tile-hover-bg, var(--urgify-grid-default-hover-bg, #000000));
+  color: var(--tile-hover-text, var(--urgify-grid-default-hover-text, #ffffff));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 2;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+/* Label Styling */
+.urgify-image-grid-label {
+  text-align: center;
+  font-size: var(--urgify-grid-label-font-size, 18px);
+  line-height: 1.4;
+  word-wrap: break-word;
+  max-width: 100%;
+  text-transform: var(--urgify-grid-label-uppercase, none);
+  position: relative;
+}
+
+/* Add ">" after label text - only when hover is enabled */
+.urgify-image-grid:not(.urgify-image-grid-no-hover) .urgify-image-grid-label::after {
+  content: ">";
+  margin-left: 0.3em;
+  display: inline-block;
+}
+
+/* Hide ">" when hover is disabled */
+.urgify-image-grid-no-hover .urgify-image-grid-label::after {
+  content: none !important;
+  display: none !important;
+}
+
+/* Apply theme typography based on font type */
+.urgify-image-grid[style*="--urgify-grid-label-font-type: body"] .urgify-image-grid-label,
+.urgify-image-grid-label[data-font-type="body"] {
+  font-family: var(--font-body--family, var(--font-paragraph--family, inherit));
+  font-weight: var(--font-body--weight, var(--font-paragraph--weight, 400));
+  font-style: var(--font-body--style, var(--font-paragraph--style, normal));
+}
+
+.urgify-image-grid[style*="--urgify-grid-label-font-type: subheading"] .urgify-image-grid-label,
+.urgify-image-grid-label[data-font-type="subheading"] {
+  font-family: var(--font-subheading--family, inherit);
+  font-weight: var(--font-subheading--weight, 500);
+  font-style: var(--font-subheading--style, normal);
+}
+
+.urgify-image-grid[style*="--urgify-grid-label-font-type: heading"] .urgify-image-grid-label,
+.urgify-image-grid-label[data-font-type="heading"] {
+  font-family: var(--font-heading--family, inherit);
+  font-weight: var(--font-heading--weight, 600);
+  font-style: var(--font-heading--style, normal);
+}
+
+.urgify-image-grid[style*="--urgify-grid-label-font-type: accent"] .urgify-image-grid-label,
+.urgify-image-grid-label[data-font-type="accent"] {
+  font-family: var(--font-accent--family, inherit);
+  font-weight: var(--font-accent--weight, 500);
+  font-style: var(--font-accent--style, normal);
+}
+
+@media screen and (max-width: 768px) {
+  .urgify-image-grid-label {
+    font-size: calc(var(--urgify-grid-label-font-size, 18px) * 0.85);
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .urgify-image-grid-label {
+    font-size: calc(var(--urgify-grid-label-font-size, 18px) * 0.75);
+  }
+}
+
+/* Hover and Focus States - only when hover is enabled */
+.urgify-image-grid:not(.urgify-image-grid-no-hover) .urgify-image-grid-tile:hover .urgify-image-grid-overlay,
+.urgify-image-grid:not(.urgify-image-grid-no-hover) .urgify-image-grid-link:focus .urgify-image-grid-overlay {
+  opacity: 1;
+}
+
+.urgify-image-grid:not(.urgify-image-grid-no-hover) .urgify-image-grid-tile:hover .urgify-image-grid-image img,
+.urgify-image-grid:not(.urgify-image-grid-no-hover) .urgify-image-grid-link:focus .urgify-image-grid-image img {
+  transform: scale(1.05);
+  opacity: 0.7;
+}
+
+/* CTA Tile (No Image) - Always show overlay only when hover is enabled */
+.urgify-image-grid:not(.urgify-image-grid-no-hover) .urgify-image-grid-tile-cta .urgify-image-grid-overlay {
+  opacity: 1;
+  background-color: var(--tile-hover-bg, var(--urgify-grid-default-hover-bg, #000000));
+}
+
+/* Disable hover effect when disabled */
+.urgify-image-grid-no-hover .urgify-image-grid-overlay,
+.urgify-image-grid-no-hover .urgify-image-grid-label,
+.urgify-image-grid-no-hover .urgify-image-grid-label::after {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  content: none !important;
+}
+
+.urgify-image-grid-no-hover .urgify-image-grid-tile:hover .urgify-image-grid-image img,
+.urgify-image-grid-no-hover .urgify-image-grid-link:focus .urgify-image-grid-image img {
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+.urgify-image-grid-no-hover .urgify-image-grid-tile-cta .urgify-image-grid-overlay {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+.urgify-image-grid-tile-cta .urgify-image-grid-image {
+  display: none;
+}
+
+/* Empty State */
+.urgify-image-grid-empty {
+  padding: 3rem 1rem;
+  text-align: center;
+  color: #666;
+  font-size: 0.875rem;
+  border: 2px dashed #ddd;
+  border-radius: var(--urgify-grid-border-radius, 8px);
+  background-color: #fafafa;
+}
+
+/* Accessibility: Ensure focus is visible - only when hover is enabled */
+.urgify-image-grid:not(.urgify-image-grid-no-hover) .urgify-image-grid-link:focus-visible {
+  outline: 3px solid var(--tile-hover-bg, var(--urgify-grid-default-hover-bg, #000000));
+  outline-offset: 3px;
+  border-radius: var(--urgify-grid-border-radius, 8px);
+}
+
+/* Prevent text selection on hover */
+.urgify-image-grid-overlay {
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+/* Smooth transitions for all interactive elements */
+.urgify-image-grid-tile {
+  transition: transform 0.2s ease;
+}
+
+.urgify-image-grid-tile:active {
+  transform: scale(0.98);
+}
+

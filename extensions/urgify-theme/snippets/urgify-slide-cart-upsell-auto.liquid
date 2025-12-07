@@ -1,0 +1,36 @@
+{% comment %}
+  Automatically injects the cart upsell block into the cart drawer
+  when the app is enabled. This avoids manual placement.
+  
+  Uses product metafields (urgify.cart_upsells) for upsell products.
+  Automatically fills to at least 3 products using Shopify recommendations if needed.
+{% endcomment %}
+
+{{ 'urgify-slide-cart-upsell.css' | asset_url | stylesheet_tag }}
+
+{% liquid
+  # Configuration - simplified since we use metafields + auto-fill
+  assign heading = 'Recommendations'
+  assign max_products = 3
+  assign enable_metafield_upsells = true
+  assign enable_recommendations = true
+  assign show_price = true
+  assign show_compare_at_price = true
+  assign image_size = 'medium'
+  assign button_label = 'Add to cart'
+  
+  # Build config JSON
+  assign config_json = '{"heading":"' | append: heading | append: '","max_products":' | append: max_products | append: ',"enable_metafield_upsells":' | append: enable_metafield_upsells | append: ',"enable_recommendations":' | append: enable_recommendations | append: ',"show_price":' | append: show_price | append: ',"show_compare_at_price":' | append: show_compare_at_price | append: ',"image_size":"' | append: image_size | append: '","button_label":"' | append: button_label | append: '","fallback_products":[]}'
+%}
+
+<div 
+  id="urgify-slide-cart-upsell-auto"
+  class="urgify-slide-cart-upsell"
+  data-urgify="slide-cart-upsell"
+  data-block-id="auto"
+  data-urgify-config="{{ config_json | escape }}"
+  style="display: none;"
+></div>
+
+<script src="{{ 'urgify-slide-cart-upsell.js' | asset_url }}" defer></script>
+

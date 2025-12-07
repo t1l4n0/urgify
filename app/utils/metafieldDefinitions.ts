@@ -24,11 +24,35 @@ const SHOP_DEFINITIONS: DefinitionConfig[] = [
   },
 ];
 
+const PRODUCT_DEFINITIONS: DefinitionConfig[] = [
+  {
+    key: "cart_upsells",
+    name: "Urgify cart upsell products",
+    type: "list.product_reference",
+    description: "List of recommended upsell products to display in the cart drawer for this product.",
+  },
+];
+
 const URGIFY_NAMESPACE = "urgify";
 
 const DEFINITION_QUERY = `#graphql
   query getUrgifyShopDefinitions($namespace: String!) {
     metafieldDefinitions(first: 50, namespace: $namespace, ownerType: SHOP) {
+      nodes {
+        id
+        key
+        access {
+          admin
+          storefront
+        }
+      }
+    }
+  }
+`;
+
+const PRODUCT_DEFINITION_QUERY = `#graphql
+  query getUrgifyProductDefinitions($namespace: String!) {
+    metafieldDefinitions(first: 50, namespace: $namespace, ownerType: PRODUCT) {
       nodes {
         id
         key
@@ -58,8 +82,8 @@ const CREATE_DEFINITION_MUTATION = `#graphql
 `;
 
 const UPDATE_DEFINITION_MUTATION = `#graphql
-  mutation updateUrgifyDefinition($id: ID!, $definition: MetafieldDefinitionUpdateInput!) {
-    metafieldDefinitionUpdate(id: $id, definition: $definition) {
+  mutation updateUrgifyDefinition($definition: MetafieldDefinitionUpdateInput!) {
+    metafieldDefinitionUpdate(definition: $definition) {
       updatedDefinition {
         id
         key
@@ -110,7 +134,7 @@ export async function ensureShopMetafieldDefinitions(admin: AdminApi) {
         match.access?.storefront && match.access.storefront !== "NONE";
 
       if (!hasStorefrontAccess) {
-        await updateShopDefinitionAccess(admin, match.id);
+        await updateShopDefinitionAccess(admin, definition);
       }
     }
   } catch (error) {
@@ -147,12 +171,14 @@ async function createShopDefinition(admin: AdminApi, definition: DefinitionConfi
   }
 }
 
-async function updateShopDefinitionAccess(admin: AdminApi, definitionId: string) {
+async function updateShopDefinitionAccess(admin: AdminApi, definition: DefinitionConfig) {
   try {
     const result = await admin.graphql(UPDATE_DEFINITION_MUTATION, {
       variables: {
-        id: definitionId,
         definition: {
+          namespace: URGIFY_NAMESPACE,
+          key: definition.key,
+          ownerType: "SHOP",
           access: {
             admin: "MERCHANT_READ_WRITE",
             storefront: "PUBLIC_READ",
@@ -168,6 +194,102 @@ async function updateShopDefinitionAccess(admin: AdminApi, definitionId: string)
     }
   } catch (error) {
     console.error("Error updating Urgify metafield definition:", error);
+  }
+}
+
+export async function ensureProductMetafieldDefinitions(admin: AdminApi) {
+  try {
+    const response = await admin.graphql(PRODUCT_DEFINITION_QUERY, {
+      variables: { namespace: URGIFY_NAMESPACE },
+    });
+    const data = await response.json();
+
+    const existing: Record<
+      string,
+      { id: string; access?: { storefront?: string | null; admin?: string | null } }
+    > = {};
+
+    const nodes = data?.data?.metafieldDefinitions?.nodes ?? [];
+    nodes.forEach((node: any) => {
+      if (node?.key) {
+        existing[node.key] = {
+          id: node.id,
+          access: node.access,
+        };
+      }
+    });
+
+    for (const definition of PRODUCT_DEFINITIONS) {
+      const match = existing[definition.key];
+      if (!match) {
+        await createProductDefinition(admin, definition);
+        continue;
+      }
+
+      const hasStorefrontAccess =
+        match.access?.storefront && match.access.storefront !== "NONE";
+
+      if (!hasStorefrontAccess) {
+        await updateProductDefinitionAccess(admin, definition);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to ensure Urgify product metafield definitions:", error);
+  }
+}
+
+async function createProductDefinition(admin: AdminApi, definition: DefinitionConfig) {
+  try {
+    const result = await admin.graphql(CREATE_DEFINITION_MUTATION, {
+      variables: {
+        definition: {
+          name: definition.name,
+          namespace: URGIFY_NAMESPACE,
+          key: definition.key,
+          description: definition.description,
+          type: definition.type,
+          ownerType: "PRODUCT",
+          access: {
+            admin: "MERCHANT_READ_WRITE",
+            storefront: "PUBLIC_READ",
+          },
+        },
+      },
+    });
+
+    const data = await result.json();
+    const userErrors = data?.data?.metafieldDefinitionCreate?.userErrors ?? [];
+    if (userErrors.length > 0) {
+      console.error("Failed to create Urgify product metafield definition:", userErrors);
+    }
+  } catch (error) {
+    console.error("Error creating Urgify product metafield definition:", error);
+  }
+}
+
+async function updateProductDefinitionAccess(admin: AdminApi, definition: DefinitionConfig) {
+  try {
+    const result = await admin.graphql(UPDATE_DEFINITION_MUTATION, {
+      variables: {
+        definition: {
+          namespace: URGIFY_NAMESPACE,
+          key: definition.key,
+          ownerType: "PRODUCT",
+          access: {
+            admin: "MERCHANT_READ_WRITE",
+            storefront: "PUBLIC_READ",
+          },
+        },
+      },
+    });
+
+    const data = await result.json();
+    const userErrors = data?.data?.metafieldDefinitionUpdate?.userErrors ?? [];
+    if (userErrors.length > 0) {
+      console.error("Failed to update Urgify product metafield definition access:", userErrors);
+    }
+  } catch (error) {
+    console.error("Error updating Urgify product metafield definition access:", error);
   }
 }
 

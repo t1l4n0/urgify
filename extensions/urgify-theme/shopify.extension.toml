@@ -28,6 +28,18 @@ destination = "assets/urgify-popup.js"
 source = "assets/urgify-popup.css"
 destination = "assets/urgify-popup.css"
 
+[[assets]]
+source = "assets/urgify-image-grid.css"
+destination = "assets/urgify-image-grid.css"
+
+[[assets]]
+source = "assets/urgify-slide-cart-upsell.js"
+destination = "assets/urgify-slide-cart-upsell.js"
+
+[[assets]]
+source = "assets/urgify-slide-cart-upsell.css"
+destination = "assets/urgify-slide-cart-upsell.css"
+
 # Blocks definition
 [[blocks]]
 type = "liquid"
@@ -48,3 +60,13 @@ source = "blocks/scarcity-banner.liquid"
 type = "liquid"
 name = "Urgify – Core"
 source = "blocks/app-embed.liquid"
+
+[[blocks]]
+type = "liquid"
+name = "Urgify – Image Grid"
+source = "blocks/image-grid.liquid"
+
+[[blocks]]
+type = "liquid"
+name = "Urgify – Cart Upsell"
+source = "blocks/slide_in_cart_upsell.liquid"

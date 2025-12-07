@@ -3,8 +3,8 @@
   position: relative;
   overflow: hidden;
   border-radius: 20px;
-  padding: 40px 30px;
-  margin: 20px 0;
+  padding: 28px 22px;
+  margin: 16px 0;
   text-align: center;
   background: linear-gradient(135deg, #dc3545 0%, #e74c3c 50%, #ff6b6b 100%);
   color: white;
@@ -55,8 +55,8 @@
   align-items: stretch;
   vertical-align: top;
   box-sizing: border-box;
-  width: calc(50% - (var(--urgify-side-gap, 24px) / 2));
-  max-width: calc(50% - (var(--urgify-side-gap, 24px) / 2));
+  width: 100%;
+  max-width: 100%;
   margin-right: 0;
   margin-left: 0;
   margin-bottom: 24px;
@@ -70,6 +70,22 @@
 .urgify-limited-offer-wrapper--side.urgify-limited-offer-wrapper--side--even {
   margin-left: calc(var(--urgify-side-gap, 24px) / 2);
   margin-right: 0;
+}
+
+/* 3-column layout spacing */
+.urgify-limited-offer-wrapper--side.urgify-limited-offer-wrapper--side--col-0 {
+  margin-right: calc(var(--urgify-side-gap, 24px) / 2);
+  margin-left: 0;
+}
+
+.urgify-limited-offer-wrapper--side.urgify-limited-offer-wrapper--side--col-1 {
+  margin-right: calc(var(--urgify-side-gap, 24px) / 2);
+  margin-left: calc(var(--urgify-side-gap, 24px) / 2);
+}
+
+.urgify-limited-offer-wrapper--side.urgify-limited-offer-wrapper--side--col-2 {
+  margin-right: 0;
+  margin-left: calc(var(--urgify-side-gap, 24px) / 2);
 }
 
 .urgify-limited-offer-wrapper--side .urgify-limited-offer {
@@ -97,12 +113,22 @@
 
 .urgify-limited-offer-side-container .urgify-limited-offer-wrapper--side,
 .urgify-limited-offer-side-container .urgify-limited-offer-wrapper--side.urgify-limited-offer-wrapper--side--odd,
-.urgify-limited-offer-side-container .urgify-limited-offer-wrapper--side.urgify-limited-offer-wrapper--side--even {
+.urgify-limited-offer-side-container .urgify-limited-offer-wrapper--side.urgify-limited-offer-wrapper--side--even,
+.urgify-limited-offer-side-container .urgify-limited-offer-wrapper--side.urgify-limited-offer-wrapper--side--col-0,
+.urgify-limited-offer-side-container .urgify-limited-offer-wrapper--side.urgify-limited-offer-wrapper--side--col-1,
+.urgify-limited-offer-side-container .urgify-limited-offer-wrapper--side.urgify-limited-offer-wrapper--side--col-2 {
   margin-right: 0;
   margin-left: 0;
   margin-bottom: 0;
-  flex: 1 1 calc(50% - (var(--urgify-side-gap, 24px) / 2));
-  max-width: calc(50% - (var(--urgify-side-gap, 24px) / 2));
+  width: auto !important;
+  flex: 1 1 calc(
+    (100% - (var(--urgify-side-gap, 24px) * (var(--urgify-side-columns, 2) - 1))) /
+    var(--urgify-side-columns, 2)
+  );
+  max-width: calc(
+    (100% - (var(--urgify-side-gap, 24px) * (var(--urgify-side-columns, 2) - 1))) /
+    var(--urgify-side-columns, 2)
+  );
 }
 
 @media (max-width: 768px) {
@@ -199,13 +225,30 @@
 .offer-content {
   position: relative;
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 20px;
+}
+
+.offer-content-main {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.offer-content-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .urgify-limited-offer-external {
   display: flex;
   align-items: center;
-  gap: 32px;
-  margin: 20px 0;
+  gap: 24px;
+  margin: 16px 0;
 }
 
 .urgify-limited-offer-external.offer-extra-position-right {
@@ -230,33 +273,39 @@
 }
 
 .offer-extra-media-inline {
-  margin: 30px auto;
-  max-width: 420px;
+  margin: 0 auto 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  max-width: 300px;
   width: 100%;
+  aspect-ratio: 1;
+  position: relative;
+  box-shadow: none;
 }
 
 .offer-extra-media-inline-inner {
-  border-radius: 18px;
+  border-radius: inherit;
   overflow: hidden;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.25);
+  box-shadow: none;
 }
 
 .offer-extra-media-inline img {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
+  object-fit: cover;
 }
 
 .offer-badge {
   display: inline-block;
   padding: 10px 20px;
-  margin-bottom: 20px;
   border-radius: 25px;
   font-weight: 700;
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 1px;
   animation: badgeBounce 2s infinite;
+  margin: 0;
 }
 
 .badge-icon {
@@ -265,10 +314,10 @@
 }
 
 .offer-title {
-  margin: 20px 0;
   font-size: 2.5rem;
   font-weight: 800;
   line-height: 1.2;
+  margin: 0;
 }
 
 .title-highlight {
@@ -280,7 +329,7 @@
 .title-underline {
   height: 4px;
   width: 100px;
-  margin: 10px auto;
+  margin: 6px auto;
   border-radius: 2px;
   animation: titleUnderline 2s infinite;
 }
@@ -288,14 +337,14 @@
 .offer-description {
   font-size: 1.1rem;
   line-height: 1.6;
-  margin: 20px 0;
   opacity: 0.9;
   white-space: pre-line;
+  margin: 0;
 }
 
 /* Product Display */
 .offer-product {
-  margin: 30px 0;
+  margin: 0;
   position: relative;
   z-index: 2;
 }
@@ -314,7 +363,7 @@
 }
 
 .offer-product-image {
-  margin: 0 auto 15px;
+  margin: 0 auto 12px;
   border-radius: 12px;
   overflow: hidden;
   max-width: 300px;
@@ -337,7 +386,7 @@
 .offer-product-title {
   font-size: 1.3rem;
   font-weight: 700;
-  margin: 0 0 10px;
+  margin: 0 0 6px;
   line-height: 1.3;
 }
 
@@ -345,8 +394,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   flex-wrap: wrap;
+}
+
+.offer-product-unit-price {
+  font-size: 0.85em;
+  opacity: 0.85;
+  margin-top: 2px;
+  text-align: center;
 }
 
 .offer-product-price-compare {
@@ -368,12 +424,13 @@
 .offer-timer {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 15px 25px;
-  border-radius: 30px;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 24px;
   font-weight: 600;
   font-size: 1rem;
   animation: timerPulse 2s infinite;
+  margin-bottom: 12px;
 }
 
 .timer-icon {
@@ -418,7 +475,7 @@
 /* Spectacular Style (Default) */
 .urgify-limited-offer.offer-style-spectacular {
   position: relative;
-  padding: 50px 40px;
+  padding: 36px 28px;
   text-align: center;
   border-radius: 20px;
   overflow: hidden;
@@ -433,7 +490,7 @@
 /* Spectacular Blue Style */
 .urgify-limited-offer.offer-style-spectacular-blue {
   position: relative;
-  padding: 50px 40px;
+  padding: 36px 28px;
   text-align: center;
   border-radius: 20px;
   overflow: hidden;
@@ -448,7 +505,7 @@
 /* Spectacular Mint Style */
 .urgify-limited-offer.offer-style-spectacular-mint {
   position: relative;
-  padding: 50px 40px;
+  padding: 36px 28px;
   text-align: center;
   border-radius: 20px;
   overflow: hidden;
@@ -463,7 +520,7 @@
 /* Spectacular Purple Style */
 .urgify-limited-offer.offer-style-spectacular-purple {
   position: relative;
-  padding: 50px 40px;
+  padding: 36px 28px;
   text-align: center;
   border-radius: 20px;
   overflow: hidden;
@@ -478,7 +535,7 @@
 /* Spectacular Emerald Style */
 .urgify-limited-offer.offer-style-spectacular-emerald {
   position: relative;
-  padding: 50px 40px;
+  padding: 36px 28px;
   text-align: center;
   border-radius: 20px;
   overflow: hidden;
@@ -493,7 +550,7 @@
 /* Spectacular Christmas Style */
 .urgify-limited-offer.offer-style-spectacular-christmas {
   position: relative;
-  padding: 50px 40px;
+  padding: 36px 28px;
   text-align: center;
   border-radius: 20px;
   overflow: hidden;
@@ -523,7 +580,7 @@
 /* Blackweek Style */
 .urgify-limited-offer.offer-style-blackweek {
   position: relative;
-  padding: 50px 40px;
+  padding: 36px 28px;
   text-align: center;
   border-radius: 16px;
   box-shadow:
@@ -547,8 +604,6 @@
 .urgify-limited-offer.offer-style-blackweek .offer-title,
 .urgify-limited-offer.offer-style-blackweek .offer-description,
 .urgify-limited-offer.offer-style-blackweek .offer-product-title,
-.urgify-limited-offer.offer-style-blackweek .offer-product-price-sale,
-.urgify-limited-offer.offer-style-blackweek .offer-product-price-regular,
 .urgify-limited-offer.offer-style-blackweek .timer-text,
 .urgify-limited-offer.offer-style-blackweek .timer-countdown {
   color: #ffffff !important;
@@ -579,7 +634,8 @@
 }
 
 .urgify-limited-offer.offer-style-blackweek .offer-product-price-sale,
-.urgify-limited-offer.offer-style-blackweek .offer-product-price-regular {
+.urgify-limited-offer.offer-style-blackweek .offer-product-price-regular,
+.urgify-limited-offer.offer-style-blackweek .offer-product-unit-price {
   color: #ffc107 !important;
 }
 
@@ -613,6 +669,7 @@
 .urgify-limited-offer.offer-style-custom .offer-title,
 .urgify-limited-offer.offer-style-custom .offer-description,
 .urgify-limited-offer.offer-style-custom .offer-product-title,
+.urgify-limited-offer.offer-style-custom .offer-product-unit-price,
 .urgify-limited-offer.offer-style-custom .offer-product-price-sale,
 .urgify-limited-offer.offer-style-custom .offer-product-price-regular,
 .urgify-limited-offer.offer-style-custom .offer-product-price-compare,
@@ -725,7 +782,6 @@
   text-transform: uppercase;
   letter-spacing: 5px;
   line-height: 0.9;
-  margin: 20px 0;
 }
 
 .urgify-limited-offer.offer-style-brutalist .offer-description {
@@ -834,7 +890,6 @@
   font-size: 3.5rem;
   letter-spacing: -1px;
   line-height: 1.1;
-  margin: 20px 0;
 }
 
 .urgify-limited-offer.offer-style-glassmorphism .offer-description {
@@ -923,7 +978,6 @@
   font-size: 3rem;
   letter-spacing: -0.5px;
   line-height: 1.2;
-  margin: 20px 0;
 }
 
 .urgify-limited-offer.offer-style-neumorphism .offer-description {
@@ -971,17 +1025,48 @@
 
 /* Button Styles */
 .offer-button-container {
-  margin-top: 30px;
+  margin-top: 20px;
   position: relative;
   z-index: 2;
+}
+
+.offer-content-footer .offer-button-container {
+  margin-top: 0;
+}
+
+.offer-disclaimer {
+  margin-top: 16px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--urgify-offer-text-color, #f8fafc);
+  opacity: 0.75;
+  text-align: inherit;
+}
+
+.offer-disclaimer p {
+  margin: 0 0 8px;
+}
+
+.offer-disclaimer p:last-child {
+  margin-bottom: 0;
+}
+
+.offer-disclaimer a {
+  color: currentColor;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.offer-content-footer .offer-disclaimer {
+  margin-top: 0;
 }
 
 .offer-button {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 15px 30px;
-  border-radius: 50px;
+  padding: 13px 26px;
+  border-radius: 44px;
   font-weight: 700;
   font-size: 1.1rem;
   text-decoration: none;
@@ -1319,7 +1404,6 @@
   font-size: 3rem;
   letter-spacing: -0.5px;
   line-height: 1.2;
-  margin: 20px 0;
   animation: titleShimmer 3s infinite;
 }
 
@@ -1332,7 +1416,6 @@
   color: rgba(255, 255, 255, 0.9);
   font-size: 1.2rem;
   line-height: 1.6;
-  margin: 20px 0;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   white-space: pre-line;
 }

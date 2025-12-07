@@ -73,14 +73,17 @@
       this.blocks = new Map();
       this.config = window.UrgifyCore?.config || {};
       this.initialized = false;
-      
-      // Urgify initialized
+      this.version = '536';
     }
 
     /**
      * Initialize all Urgify blocks on the page
      */
     init() {
+      if (!this.initialized) {
+        globalConsole.log(`Urgify v${this.version} initialized`);
+      }
+      
       // Find and initialize all Urgify blocks
       const blocks = document.querySelectorAll('[data-urgify]');
       

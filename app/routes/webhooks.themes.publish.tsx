@@ -1,14 +1,16 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
-import { shouldRateLimit } from "../utils/rateLimiting";
+import { shouldRateLimitByShop } from "../utils/rateLimiting";
 import { WebhookProcessor, WEBHOOK_EVENTS } from "../utils/webhooks";
 // Quickstart entfernt: kein Embed-Status-Check mehr nötig
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  // Check rate limiting for webhooks
-  const rateLimitCheck = await shouldRateLimit(request, 'webhook');
+  const { shop, admin, payload } = await authenticate.webhook(request);
+  
+  // Check rate limiting for webhooks by shop (after authentication)
+  const rateLimitCheck = await shouldRateLimitByShop(shop, 'webhook');
   if (rateLimitCheck.limited) {
-    console.warn(`Webhook rate limited: ${rateLimitCheck.error}`);
+    console.warn(`Webhook rate limited for shop ${shop}: ${rateLimitCheck.error}`);
     return new Response('Rate limited', { 
       status: 429, 
       headers: { 
@@ -16,8 +18,6 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       } 
     });
   }
-
-  const { shop, admin, payload } = await authenticate.webhook(request);
 
   if (!admin) {
     // The admin context isn't returned if the webhook fired after a shop was uninstalled.

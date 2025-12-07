@@ -9,6 +9,10 @@
   allHosts.forEach(host => {
     if (!host) return;
 
+    // Immediately hide element until JavaScript determines it should be shown
+    host.hidden = true;
+    host.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; height: 0 !important; width: 0 !important; min-height: 0 !important; min-width: 0 !important; max-height: 0 !important; max-width: 0 !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; border: none !important; background: none !important; box-shadow: none !important; position: absolute !important; left: -9999px !important; top: -9999px !important; pointer-events: none !important; line-height: 0 !important; font-size: 0 !important;';
+
     const blockId = host.id.includes('auto') ? 'auto' : host.id.split('-').pop();
     const cfg = window.__urgifyConfig || {};
     const threshold = parseInt(cfg.global_threshold || host.dataset.threshold, 10) || 5;
@@ -96,14 +100,25 @@
       }
     }
 
+    function hideElement() {
+      host.hidden = true;
+      host.removeAttribute('data-visible');
+      host.style.cssText = 'display: none !important; visibility: hidden !important; opacity: 0 !important; height: 0 !important; width: 0 !important; min-height: 0 !important; min-width: 0 !important; max-height: 0 !important; max-width: 0 !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; border: none !important; background: none !important; box-shadow: none !important; position: absolute !important; left: -9999px !important; top: -9999px !important; pointer-events: none !important; line-height: 0 !important; font-size: 0 !important;';
+    }
+
+    function showElement() {
+      host.hidden = false;
+      host.setAttribute('data-visible', 'true');
+      host.style.cssText = ''; // Reset inline styles to let CSS take over
+    }
+
     function render() {
       ensurePlacement();
       const id = currentVariantId();
       if (!id) {
         // Retry shortly — some themes mount product forms late
         setTimeout(render, 250);
-        host.hidden = true;
-        host.style.display = 'none'; // Force hide
+        hideElement();
         return;
       }
       
@@ -119,15 +134,13 @@
       
       // Hide banner if inventory tracking is disabled
       if (!tracksInventory) {
-        host.hidden = true;
-        host.style.display = 'none'; // Force hide
+        hideElement();
         return;
       }
       
       // Hide banner if quantity is not a valid number or is 0 or negative
       if (typeof qty !== 'number' || qty <= 0) { 
-        host.hidden = true; 
-        host.style.display = 'none'; // Force hide
+        hideElement();
         return; 
       }
       
@@ -156,18 +169,10 @@
         if (animation === 'bounce') host.style.setProperty('--urgify-animation', 'urgifyBounce 1.2s infinite');
         if (animation === 'shake') host.style.setProperty('--urgify-animation', 'criticalShake 0.5s infinite');
         if (shake === 'enabled') host.style.setProperty('--urgify-animation-critical', 'criticalShake 0.5s infinite');
-        host.hidden = false;
-        host.style.display = 'flex'; // Ensure it's visible
+        showElement();
       } else {
         // Hide banner if quantity is above threshold
-        host.hidden = true;
-        host.style.display = 'none'; // Force hide
-        host.style.visibility = 'hidden'; // Additional safety
-        host.style.opacity = '0'; // Additional safety
-        host.style.height = '0'; // Additional safety
-        host.style.overflow = 'hidden'; // Additional safety
-        host.style.margin = '0'; // Additional safety
-        host.style.padding = '0'; // Additional safety
+        hideElement();
       }
     }
 

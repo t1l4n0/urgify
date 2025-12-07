@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ensureShopMetafieldDefinitions } from './metafieldDefinitions';
+import { ensureShopMetafieldDefinitions, ensureProductMetafieldDefinitions } from './metafieldDefinitions';
 
 // Billing configuration
 export const BILLING_CONFIG = {
@@ -620,6 +620,7 @@ export async function syncSubscriptionStatusToMetafield(admin: any, shopId: stri
 }> {
   try {
     await ensureShopMetafieldDefinitions(admin);
+    await ensureProductMetafieldDefinitions(admin);
     const billingManager = new BillingManager(shopId.replace('.myshopify.com', ''), admin);
     const subscriptionStatus = await billingManager.getSubscriptionStatus();
     

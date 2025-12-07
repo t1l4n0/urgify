@@ -62,6 +62,7 @@ export default function App() {
   const pageTitle = 
     location.pathname === "/app/stock-alerts" ? "Stock Alerts" :
     location.pathname === "/app/popup" ? "PopUp" :
+    location.pathname === "/app/cart-upsells" ? "Cart Upsells" :
     location.pathname === "/app/metrics" ? "Web Vitals Metrics" :
     "Urgify";
 
@@ -73,6 +74,7 @@ export default function App() {
       <NavMenu>
         <a href="/app" rel="home">Home</a>
         <a href="/app/stock-alerts">Stock Alerts</a>
+        <a href="/app/cart-upsells">Cart Upsells</a>
         <a href="/app/popup">PopUp</a>
       </NavMenu>
       <ServerSessionTokenProvider initialToken={null}>

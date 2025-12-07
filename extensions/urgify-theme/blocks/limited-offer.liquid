@@ -72,6 +72,7 @@
      data-end-date="{{ end_iso }}"
      data-end-epoch="{{ end_epoch }}"
      data-layout="{{ block.settings.layout | default: 'stacked' }}"
+     data-side-columns="{{ block.settings.side_columns | default: '2' }}"
      data-match-height="{{ block.settings.match_height_side | default: false }}"
      data-side-gap="{{ block.settings.side_gap | default: 24 }}"
      style="
@@ -104,90 +105,153 @@
 
   <!-- Main Content -->
   <div class="offer-content">
-    {% if block.settings.badge_text != blank %}
-      <div class="offer-badge">
-        <span class="badge-icon">⚡</span>
-        {{ block.settings.badge_text }}
-      </div>
-    {% endif %}
-
-    {% if block.settings.title != blank %}
-      <h2 class="offer-title">
-        <span class="title-highlight">{{ block.settings.title }}</span>
-        <div class="title-underline"></div>
-      </h2>
-    {% endif %}
-
-    {% if block.settings.description != blank %}
-      <p class="offer-description">{{ block.settings.description }}</p>
-    {% endif %}
-
-    {% if show_inline_extra %}
-      {% assign extra_inline_width = 800 %}
-      {% assign extra_inline_height = 450 %}
-      {% if extra_media_image.aspect_ratio %}
-        {% assign extra_inline_height = 800 | divided_by: extra_media_image.aspect_ratio | round %}
-      {% endif %}
-      <div class="offer-extra-media-inline">
-        <div class="offer-extra-media-inline-inner">
-          <img
-            src="{{ extra_media_image | image_url: width: 800 }}"
-            alt="{{ extra_media_alt | escape }}"
-            loading="lazy"
-            width="{{ extra_inline_width }}"
-            height="{{ extra_inline_height }}"
-          >
+    <div class="offer-content-main">
+      {% if block.settings.badge_text != blank %}
+        <div class="offer-badge">
+          <span class="badge-icon">⚡</span>
+          {{ block.settings.badge_text }}
         </div>
-      </div>
-    {% elsif has_product %}
-      <div class="offer-product">
-        <a href="{{ selected_product.url }}" class="offer-product-link">
-          {% if has_product_image %}
-            <div class="offer-product-image">
-              <img src="{{ selected_product.featured_image | image_url: width: 300 }}" 
-                   alt="{{ selected_product.featured_image.alt | escape | default: selected_product.title | escape }}"
-                   loading="lazy"
-                   width="300"
-                   height="{{ 300 | divided_by: selected_product.featured_image.aspect_ratio | round }}">
-            </div>
+      {% endif %}
+
+      {% if block.settings.title != blank %}
+        <h2 class="offer-title">
+          <span class="title-highlight">{{ block.settings.title }}</span>
+          <div class="title-underline"></div>
+        </h2>
+      {% endif %}
+
+      {% if block.settings.description != blank %}
+        <p class="offer-description">{{ block.settings.description }}</p>
+      {% endif %}
+
+      {% if show_inline_extra %}
+        {% comment %}Replace mode: show media, and product info if product is selected{% endcomment %}
+        {% assign extra_inline_width = 300 %}
+        {% assign extra_inline_height = 300 %}
+        {% if extra_media_image.aspect_ratio %}
+          {% assign extra_inline_height = 300 | divided_by: extra_media_image.aspect_ratio | round %}
+        {% endif %}
+        <div class="offer-product">
+          {% if has_product %}
+            <a href="{{ selected_product.url }}" class="offer-product-link">
           {% endif %}
-          <div class="offer-product-info">
-            <h3 class="offer-product-title">{{ selected_product.title }}</h3>
-            {% assign product_variant = selected_product.selected_or_first_available_variant %}
-            {% if product_variant %}
-              <div class="offer-product-price">
-                {% if product_variant.compare_at_price > product_variant.price %}
-                  <span class="offer-product-price-compare">{{ product_variant.compare_at_price | money }}</span>
-                  <span class="offer-product-price-sale">{{ product_variant.price | money }}</span>
-                {% else %}
-                  <span class="offer-product-price-regular">{{ product_variant.price | money }}</span>
+            <div class="offer-extra-media-inline">
+              <div class="offer-extra-media-inline-inner">
+                <img
+                  src="{{ extra_media_image | image_url: width: 300 }}"
+                  alt="{{ extra_media_alt | escape }}"
+                  loading="lazy"
+                  width="{{ extra_inline_width }}"
+                  height="{{ extra_inline_height }}"
+                >
+              </div>
+            </div>
+          {% if has_product %}
+            <div class="offer-product-info">
+              <h3 class="offer-product-title">{{ selected_product.title }}</h3>
+              {% assign product_variant = selected_product.selected_or_first_available_variant %}
+              {% if product_variant %}
+                <div class="offer-product-price">
+                  {% if product_variant.compare_at_price > product_variant.price %}
+                    <span class="offer-product-price-compare">{{ product_variant.compare_at_price | money }}</span>
+                    <span class="offer-product-price-sale">{{ product_variant.price | money }}</span>
+                  {% else %}
+                    <span class="offer-product-price-regular">{{ product_variant.price | money }}</span>
+                  {% endif %}
+                </div>
+                {% assign unit_measurement = product_variant.unit_price_measurement %}
+                {% if unit_measurement and product_variant.unit_price %}
+                  <div class="offer-product-unit-price">
+                    {{ product_variant.unit_price | money }} /
+                    {% if unit_measurement.reference_value != 1 %}
+                      {{ unit_measurement.reference_value }}
+                    {% endif %}
+                    {{ unit_measurement.reference_unit }}
+                  </div>
                 {% endif %}
+              {% endif %}
+            </div>
+            </a>
+          {% endif %}
+        </div>
+      {% elsif has_product %}
+        <div class="offer-product">
+          <a href="{{ selected_product.url }}" class="offer-product-link">
+            {% if has_product_image %}
+              <div class="offer-product-image">
+                <img src="{{ selected_product.featured_image | image_url: width: 300 }}" 
+                     alt="{{ selected_product.featured_image.alt | escape | default: selected_product.title | escape }}"
+                     loading="lazy"
+                     width="300"
+                     height="{{ 300 | divided_by: selected_product.featured_image.aspect_ratio | round }}">
               </div>
             {% endif %}
-          </div>
-        </a>
-      </div>
-    {% endif %}
+            <div class="offer-product-info">
+              <h3 class="offer-product-title">{{ selected_product.title }}</h3>
+              {% assign product_variant = selected_product.selected_or_first_available_variant %}
+              {% if product_variant %}
+                <div class="offer-product-price">
+                  {% if product_variant.compare_at_price > product_variant.price %}
+                    <span class="offer-product-price-compare">{{ product_variant.compare_at_price | money }}</span>
+                    <span class="offer-product-price-sale">{{ product_variant.price | money }}</span>
+                  {% else %}
+                    <span class="offer-product-price-regular">{{ product_variant.price | money }}</span>
+                  {% endif %}
+                </div>
+                {% assign unit_measurement = product_variant.unit_price_measurement %}
+                {% if unit_measurement and product_variant.unit_price %}
+                  <div class="offer-product-unit-price">
+                    {{ product_variant.unit_price | money }} /
+                    {% if unit_measurement.reference_value != 1 %}
+                      {{ unit_measurement.reference_value }}
+                    {% endif %}
+                    {{ unit_measurement.reference_unit }}
+                  </div>
+                {% endif %}
+              {% endif %}
+            </div>
+          </a>
+        </div>
+      {% endif %}
 
-    {% if block.settings.show_timer %}
-      <div class="offer-timer">
-        <span class="timer-icon">⏰</span>
-        <span class="timer-text">{{ block.settings.timer_text | default: 'Offer ends in:' }}</span>
-        <div class="timer-countdown" id="urgify-timer-{{ block.id }}"></div>
-        <div class="timer-expired-text" hidden>{{ block.settings.timer_expired_text | default: 'Offer expired' }}</div>
-      </div>
-    {% endif %}
+      {% if block.settings.show_timer %}
+        <div class="offer-timer">
+          <span class="timer-icon">⏰</span>
+          <span class="timer-text">{{ block.settings.timer_text | default: 'Offer ends in:' }}</span>
+          <div class="timer-countdown" id="urgify-timer-{{ block.id }}"></div>
+          <div class="timer-expired-text" hidden>{{ block.settings.timer_expired_text | default: 'Offer expired' }}</div>
+        </div>
+      {% endif %}
+    </div>
 
+    {% assign has_footer_content = false %}
     {% if block.settings.show_button and block.settings.button_text != blank %}
-      <div class="offer-button-container">
-        <a href="{{ block.settings.button_url | default: '#' }}" 
-           class="offer-button offer-button-{{ block.settings.offer_style | default: 'spectacular' }}"
-           {% if block.settings.button_target_blank %}target="_blank"{% endif %}>
-          <span class="button-text">{{ block.settings.button_text }}</span>
-          {% if block.settings.button_icon != blank %}
-            <span class="button-icon">{{ block.settings.button_icon }}</span>
-          {% endif %}
-        </a>
+      {% assign has_footer_content = true %}
+    {% endif %}
+    {% if block.settings.show_disclaimer and block.settings.disclaimer_text != blank %}
+      {% assign has_footer_content = true %}
+    {% endif %}
+
+    {% if has_footer_content %}
+      <div class="offer-content-footer">
+        {% if block.settings.show_button and block.settings.button_text != blank %}
+          <div class="offer-button-container">
+            <a href="{{ block.settings.button_url | default: '#' }}" 
+               class="offer-button offer-button-{{ block.settings.offer_style | default: 'spectacular' }}"
+               {% if block.settings.button_target_blank %}target="_blank"{% endif %}>
+              <span class="button-text">{{ block.settings.button_text }}</span>
+              {% if block.settings.button_icon != blank %}
+                <span class="button-icon">{{ block.settings.button_icon }}</span>
+              {% endif %}
+            </a>
+          </div>
+        {% endif %}
+
+        {% if block.settings.show_disclaimer and block.settings.disclaimer_text != blank %}
+          <div class="offer-disclaimer" role="note">
+            {{ block.settings.disclaimer_text }}
+          </div>
+        {% endif %}
       </div>
     {% endif %}
   </div>
@@ -350,24 +414,39 @@ function urgifyApplySideWrapperParity(parent) {
     wrappers.forEach((wrapper) => {
       wrapper.classList.remove(
         'urgify-limited-offer-wrapper--side--odd',
-        'urgify-limited-offer-wrapper--side--even'
+        'urgify-limited-offer-wrapper--side--even',
+        'urgify-limited-offer-wrapper--side--col-0',
+        'urgify-limited-offer-wrapper--side--col-1',
+        'urgify-limited-offer-wrapper--side--col-2'
       );
     });
     return;
   }
+  const columns = parseInt(
+    getComputedStyle(parent).getPropertyValue('--urgify-side-columns') || '2',
+    10
+  ) || 2;
   wrappers.forEach((wrapper, index) => {
     wrapper.classList.remove(
       'urgify-limited-offer-wrapper--side--odd',
-      'urgify-limited-offer-wrapper--side--even'
+      'urgify-limited-offer-wrapper--side--even',
+      'urgify-limited-offer-wrapper--side--col-0',
+      'urgify-limited-offer-wrapper--side--col-1',
+      'urgify-limited-offer-wrapper--side--col-2'
     );
     const hasSideChild = wrapper.querySelector(
       '.urgify-limited-offer[data-layout="side-by-side"]'
     );
     if (hasSideChild) {
-      if (index % 2 === 0) {
-        wrapper.classList.add('urgify-limited-offer-wrapper--side--odd');
-      } else {
-        wrapper.classList.add('urgify-limited-offer-wrapper--side--even');
+      if (columns === 2) {
+        if (index % 2 === 0) {
+          wrapper.classList.add('urgify-limited-offer-wrapper--side--odd');
+        } else {
+          wrapper.classList.add('urgify-limited-offer-wrapper--side--even');
+        }
+      } else if (columns === 3) {
+        const colIndex = index % 3;
+        wrapper.classList.add(`urgify-limited-offer-wrapper--side--col-${colIndex}`);
       }
     }
   });
@@ -396,11 +475,15 @@ function urgifyApplyLimitedOfferLayout(root) {
 
     const parent = wrapper ? wrapper.parentElement : null;
     if (parent) {
-      const details = parentDetails.get(parent) || { count: 0, gaps: [] };
+      const details = parentDetails.get(parent) || { count: 0, gaps: [], columns: [] };
       details.count += 1;
       const blockGap = Number(block.dataset.sideGap || 24);
       if (!isNaN(blockGap)) {
         details.gaps.push(blockGap);
+      }
+      const blockColumns = Number(block.dataset.sideColumns || 2);
+      if (!isNaN(blockColumns) && blockColumns > 1) {
+        details.columns.push(blockColumns);
       }
       parentDetails.set(parent, details);
     }
@@ -416,6 +499,7 @@ function urgifyApplyLimitedOfferLayout(root) {
     if (wrapperCount < 2) {
       container.classList.remove('urgify-limited-offer-side-container');
       container.style.removeProperty('--urgify-side-gap');
+      container.style.removeProperty('--urgify-side-columns');
     }
     urgifyApplySideWrapperParity(container);
   });
@@ -428,9 +512,29 @@ function urgifyApplyLimitedOfferLayout(root) {
           : 24;
       parent.classList.add('urgify-limited-offer-side-container');
       parent.style.setProperty('--urgify-side-gap', `${gapValue}px`);
+      
+      // Use the most common column value (mode) instead of max to respect individual block settings
+      let columnValue = 2;
+      if (details.columns.length > 0) {
+        const columnCounts = {};
+        details.columns.forEach(col => {
+          columnCounts[col] = (columnCounts[col] || 0) + 1;
+        });
+        const sortedColumns = Object.entries(columnCounts).sort((a, b) => b[1] - a[1]);
+        const mostCommon = parseInt(sortedColumns[0][0], 10);
+        // If there's a tie, prefer the lower value (2 over 3)
+        if (sortedColumns.length > 1 && sortedColumns[0][1] === sortedColumns[1][1]) {
+          columnValue = Math.min(mostCommon, parseInt(sortedColumns[1][0], 10));
+        } else {
+          columnValue = mostCommon;
+        }
+        columnValue = Math.min(Math.max(columnValue, 2), 3);
+      }
+      parent.style.setProperty('--urgify-side-columns', `${columnValue}`);
     } else {
       parent.classList.remove('urgify-limited-offer-side-container');
       parent.style.removeProperty('--urgify-side-gap');
+      parent.style.removeProperty('--urgify-side-columns');
     }
     urgifyApplySideWrapperParity(parent);
   });
@@ -779,6 +883,17 @@ window.addEventListener('resize', function() {
       "info": "Choose 'Side by Side' to display multiple blocks next to each other. On mobile devices, blocks will automatically stack vertically."
     },
     {
+      "type": "select",
+      "id": "side_columns",
+      "label": "Blocks per row (desktop)",
+      "options": [
+        {"value": "2", "label": "2 blocks"},
+        {"value": "3", "label": "3 blocks"}
+      ],
+      "default": "2",
+      "info": "Applies when layout mode is set to side by side on desktop screens."
+    },
+    {
       "type": "checkbox",
       "id": "match_height_side",
       "label": "Enable equal height in side-by-side rows",
@@ -812,7 +927,7 @@ window.addEventListener('resize', function() {
     },
     {
       "type": "header",
-      "content": "Alignment"
+      "content": "Alignment & disclaimer"
     },
     {
       "type": "select",
@@ -824,6 +939,20 @@ window.addEventListener('resize', function() {
         {"value": "right", "label": "Right"}
       ],
       "default": "center"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_disclaimer",
+      "label": "Show disclaimer text",
+      "default": false,
+      "info": "Enable this if you need to show fine print at the bottom of the block."
+    },
+    {
+      "type": "richtext",
+      "id": "disclaimer_text",
+      "label": "Disclaimer content",
+      "default": "<p>Limited quantities available. Terms and conditions apply.</p>",
+      "info": "Displayed underneath the offer content in smaller text. Links are supported."
     }
   ]
 }

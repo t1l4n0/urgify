@@ -54,6 +54,7 @@
 {% elsif enabled == true or enabled == 'true' %}
   {{ 'urgify-stock-alert.css' | asset_url | stylesheet_tag }}
   <div id="urgify-stock-alert-auto" class="urgify-stock-alert urgify-stock-alert--{{ style }}" hidden
+       style="display: none !important; visibility: hidden !important; opacity: 0 !important; height: 0 !important; width: 0 !important; min-height: 0 !important; min-width: 0 !important; max-height: 0 !important; max-width: 0 !important; overflow: hidden !important; margin: 0 !important; padding: 0 !important; border: none !important; background: none !important; box-shadow: none !important; position: absolute !important; left: -9999px !important; top: -9999px !important; pointer-events: none !important; line-height: 0 !important; font-size: 0 !important;"
        data-threshold="{{ threshold | escape }}"
        data-low-message="{{ low_msg | escape }}"
        data-message="{{ low_msg | escape }}"

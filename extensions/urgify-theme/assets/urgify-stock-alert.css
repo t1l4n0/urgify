@@ -541,24 +541,79 @@ div#urgify-stock-alert-auto.urgify-stock-alert.urgify-stock-alert--neumorphism {
 }
 
 /* Critical: Hide when hidden attribute is present - must override all other display rules */
-div#urgify-stock-alert-auto[hidden] {
+div#urgify-stock-alert-auto[hidden],
+div#urgify-stock-alert-auto[hidden] * {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   height: 0 !important;
+  width: 0 !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  max-height: 0 !important;
+  max-width: 0 !important;
   overflow: hidden !important;
   margin: 0 !important;
   padding: 0 !important;
   border: none !important;
   background: none !important;
+  box-shadow: none !important;
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
+  pointer-events: none !important;
+  line-height: 0 !important;
+  font-size: 0 !important;
 }
 
 /* Additional safety: Hide any stock alert that should be hidden */
-.urgify-stock-alert[hidden] {
+.urgify-stock-alert[hidden],
+.urgify-stock-alert[hidden] * {
   display: none !important;
   visibility: hidden !important;
   opacity: 0 !important;
   height: 0 !important;
+  width: 0 !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  max-height: 0 !important;
+  max-width: 0 !important;
   overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
+  pointer-events: none !important;
+  line-height: 0 !important;
+  font-size: 0 !important;
+}
+
+/* Initial state: Element should be completely hidden until JavaScript decides to show it */
+#urgify-stock-alert-auto:not([data-visible="true"]) {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  width: 0 !important;
+  min-height: 0 !important;
+  min-width: 0 !important;
+  max-height: 0 !important;
+  max-width: 0 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+  background: none !important;
+  box-shadow: none !important;
+  position: absolute !important;
+  left: -9999px !important;
+  top: -9999px !important;
+  pointer-events: none !important;
+  line-height: 0 !important;
+  font-size: 0 !important;
 }
 

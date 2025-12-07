@@ -1,0 +1,634 @@
+{% comment %}
+  Urgify Image Grid Block
+  Responsive image grid with hover effects - Always free to use
+{% endcomment %}
+
+{{ 'urgify-image-grid.css' | asset_url | stylesheet_tag }}
+
+{% liquid
+  assign columns_desktop = block.settings.columns_desktop | default: 3
+  assign columns_mobile = block.settings.columns_mobile | default: 2
+  assign gap = block.settings.gap | default: 16
+  assign border_radius = block.settings.border_radius | default: 8
+  assign aspect_ratio = block.settings.aspect_ratio | default: 'square'
+  assign default_hover_bg = block.settings.default_hover_background | default: '#000000'
+  assign default_hover_text = block.settings.default_hover_text_color | default: '#ffffff'
+  assign width_setting = block.settings.width | default: 'fullwidth'
+  assign label_font_size = block.settings.label_font_size | default: 18
+  assign label_uppercase = block.settings.label_uppercase | default: false
+  assign label_font_type = block.settings.label_font_type | default: 'body'
+  assign enable_hover_setting = block.settings.enable_hover
+  if enable_hover_setting == blank or enable_hover_setting == false
+    assign enable_hover = false
+  else
+    assign enable_hover = true
+  endif
+  assign heading_text = block.settings.heading_text
+%}
+
+{% if request.design_mode %}
+  <div style="padding: 16px; margin: 16px 0; background: #f0f7ff; border: 1px solid #0066cc; border-radius: 8px;">
+    <div style="color: #0066cc; font-weight: 600; margin-bottom: 8px; font-size: 14px;">📐 Urgify Image Grid</div>
+    <div style="color: #333; font-size: 13px; margin-bottom: 4px;">Columns: Desktop {{ columns_desktop }} | Mobile {{ columns_mobile }}</div>
+    <div style="color: #666; font-size: 12px;">Configure tiles below to display the grid.</div>
+  </div>
+{% endif %}
+
+<div class="urgify-image-grid urgify-image-grid-width-{{ width_setting }}{% if enable_hover == false %} urgify-image-grid-no-hover{% endif %}" 
+     id="urgify-image-grid-{{ block.id }}"
+     style="
+       --urgify-grid-columns-desktop: {{ columns_desktop }};
+       --urgify-grid-columns-mobile: {{ columns_mobile }};
+       --urgify-grid-gap: {{ gap }}px;
+       --urgify-grid-block-gap: {{ gap }}px;
+       --urgify-grid-border-radius: {{ border_radius }}px;
+       --urgify-grid-aspect-ratio: {% if aspect_ratio == 'square' %}1 / 1{% elsif aspect_ratio == 'video' %}16 / 9{% else %}auto{% endif %};
+       --urgify-grid-default-hover-bg: {{ default_hover_bg }};
+       --urgify-grid-default-hover-text: {{ default_hover_text }};
+       --urgify-grid-label-font-size: {{ label_font_size }}px;
+       --urgify-grid-label-uppercase: {% if label_uppercase %}uppercase{% else %}none{% endif %};
+       --urgify-grid-label-font-type: {{ label_font_type }};
+       --urgify-grid-heading-bg: {{ default_hover_bg }};
+     ">
+  
+  {% if heading_text != blank %}
+    <div class="urgify-image-grid-heading">
+      <div class="urgify-image-grid-heading-text">
+        {{ heading_text }}
+      </div>
+    </div>
+  {% endif %}
+  
+  {% liquid
+    assign tiles = ''
+    assign tile_count = 0
+    
+    for i in (1..6)
+      assign tile_image_key = 'tile_' | append: i | append: '_image'
+      assign tile_link_key = 'tile_' | append: i | append: '_link'
+      assign tile_label_key = 'tile_' | append: i | append: '_label'
+      assign tile_cta_key = 'tile_' | append: i | append: '_is_cta'
+      assign tile_hover_bg_key = 'tile_' | append: i | append: '_hover_bg'
+      assign tile_hover_text_key = 'tile_' | append: i | append: '_hover_text'
+      
+      assign tile_image = block.settings[tile_image_key]
+      assign tile_link = block.settings[tile_link_key]
+      assign tile_label = block.settings[tile_label_key]
+      assign tile_is_cta = block.settings[tile_cta_key]
+      assign tile_hover_bg = block.settings[tile_hover_bg_key] | default: default_hover_bg
+      assign tile_hover_text = block.settings[tile_hover_text_key] | default: default_hover_text
+      
+      if tile_label != blank or tile_image != blank
+        assign tile_count = tile_count | plus: 1
+        assign tiles = tiles | append: i | append: ','
+      endif
+    endfor
+    
+    assign tile_list = tiles | split: ','
+  %}
+  
+  {% if tile_count > 0 %}
+    <div class="urgify-image-grid-container">
+      {% for tile_num_str in tile_list %}
+        {% if tile_num_str != blank %}
+          {% liquid
+            assign tile_num = tile_num_str | plus: 0
+            assign tile_image_key = 'tile_' | append: tile_num | append: '_image'
+            assign tile_link_key = 'tile_' | append: tile_num | append: '_link'
+            assign tile_label_key = 'tile_' | append: tile_num | append: '_label'
+            assign tile_cta_key = 'tile_' | append: tile_num | append: '_is_cta'
+            assign tile_hover_bg_key = 'tile_' | append: tile_num | append: '_hover_bg'
+            assign tile_hover_text_key = 'tile_' | append: tile_num | append: '_hover_text'
+            
+            assign tile_image = block.settings[tile_image_key]
+            assign tile_link = block.settings[tile_link_key]
+            assign tile_label = block.settings[tile_label_key]
+            assign tile_is_cta = block.settings[tile_cta_key]
+            assign tile_hover_bg = block.settings[tile_hover_bg_key] | default: default_hover_bg
+            assign tile_hover_text = block.settings[tile_hover_text_key] | default: default_hover_text
+          %}
+          
+          <div class="urgify-image-grid-tile {% if tile_is_cta %}urgify-image-grid-tile-cta{% endif %}" 
+               data-tile-id="{{ tile_num }}"
+               style="
+                 --tile-hover-bg: {{ tile_hover_bg }};
+                 --tile-hover-text: {{ tile_hover_text }};
+               ">
+            
+            {% if tile_link != blank %}
+              <a href="{{ tile_link }}" class="urgify-image-grid-link" aria-label="{{ tile_label | default: 'Grid tile' }}">
+            {% endif %}
+            
+            <div class="urgify-image-grid-tile-inner">
+              {% unless tile_is_cta %}
+                {% if tile_image != blank %}
+                  <div class="urgify-image-grid-image">
+                    <img src="{{ tile_image | image_url: width: 800 }}"
+                         srcset="{{ tile_image | image_url: width: 400 }} 400w,
+                                 {{ tile_image | image_url: width: 800 }} 800w,
+                                 {{ tile_image | image_url: width: 1200 }} 1200w"
+                         sizes="(max-width: 768px) 50vw, {% if width_setting == 'fullwidth' %}100vw{% else %}{{ 100 | divided_by: columns_desktop }}vw{% endif %}"
+                         alt="{{ tile_image.alt | default: tile_label | escape }}"
+                         loading="lazy"
+                         width="{{ tile_image.width }}"
+                         height="{{ tile_image.height }}">
+                  </div>
+                {% endif %}
+              {% endunless %}
+              
+              {% if enable_hover %}
+              <div class="urgify-image-grid-overlay">
+                <div class="urgify-image-grid-label" data-font-type="{{ label_font_type }}">
+                  {{ tile_label }}
+                </div>
+              </div>
+              {% endif %}
+            </div>
+            
+            {% if tile_link != blank %}
+              </a>
+            {% endif %}
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% else %}
+    {% if request.design_mode %}
+      <div class="urgify-image-grid-empty" style="padding: 3rem 1rem; text-align: center; color: #666; font-size: 0.875rem; border: 2px dashed #ddd; border-radius: 8px; background-color: #fafafa; margin: 20px 0;">
+        <p style="margin: 0; font-weight: 600; color: #333; margin-bottom: 8px;">📐 Image Grid</p>
+        <p style="margin: 0;">Add tiles to this grid using the block settings. Configure at least one tile with an image or label to display the grid.</p>
+      </div>
+    {% else %}
+      <div class="urgify-image-grid-empty">
+        <p>Add tiles to this grid using the block settings.</p>
+      </div>
+    {% endif %}
+  {% endif %}
+</div>
+
+<script>
+(function() {
+  // Function to fix parent container layout
+  function fixImageGridLayout() {
+    // Find all image grid blocks first
+    const imageGrids = document.querySelectorAll('.urgify-image-grid');
+    
+    if (imageGrids.length === 0) return;
+    
+    // Group blocks by their parent container
+    const containerMap = new Map();
+    
+    imageGrids.forEach(function(grid) {
+      const block = grid.closest('.shopify-app-block, .shopify-block');
+      if (!block) return;
+      
+      const container = block.closest('.section-content-wrapper, .layout-panel-flex');
+      if (!container) return;
+      
+      if (!containerMap.has(container)) {
+        containerMap.set(container, []);
+      }
+      containerMap.get(container).push({grid: grid, block: block});
+    });
+    
+    // Process each container
+    containerMap.forEach(function(blocks, container) {
+      // Force column layout on container
+      container.style.setProperty('flex-direction', 'column', 'important');
+      container.style.setProperty('--flex-direction', 'column', 'important');
+      container.style.setProperty('flex-wrap', 'wrap', 'important');
+      container.style.setProperty('--flex-wrap', 'wrap', 'important');
+      container.style.setProperty('overflow', 'visible', 'important');
+      container.style.setProperty('overflow-x', 'hidden', 'important');
+      container.style.setProperty('overflow-y', 'visible', 'important');
+      container.style.setProperty('display', 'flex', 'important');
+      container.style.removeProperty('max-height');
+      container.style.removeProperty('height');
+      container.style.setProperty('height', 'auto', 'important');
+      container.style.setProperty('max-height', 'none', 'important');
+      
+      // Fix all image grid blocks in this container
+      blocks.forEach(function(item, index) {
+        const block = item.block;
+        const grid = item.grid;
+        
+        // Get gap from grid element
+        const gap = getComputedStyle(grid).getPropertyValue('--urgify-grid-block-gap').trim() || '0px';
+        
+        // Ensure block is visible and takes full width
+        block.style.removeProperty('display');
+        block.style.removeProperty('visibility');
+        block.style.removeProperty('opacity');
+        block.style.removeProperty('height');
+        block.style.removeProperty('max-height');
+        block.style.removeProperty('margin-bottom');
+        block.style.setProperty('display', 'block', 'important');
+        block.style.setProperty('visibility', 'visible', 'important');
+        block.style.setProperty('opacity', '1', 'important');
+        block.style.setProperty('width', '100%', 'important');
+        block.style.setProperty('min-width', '100%', 'important');
+        block.style.setProperty('max-width', '100%', 'important');
+        block.style.setProperty('flex', '0 0 100%', 'important');
+        block.style.setProperty('flex-basis', '100%', 'important');
+        block.style.setProperty('flex-shrink', '0', 'important');
+        block.style.setProperty('flex-grow', '0', 'important');
+        block.style.setProperty('position', 'relative', 'important');
+        block.style.setProperty('z-index', 'auto', 'important');
+        block.style.setProperty('height', 'auto', 'important');
+        block.style.setProperty('max-height', 'none', 'important');
+        
+        // Apply gap as margin-bottom (except for last block)
+        if (index < blocks.length - 1) {
+          block.style.setProperty('margin-bottom', gap, 'important');
+        } else {
+          block.style.setProperty('margin-bottom', '0', 'important');
+        }
+        
+        // Ensure grid itself is visible
+        grid.style.removeProperty('display');
+        grid.style.removeProperty('visibility');
+        grid.style.removeProperty('opacity');
+        grid.style.removeProperty('height');
+        grid.style.removeProperty('max-height');
+        grid.style.setProperty('display', 'block', 'important');
+        grid.style.setProperty('visibility', 'visible', 'important');
+        grid.style.setProperty('opacity', '1', 'important');
+        grid.style.setProperty('height', 'auto', 'important');
+        grid.style.setProperty('max-height', 'none', 'important');
+      });
+    });
+  }
+  
+  // Run on DOMContentLoaded
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fixImageGridLayout);
+  } else {
+    fixImageGridLayout();
+  }
+  
+  // Run after a short delay to ensure DOM is ready
+  setTimeout(fixImageGridLayout, 100);
+  setTimeout(fixImageGridLayout, 500);
+  
+  // Run on Shopify theme editor updates
+  if (typeof Shopify !== 'undefined' && Shopify.designMode) {
+    document.addEventListener('shopify:section:load', function() {
+      setTimeout(fixImageGridLayout, 100);
+      setTimeout(fixImageGridLayout, 500);
+    });
+    document.addEventListener('shopify:section:reorder', function() {
+      setTimeout(fixImageGridLayout, 100);
+      setTimeout(fixImageGridLayout, 500);
+    });
+  }
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Image Grid",
+  "target": "section",
+  "settings": [
+    {
+      "type": "select",
+      "id": "width",
+      "label": "Width",
+      "options": [
+        { "value": "fullwidth", "label": "Full Width" },
+        { "value": "container", "label": "Container (1200px)" },
+        { "value": "narrow", "label": "Narrow (800px)" },
+        { "value": "super-narrow", "label": "Super Narrow (600px)" }
+      ],
+      "default": "fullwidth",
+      "info": "Control the width of the grid"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Columns (Desktop)",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 3,
+      "info": "Number of columns on desktop screens"
+    },
+    {
+      "type": "range",
+      "id": "columns_mobile",
+      "label": "Columns (Mobile)",
+      "min": 1,
+      "max": 3,
+      "step": 1,
+      "default": 2,
+      "info": "Number of columns on mobile screens"
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "Gap",
+      "min": 0,
+      "max": 40,
+      "step": 2,
+      "default": 16,
+      "unit": "px",
+      "info": "Space between grid items"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Border Radius",
+      "min": 0,
+      "max": 30,
+      "step": 1,
+      "default": 8,
+      "unit": "px",
+      "info": "Roundness of grid item corners"
+    },
+    {
+      "type": "select",
+      "id": "aspect_ratio",
+      "label": "Aspect Ratio",
+      "options": [
+        { "value": "square", "label": "Square (1:1)" },
+        { "value": "video", "label": "Video (16:9)" },
+        { "value": "auto", "label": "Auto" }
+      ],
+      "default": "square",
+      "info": "Aspect ratio for grid items"
+    },
+    {
+      "type": "color",
+      "id": "default_hover_background",
+      "label": "Default Hover Background Color",
+      "default": "#000000",
+      "info": "Default background color shown on hover"
+    },
+    {
+      "type": "color",
+      "id": "default_hover_text_color",
+      "label": "Default Hover Text Color",
+      "default": "#ffffff",
+      "info": "Default text color shown on hover"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_hover",
+      "label": "Enable Hover Effect",
+      "default": true,
+      "info": "Show hover overlay with label text. Disable to show images only without hover effect."
+    },
+    {
+      "type": "text",
+      "id": "heading_text",
+      "label": "Heading Text",
+      "info": "Optional heading text displayed above the grid with parallelogram background"
+    },
+    {
+      "type": "range",
+      "id": "label_font_size",
+      "label": "CTA Label Font Size",
+      "min": 12,
+      "max": 48,
+      "step": 1,
+      "default": 18,
+      "unit": "px",
+      "info": "Font size for the label text shown on hover"
+    },
+    {
+      "type": "checkbox",
+      "id": "label_uppercase",
+      "label": "Label Text Uppercase",
+      "default": false,
+      "info": "Transform all label text to uppercase"
+    },
+    {
+      "type": "select",
+      "id": "label_font_type",
+      "label": "Label Font Type",
+      "options": [
+        { "value": "body", "label": "Nachricht (Body)" },
+        { "value": "subheading", "label": "Unterüberschrift (Subheading)" },
+        { "value": "heading", "label": "Titel (Heading)" },
+        { "value": "accent", "label": "Akzent (Accent)" }
+      ],
+      "default": "body",
+      "info": "Select which theme typography to use for tile labels"
+    },
+    {
+      "type": "header",
+      "content": "Tile 1"
+    },
+    {
+      "type": "image_picker",
+      "id": "tile_1_image",
+      "label": "🔹 Tile 1 - Image",
+      "info": "Image for this tile (optional if CTA tile)"
+    },
+    {
+      "type": "url",
+      "id": "tile_1_link",
+      "label": "Link"
+    },
+    {
+      "type": "text",
+      "id": "tile_1_label",
+      "label": "Label",
+      "info": "Text displayed on hover"
+    },
+    {
+      "type": "checkbox",
+      "id": "tile_1_is_cta",
+      "label": "CTA Tile (No Image)",
+      "default": false
+    },
+    {
+      "type": "color",
+      "id": "tile_1_hover_bg",
+      "label": "Custom Hover Background",
+      "info": "Leave empty to use default"
+    },
+    {
+      "type": "color",
+      "id": "tile_1_hover_text",
+      "label": "Custom Hover Text Color",
+      "info": "Leave empty to use default"
+    },
+    {
+      "type": "header",
+      "content": "Tile 2"
+    },
+    {
+      "type": "image_picker",
+      "id": "tile_2_image",
+      "label": "🔹 Tile 2 - Image"
+    },
+    {
+      "type": "url",
+      "id": "tile_2_link",
+      "label": "Link"
+    },
+    {
+      "type": "text",
+      "id": "tile_2_label",
+      "label": "Label"
+    },
+    {
+      "type": "checkbox",
+      "id": "tile_2_is_cta",
+      "label": "CTA Tile (No Image)",
+      "default": false
+    },
+    {
+      "type": "color",
+      "id": "tile_2_hover_bg",
+      "label": "Custom Hover Background"
+    },
+    {
+      "type": "color",
+      "id": "tile_2_hover_text",
+      "label": "Custom Hover Text Color"
+    },
+    {
+      "type": "header",
+      "content": "Tile 3"
+    },
+    {
+      "type": "image_picker",
+      "id": "tile_3_image",
+      "label": "🔹 Tile 3 - Image"
+    },
+    {
+      "type": "url",
+      "id": "tile_3_link",
+      "label": "Link"
+    },
+    {
+      "type": "text",
+      "id": "tile_3_label",
+      "label": "Label"
+    },
+    {
+      "type": "checkbox",
+      "id": "tile_3_is_cta",
+      "label": "CTA Tile (No Image)",
+      "default": false
+    },
+    {
+      "type": "color",
+      "id": "tile_3_hover_bg",
+      "label": "Custom Hover Background"
+    },
+    {
+      "type": "color",
+      "id": "tile_3_hover_text",
+      "label": "Custom Hover Text Color"
+    },
+    {
+      "type": "header",
+      "content": "Tile 4"
+    },
+    {
+      "type": "image_picker",
+      "id": "tile_4_image",
+      "label": "🔹 Tile 4 - Image"
+    },
+    {
+      "type": "url",
+      "id": "tile_4_link",
+      "label": "Link"
+    },
+    {
+      "type": "text",
+      "id": "tile_4_label",
+      "label": "Label"
+    },
+    {
+      "type": "checkbox",
+      "id": "tile_4_is_cta",
+      "label": "CTA Tile (No Image)",
+      "default": false
+    },
+    {
+      "type": "color",
+      "id": "tile_4_hover_bg",
+      "label": "Custom Hover Background"
+    },
+    {
+      "type": "color",
+      "id": "tile_4_hover_text",
+      "label": "Custom Hover Text Color"
+    },
+    {
+      "type": "header",
+      "content": "Tile 5"
+    },
+    {
+      "type": "image_picker",
+      "id": "tile_5_image",
+      "label": "🔹 Tile 5 - Image"
+    },
+    {
+      "type": "url",
+      "id": "tile_5_link",
+      "label": "Link"
+    },
+    {
+      "type": "text",
+      "id": "tile_5_label",
+      "label": "Label"
+    },
+    {
+      "type": "checkbox",
+      "id": "tile_5_is_cta",
+      "label": "CTA Tile (No Image)",
+      "default": false
+    },
+    {
+      "type": "color",
+      "id": "tile_5_hover_bg",
+      "label": "Custom Hover Background"
+    },
+    {
+      "type": "color",
+      "id": "tile_5_hover_text",
+      "label": "Custom Hover Text Color"
+    },
+    {
+      "type": "header",
+      "content": "Tile 6"
+    },
+    {
+      "type": "image_picker",
+      "id": "tile_6_image",
+      "label": "🔹 Tile 6 - Image"
+    },
+    {
+      "type": "url",
+      "id": "tile_6_link",
+      "label": "Link"
+    },
+    {
+      "type": "text",
+      "id": "tile_6_label",
+      "label": "Label"
+    },
+    {
+      "type": "checkbox",
+      "id": "tile_6_is_cta",
+      "label": "CTA Tile (No Image)",
+      "default": false
+    },
+    {
+      "type": "color",
+      "id": "tile_6_hover_bg",
+      "label": "Custom Hover Background"
+    },
+    {
+      "type": "color",
+      "id": "tile_6_hover_text",
+      "label": "Custom Hover Text Color"
+    }
+  ]
+}
+{% endschema %}
+

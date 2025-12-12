@@ -812,7 +812,8 @@
       // Trigger animation
       requestAnimationFrame(() => {
         this.container.classList.add('urgify-popup-visible');
-        this.setInitialFocus();
+        // Don't set initial focus - let user interact naturally
+        // this.setInitialFocus();
       });
 
       // Prevent body scroll only if overlay is shown

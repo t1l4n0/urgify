@@ -815,8 +815,22 @@
         this.setInitialFocus();
       });
 
-      // Prevent body scroll
-      document.body.style.overflow = 'hidden';
+      // Prevent body scroll only if overlay is shown
+      // If overlay is hidden, user should be able to scroll the page
+      const overlay = this.container.querySelector('.urgify-popup-overlay');
+      if (overlay) {
+        const showOverlay = this.config.show_overlay !== undefined 
+          ? this.config.show_overlay 
+          : (this.config.showOverlay !== undefined ? this.config.showOverlay : true);
+        
+        // Only block body scroll if overlay is actually displayed
+        if (showOverlay !== false && showOverlay !== 'false') {
+          document.body.style.overflow = 'hidden';
+        }
+      } else {
+        // If no overlay element exists, don't block scroll
+        // This allows popup to work without blocking page interaction
+      }
     }
 
     close() {

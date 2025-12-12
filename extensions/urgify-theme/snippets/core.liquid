@@ -40,10 +40,8 @@
 
 {% comment %}Cart Upsell loads independently of subscription{% endcomment %}
 {% comment %}
-  Note: Cart Upsell is controlled by the app-embed block enable_cart_upsell setting.
-  If the block is disabled, this entire snippet won't render.
-  If the block is enabled but enable_cart_upsell is false, we could check a shop metafield here.
-  For now, we always render if the block is enabled.
+  Cart Upsell is controlled by the shop metafield (urgify.cart_upsell_config).
+  It loads independently of subscription status.
 {% endcomment %}
 {% render 'urgify-slide-cart-upsell-auto' %}
 

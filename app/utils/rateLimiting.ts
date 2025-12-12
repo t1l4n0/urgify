@@ -69,9 +69,9 @@ export const rateLimitConfigs = {
     duration: 60, // Per 60 seconds
   },
   
-  // Admin endpoints - moderate restriction
+  // Admin endpoints - less restrictive (UI interactions need more headroom)
   admin: {
-    points: 30, // Number of requests
+    points: 100, // Number of requests
     duration: 60, // Per 60 seconds
   },
   
@@ -122,9 +122,10 @@ export function getClientIdentifier(request: Request): string {
 // Shopify-specific rate limiting (respects Shopify's limits)
 export const shopifyRateLimits = {
   // GraphQL Admin API: 50 points per second, 1000 points per 10 seconds
+  // Using more conservative limits to avoid hitting Shopify's actual limits
   graphql: {
-    points: 50,
-    duration: 1, // 1 second
+    points: 100, // Allow more requests per shop
+    duration: 10, // Per 10 seconds (more lenient window)
   },
   
   // REST Admin API: 40 requests per second

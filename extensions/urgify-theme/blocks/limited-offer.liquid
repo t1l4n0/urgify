@@ -38,18 +38,12 @@
     endif
 
     assign extra_media_image = block.settings.extra_media_image
-    assign extra_media_alt = block.settings.extra_media_alt | default: block.settings.title | default: 'Limited offer visual'
-    assign extra_media_usage = block.settings.extra_media_usage | default: 'replace'
-    assign extra_media_position = block.settings.extra_media_position | default: 'left'
+    assign extra_media_alt = block.settings.title | default: 'Limited offer visual'
     assign show_inline_extra = false
-    assign show_side_extra = false
 
-    if extra_media_image != blank
-      if extra_media_usage == 'replace'
-        assign show_inline_extra = true
-      elsif extra_media_usage == 'sidecar' and has_product
-        assign show_side_extra = true
-      endif
+    # If both product and additional image are set, the additional image replaces the product image
+    if extra_media_image != blank and has_product
+      assign show_inline_extra = true
     endif
   endif
 %}
@@ -73,12 +67,13 @@
      data-end-epoch="{{ end_epoch }}"
      data-layout="{{ block.settings.layout | default: 'stacked' }}"
      data-side-columns="{{ block.settings.side_columns | default: '2' }}"
-     data-match-height="{{ block.settings.match_height_side | default: false }}"
+     data-match-height="true"
      data-side-gap="{{ block.settings.side_gap | default: 24 }}"
      style="
        {% if block.settings.text_align != blank %}
          text-align: {{ block.settings.text_align }};
        {% endif %}
+       --urgify-font-size-price: 1.8em;
        {% if block.settings.offer_style == 'custom' %}
          --urgify-offer-bg-start: {{ block.settings.custom_background_start | default: '#0f172a' }};
          --urgify-offer-bg-end: {{ block.settings.custom_background_end | default: '#312e81' }};
@@ -240,9 +235,6 @@
                class="offer-button offer-button-{{ block.settings.offer_style | default: 'spectacular' }}"
                {% if block.settings.button_target_blank %}target="_blank"{% endif %}>
               <span class="button-text">{{ block.settings.button_text }}</span>
-              {% if block.settings.button_icon != blank %}
-                <span class="button-icon">{{ block.settings.button_icon }}</span>
-              {% endif %}
             </a>
           </div>
         {% endif %}
@@ -263,45 +255,7 @@
 </div>
 {% endcapture %}
 
-{% if show_side_extra %}
-  {% assign extra_side_height = 600 %}
-  {% if extra_media_image.aspect_ratio %}
-    {% assign extra_side_height = 600 | divided_by: extra_media_image.aspect_ratio | round %}
-  {% endif %}
-  <div class="urgify-limited-offer-external offer-extra-position-{{ extra_media_position }}">
-    {% if extra_media_position == 'left' %}
-      <div class="offer-extra-media">
-        <div class="offer-extra-media-inner">
-          <img
-            src="{{ extra_media_image | image_url: width: 600 }}"
-            alt="{{ extra_media_alt | escape }}"
-            loading="lazy"
-            width="600"
-            height="{{ extra_side_height }}"
-          >
-        </div>
-      </div>
-    {% endif %}
-
-    {{ urgify_offer_block | strip }}
-
-    {% if extra_media_position == 'right' %}
-      <div class="offer-extra-media">
-        <div class="offer-extra-media-inner">
-          <img
-            src="{{ extra_media_image | image_url: width: 600 }}"
-            alt="{{ extra_media_alt | escape }}"
-            loading="lazy"
-            width="600"
-            height="{{ extra_side_height }}"
-          >
-        </div>
-      </div>
-    {% endif %}
-  </div>
-{% else %}
-  {{ urgify_offer_block | strip }}
-{% endif %}
+{{ urgify_offer_block | strip }}
 
 <script>
 // Globale parseIsoLocal Funktion für Limited-Offer
@@ -668,34 +622,6 @@ window.addEventListener('resize', function() {
     },
     {
       "type": "text",
-      "id": "extra_media_alt",
-      "label": "Additional image alt text",
-      "default": "Limited offer visual"
-    },
-    {
-      "type": "select",
-      "id": "extra_media_usage",
-      "label": "Additional image usage",
-      "options": [
-        { "value": "replace", "label": "Replace the product area inside the offer" },
-        { "value": "sidecar", "label": "Show next to the offer when a product is selected" }
-      ],
-      "default": "replace",
-      "info": "Choose whether the additional image replaces the product or appears beside it."
-    },
-    {
-      "type": "select",
-      "id": "extra_media_position",
-      "label": "Side image position",
-      "options": [
-        { "value": "left", "label": "Left of the offer content" },
-        { "value": "right", "label": "Right of the offer content" }
-      ],
-      "default": "left",
-      "info": "Applies when the additional image is shown next to the offer."
-    },
-    {
-      "type": "text",
       "id": "badge_text",
       "label": "Badge Text",
       "default": "LIMITED TIME OFFER"
@@ -723,13 +649,6 @@ window.addEventListener('resize', function() {
       "id": "timer_text",
       "label": "Timer Text",
       "default": "Offer ends in:"
-    },
-    {
-      "type": "text",
-      "id": "timer_expired_text",
-      "label": "Text after countdown ends",
-      "default": "Offer expired",
-      "info": "Shown once the countdown reached zero."
     },
     {
       "type": "text",
@@ -761,35 +680,6 @@ window.addEventListener('resize', function() {
       "id": "button_url",
       "label": "Button Link",
       "info": "Where the button should link to"
-    },
-    {
-      "type": "select",
-      "id": "button_icon",
-      "label": "Button Icon",
-      "options": [
-        {"value": "", "label": "No Icon"},
-        {"value": "→", "label": "Arrow Right (→)"},
-        {"value": "🛒", "label": "Shopping Cart (🛒)"},
-        {"value": "💎", "label": "Diamond (💎)"},
-        {"value": "⚡", "label": "Lightning (⚡)"},
-        {"value": "🔥", "label": "Fire (🔥)"},
-        {"value": "⭐", "label": "Star (⭐)"},
-        {"value": "🎯", "label": "Target (🎯)"},
-        {"value": "💫", "label": "Dizzy Star (💫)"},
-        {"value": "🚀", "label": "Rocket (🚀)"},
-        {"value": "✨", "label": "Sparkles (✨)"},
-        {"value": "💝", "label": "Gift (💝)"},
-        {"value": "🏆", "label": "Trophy (🏆)"},
-        {"value": "💰", "label": "Money Bag (💰)"},
-        {"value": "🎉", "label": "Party (🎉)"},
-        {"value": "❤️", "label": "Heart (❤️)"},
-        {"value": "👑", "label": "Crown (👑)"},
-        {"value": "🎁", "label": "Present (🎁)"},
-        {"value": "💯", "label": "Hundred (💯)"},
-        {"value": "🔔", "label": "Bell (🔔)"}
-      ],
-      "default": "→",
-      "info": "Choose an icon for the button"
     },
     {
       "type": "checkbox",
@@ -892,13 +782,6 @@ window.addEventListener('resize', function() {
       ],
       "default": "2",
       "info": "Applies when layout mode is set to side by side on desktop screens."
-    },
-    {
-      "type": "checkbox",
-      "id": "match_height_side",
-      "label": "Enable equal height in side-by-side rows",
-      "default": false,
-      "info": "When enabled, blocks in the same side-by-side row stretch to the same height. Useful if one block has a timer or more text."
     },
     {
       "type": "select",

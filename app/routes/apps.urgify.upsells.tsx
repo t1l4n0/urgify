@@ -1,15 +1,22 @@
 import { json, type LoaderFunctionArgs } from "@remix-run/node";
 import { getOfflineToken, adminCall } from "../utils/webhookHelpers";
 
+// CORS headers for storefront access
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Vary": "Origin",
+};
+
 /**
  * Metafield definition constant
+ * Matches the metafield definition created in metafieldDefinitions.ts
  */
 const UPSELL_METAFIELD = {
   namespace: 'urgify',
   key: 'cart_upsells'
 };
-
-const MIN_UPSELL_PRODUCTS = 3;
 
 /**
  * Public storefront endpoint for fetching metafield-based upsell products
@@ -41,6 +48,17 @@ const MIN_UPSELL_PRODUCTS = 3;
  * }
  */
 export const loader = async ({ request }: LoaderFunctionArgs) => {
+  // Handle CORS preflight
+  if (request.method === "OPTIONS") {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        ...CORS_HEADERS,
+        "Access-Control-Max-Age": "600",
+      },
+    });
+  }
+
   try {
     const url = new URL(request.url);
     const productIdsParam = url.searchParams.get('product_ids');
@@ -51,14 +69,14 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     if (!productIdsParam) {
       return json(
         { error: "product_ids parameter is required" },
-        { status: 400 }
+        { status: 400, headers: { ...CORS_HEADERS } }
       );
     }
 
     if (!shopParam) {
       return json(
         { error: "shop parameter is required" },
-        { status: 400 }
+        { status: 400, headers: { ...CORS_HEADERS } }
       );
     }
 
@@ -70,7 +88,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       .map(id => `gid://shopify/Product/${id}`);
 
     if (productIds.length === 0) {
-      return json({ upsellProductIds: [] });
+      return json({ upsellProductIds: [] }, { headers: { ...CORS_HEADERS } });
     }
 
     // Parse and validate limit
@@ -92,7 +110,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       console.error('Failed to get offline token for shop:', shop, tokenError);
       return json(
         { error: "Unable to authenticate with shop" },
-        { status: 401 }
+        { status: 401, headers: { ...CORS_HEADERS } }
       );
     }
 
@@ -160,7 +178,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     let upsellGidsArray = Array.from(upsellProductGids).slice(0, limit);
     
     if (upsellGidsArray.length === 0) {
-      return json({ upsellProducts: [] });
+      return json({ upsellProducts: [] }, { headers: { ...CORS_HEADERS } });
     }
 
     // Fetch product details
@@ -221,7 +239,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         })
         .filter((p: any) => p.available); // Only return available products
 
-      return json({ upsellProducts });
+      return json({ upsellProducts }, { headers: { ...CORS_HEADERS } });
     } catch (productError) {
       console.error('Failed to fetch product details', productError);
       // Fallback: return just IDs if product fetch fails
@@ -229,7 +247,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         .map(gid => gid.replace('gid://shopify/Product/', ''))
         .filter(id => !isNaN(Number(id)))
         .map(id => Number(id));
-      return json({ upsellProductIds: fallbackIds });
+      return json({ upsellProductIds: fallbackIds }, { headers: { ...CORS_HEADERS } });
     }
   } catch (error) {
     console.error("Upsells endpoint error:", error);
@@ -238,7 +256,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         error: "Failed to fetch upsell products",
         details: error instanceof Error ? error.message : "Unknown error"
       },
-      { status: 500 }
+      { status: 500, headers: { ...CORS_HEADERS } }
     );
   }
 };

@@ -74,3 +74,19 @@ model GdprRequest {
   @@index([shop, topic])
   @@index([shop, customerId])
 }
+
+model CartUpsellSettings {
+  id                  String   @id @default(cuid())
+  shop                String   @unique
+  enabled             Boolean  @default(false)
+  heading             String   @default("Recommendations")
+  maxProducts         Int      @default(3)
+  showPrice           Boolean  @default(true)
+  showCompareAtPrice  Boolean  @default(true)
+  imageSize           String   @default("medium")
+  buttonLabel         String   @default("Add to cart")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@map("cart_upsell_settings")
+}

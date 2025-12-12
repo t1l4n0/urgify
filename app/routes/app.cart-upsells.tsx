@@ -6,173 +6,102 @@ import {
 } from "@remix-run/node";
 import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
-import { ensureProductMetafieldDefinitions } from "../utils/metafieldDefinitions";
-import { shouldRateLimit, checkShopifyRateLimit } from "../utils/rateLimiting";
-import { ViewPlansLink } from "../components/ViewPlansLink";
+import { ensureShopMetafieldDefinitions, ensureProductMetafieldDefinitions } from "../utils/metafieldDefinitions";
+import prisma from "../db.server";
 // Polaris Web Components - no imports needed, components are global
-import { useState, useCallback, useEffect, useMemo } from "react";
-
-type Product = {
-  id: string;
-  title: string;
-  handle: string;
-  featuredImage?: {
-    url: string;
-    altText?: string;
-  } | null;
-  upsellProductIds: string[];
-};
+import { useState, useCallback, useEffect } from "react";
 
 type CartUpsellsLoaderData = SerializeFrom<typeof loader>;
-type CartUpsellsSuccess = Extract<CartUpsellsLoaderData, { products: unknown }>;
+type CartUpsellsSuccess = Extract<CartUpsellsLoaderData, { settings: unknown }>;
 
-const MIN_UPSELL_PRODUCTS = 3;
+type ActionData = 
+  | { success: true; message: string }
+  | { error: string }
+  | undefined;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
-  
-  // Ensure product metafield definitions exist
-  await ensureProductMetafieldDefinitions(admin);
-
-  const url = new URL(request.url);
-  const page = parseInt(url.searchParams.get("page") || "1", 10);
-  const searchQuery = url.searchParams.get("search") || "";
-  const perPage = 20;
 
   try {
-    // Check rate limiting
-    const rateLimitCheck = await shouldRateLimit(request, 'admin');
-    if (rateLimitCheck.limited) {
-      return json(
-        { error: rateLimitCheck.error },
-        { 
-          status: 429, 
-          headers: { 
-            'Retry-After': rateLimitCheck.retryAfter?.toString() || '60' 
-          } 
-        }
-      );
-    }
+    // Note: Rate limiting checks removed for admin UI pages to avoid blocking legitimate user actions
+    // Shopify's own rate limits will still apply
 
-    // Check Shopify GraphQL rate limits
-    const shopifyRateLimit = await checkShopifyRateLimit('graphql', session.shop);
-    if (!shopifyRateLimit.success) {
-      return json(
-        { error: shopifyRateLimit.error },
-        { 
-          status: 429, 
-          headers: { 
-            'Retry-After': shopifyRateLimit.retryAfter?.toString() || '60' 
-          } 
-        }
-      );
-    }
-
-    // Build search query
-    const searchFilter = searchQuery
-      ? `title:${searchQuery}* OR handle:${searchQuery}*`
-      : "";
-
-    // Fetch products with pagination
-    const productsQuery = `#graphql
-      query getProducts($first: Int!, $after: String, $query: String) {
-        products(first: $first, after: $after, query: $query) {
-          pageInfo {
-            hasNextPage
-            hasPreviousPage
-            startCursor
-            endCursor
-          }
-          edges {
-            node {
-              id
-              title
-              handle
-            featuredMedia {
-              preview {
-                image {
-                  url
-                  altText
-                }
-              }
-            }
-              metafield(namespace: "urgify", key: "cart_upsells") {
-                value
-                type
-              }
-            }
-            cursor
+    // Check if product metafield definition exists and is pinned
+    const definitionQuery = `#graphql
+      query getProductMetafieldDefinition {
+        metafieldDefinitions(first: 10, namespace: "urgify", ownerType: PRODUCT) {
+          nodes {
+            id
+            key
+            pinnedPosition
           }
         }
       }
     `;
 
-    const variables: any = {
-      first: perPage,
-      query: searchFilter || undefined,
-    };
+    const definitionResponse = await admin.graphql(definitionQuery);
+    const definitionData = await definitionResponse.json();
+    const definitions = definitionData.data?.metafieldDefinitions?.nodes || [];
+    const cartUpsellsDefinition = definitions.find((def: any) => def.key === "cart_upsells");
+    const metafieldDefinitionExists = !!cartUpsellsDefinition;
+    const metafieldDefinitionPinned = cartUpsellsDefinition?.pinnedPosition !== null && cartUpsellsDefinition?.pinnedPosition !== undefined;
 
-    // Handle pagination cursor
-    if (page > 1) {
-      // For simplicity, we'll fetch all products up to the current page
-      // In production, you'd want to store cursors properly
-      variables.after = null;
-    }
-
-    const response = await admin.graphql(productsQuery, { variables });
-    const data = await response.json();
-
-    const products = (data?.data?.products?.edges || []).map((edge: any) => {
-      const product = edge.node;
-      let upsellProductIds: string[] = [];
-
-      // Parse metafield value (list.product_reference returns JSON array of GIDs)
-      if (product.metafield?.value) {
-        try {
-          const metafieldValue = JSON.parse(product.metafield.value);
-          if (Array.isArray(metafieldValue)) {
-            upsellProductIds = metafieldValue
-              .map((ref: any) => {
-                // Extract product ID from GID
-                if (typeof ref === 'string' && ref.startsWith('gid://shopify/Product/')) {
-                  return ref.replace('gid://shopify/Product/', '');
-                } else if (typeof ref === 'object' && ref.id) {
-                  const refId = String(ref.id);
-                  if (refId.startsWith('gid://shopify/Product/')) {
-                    return refId.replace('gid://shopify/Product/', '');
-                  }
-                }
-                return null;
-              })
-              .filter((id: string | null): id is string => id !== null);
-          }
-        } catch (error) {
-          console.warn('Failed to parse cart_upsells metafield for product', product.id, error);
+    // Get shop ID
+    const shopResponse = await admin.graphql(`
+      query getShop {
+        shop {
+          id
         }
       }
+    `);
+    const shopData = await shopResponse.json();
+    const shopId = shopData.data?.shop?.id;
 
-      return {
-        id: product.id.replace('gid://shopify/Product/', ''),
-        title: product.title || '',
-        handle: product.handle || '',
-        featuredImage: product.featuredMedia?.preview?.image || null,
-        upsellProductIds,
-      };
+    // Normalize shop name (remove .myshopify.com if present for consistency)
+    const normalizedShop = session.shop.replace(/\.myshopify\.com$/, '');
+    
+    // Fetch cart upsell settings from database
+    let settings = {
+      enabled: false,
+      heading: "Recommendations",
+      max_products: 3,
+      show_price: true,
+      show_compare_at_price: true,
+      image_size: "medium",
+      button_label: "Add to cart",
+    };
+
+    const dbSettings = await prisma.cartUpsellSettings.findUnique({
+      where: { shop: normalizedShop },
     });
 
+    if (dbSettings) {
+      settings = {
+        enabled: dbSettings.enabled,
+        heading: dbSettings.heading,
+        max_products: dbSettings.maxProducts,
+        show_price: dbSettings.showPrice,
+        show_compare_at_price: dbSettings.showCompareAtPrice,
+        image_size: dbSettings.imageSize,
+        button_label: dbSettings.buttonLabel,
+      };
+      console.log(`[Cart Upsells] Loaded settings for shop: "${normalizedShop}"`, settings);
+    } else {
+      console.log(`[Cart Upsells] No settings found for shop: "${normalizedShop}", using defaults`);
+    }
+
     return json({
-      products,
-      pageInfo: data?.data?.products?.pageInfo || {},
-      currentPage: page,
-      searchQuery,
-      perPage,
+      settings,
+      shopId,
+      metafieldDefinitionExists,
+      metafieldDefinitionPinned,
     }, {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {
     console.error("Error loading cart upsells:", error);
     return json(
-      { error: "Failed to load products. Please try again." },
+      { error: "Failed to load settings. Please try again." },
       { status: 500, headers: { "Cache-Control": "no-store" } }
     );
   }
@@ -182,114 +111,271 @@ export const action = async ({ request }: ActionFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
 
   try {
-    // Check rate limiting
-    const rateLimitCheck = await shouldRateLimit(request, 'admin');
-    if (rateLimitCheck.limited) {
-      return json(
-        { error: rateLimitCheck.error },
-        { 
-          status: 429, 
-          headers: { 
-            'Retry-After': rateLimitCheck.retryAfter?.toString() || '60' 
-          } 
-        }
-      );
-    }
-
-    // Check Shopify GraphQL rate limits
-    const shopifyRateLimit = await checkShopifyRateLimit('graphql', session.shop);
-    if (!shopifyRateLimit.success) {
-      return json(
-        { error: shopifyRateLimit.error },
-        { 
-          status: 429, 
-          headers: { 
-            'Retry-After': shopifyRateLimit.retryAfter?.toString() || '60' 
-          } 
-        }
-      );
-    }
+    // Note: Rate limiting checks removed for admin UI actions to avoid blocking legitimate saves
+    // Shopify's own rate limits will still apply and be handled by the GraphQL client
 
     const formData = await request.formData();
     const action = formData.get("action");
 
     if (action === "update") {
-      const productId = formData.get("productId");
-      const upsellProductIds = formData.get("upsellProductIds");
-
-      if (!productId) {
-        return json({ error: "Product ID is required" }, { status: 400 });
-      }
-
-      // Parse upsell product IDs
-      let upsellGids: string[] = [];
-      if (upsellProductIds) {
-        const ids = String(upsellProductIds).split(',').filter(id => id.trim());
-        upsellGids = ids.map(id => `gid://shopify/Product/${id.trim()}`);
-      }
-
-      // Note: Auto-fill to MIN_UPSELL_PRODUCTS happens in frontend JavaScript
-      // Backend just saves what the user selected
-
-      // Update metafield
-      const updateMutation = `#graphql
-        mutation updateProductMetafield($metafields: [MetafieldsSetInput!]!) {
-          metafieldsSet(metafields: $metafields) {
-            metafields {
-              id
-              namespace
-              key
-              value
-            }
-            userErrors {
-              field
-              message
-            }
+      // Get shop ID
+      const shopResponse = await admin.graphql(`
+        query getShop {
+          shop {
+            id
           }
         }
-      `;
+      `);
+      const shopData = await shopResponse.json();
+      const shopId = shopData.data?.shop?.id;
 
-      const metafieldValue = JSON.stringify(upsellGids);
+      if (!shopId) {
+        return json({ error: "Shop ID not found" }, { status: 400 });
+      }
 
-      const updateResponse = await admin.graphql(updateMutation, {
-        variables: {
-          metafields: [
-            {
-              ownerId: `gid://shopify/Product/${productId}`,
-              namespace: "urgify",
-              key: "cart_upsells",
-              type: "list.product_reference",
-              value: metafieldValue,
-            },
-          ],
+      // Build settings object
+      const settings = {
+        enabled: formData.get("enabled") === "true",
+        heading: formData.get("heading") || "Recommendations",
+        max_products: parseInt(formData.get("max_products") || "3", 10),
+        show_price: formData.get("show_price") === "true",
+        show_compare_at_price: formData.get("show_compare_at_price") === "true",
+        image_size: formData.get("image_size") || "medium",
+        button_label: formData.get("button_label") || "Add to cart",
+      };
+
+      // Validate max_products
+      if (settings.max_products < 1 || settings.max_products > 10) {
+        return json({ error: "Max products must be between 1 and 10" }, { status: 400 });
+      }
+
+      // Normalize shop name (remove .myshopify.com if present for consistency)
+      const normalizedShop = session.shop.replace(/\.myshopify\.com$/, '');
+      
+      console.log(`[Cart Upsells] Saving settings for shop: "${normalizedShop}" (original: "${session.shop}")`, settings);
+
+      // Save settings to database
+      await prisma.cartUpsellSettings.upsert({
+        where: { shop: normalizedShop },
+        update: {
+          enabled: settings.enabled,
+          heading: settings.heading,
+          maxProducts: settings.max_products,
+          showPrice: settings.show_price,
+          showCompareAtPrice: settings.show_compare_at_price,
+          imageSize: settings.image_size,
+          buttonLabel: settings.button_label,
+        },
+        create: {
+          shop: normalizedShop,
+          enabled: settings.enabled,
+          heading: settings.heading,
+          maxProducts: settings.max_products,
+          showPrice: settings.show_price,
+          showCompareAtPrice: settings.show_compare_at_price,
+          imageSize: settings.image_size,
+          buttonLabel: settings.button_label,
         },
       });
 
-      const updateData = await updateResponse.json();
-      const userErrors = updateData?.data?.metafieldsSet?.userErrors || [];
+      console.log(`[Cart Upsells] Settings saved successfully for shop: "${normalizedShop}"`);
 
-      if (userErrors.length > 0) {
-        return json(
-          { error: userErrors.map((e: any) => e.message).join(", ") },
-          { status: 400 }
-        );
+      // Set shop metafield to enable/disable cart upsell in Liquid templates
+      try {
+        await ensureShopMetafieldDefinitions(admin);
+        
+        const metafieldMutation = `#graphql
+          mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
+            metafieldsSet(metafields: $metafields) {
+              metafields {
+                id
+                namespace
+                key
+                value
+              }
+              userErrors {
+                field
+                message
+              }
+            }
+          }
+        `;
+
+        const metafieldVariables = {
+          metafields: [
+            {
+              ownerId: shopId,
+              namespace: "urgify",
+              key: "cart_upsell_enabled",
+              type: "boolean",
+              value: String(settings.enabled),
+            },
+          ],
+        };
+
+        const metafieldResponse = await admin.graphql(metafieldMutation, {
+          variables: metafieldVariables,
+        });
+
+        const metafieldData = await metafieldResponse.json();
+
+        if (metafieldData.errors) {
+          console.error("GraphQL errors in metafieldsSet:", metafieldData.errors);
+        }
+
+        const userErrors = metafieldData?.data?.metafieldsSet?.userErrors || [];
+        if (userErrors.length > 0) {
+          console.error("User errors in metafieldsSet:", userErrors);
+        } else {
+          console.log(`[Cart Upsells] Shop metafield 'cart_upsell_enabled' set to: ${settings.enabled}`);
+        }
+      } catch (metafieldError) {
+        console.error("[Cart Upsells] Error setting shop metafield:", metafieldError);
+        // Don't fail the request if metafield update fails - settings are already saved to DB
       }
 
-      return json({ success: true, message: "Upsell products updated successfully" });
+      return json({ success: true, message: "Cart Upsell settings updated successfully" });
+    }
+
+    if (action === "create-metafield-definition") {
+      try {
+        // Check available scopes for debugging
+        let availableScopes: string[] = [];
+        try {
+          const scopeResponse = await admin.graphql(`
+            query getCurrentAppInstallation {
+              currentAppInstallation {
+                accessScopes {
+                  handle
+                }
+              }
+            }
+          `);
+          const scopeData = await scopeResponse.json();
+          
+          // Check for GraphQL errors in scope query
+          if (scopeData.errors) {
+            console.error("GraphQL errors when checking scopes:", scopeData.errors);
+            // Continue anyway - might still work
+          } else {
+            availableScopes = scopeData.data?.currentAppInstallation?.accessScopes?.map((s: any) => s.handle) || [];
+            console.log("Available scopes:", availableScopes);
+          }
+        } catch (scopeError) {
+          console.error("Error checking scopes:", scopeError);
+          // Continue anyway - might still work
+        }
+        
+        // Check if required scopes are present (but don't block if check failed)
+        if (availableScopes.length > 0) {
+          const hasWriteMetaobjectDefinitions = availableScopes.includes("write_metaobject_definitions");
+          
+          if (!hasWriteMetaobjectDefinitions) {
+            console.warn("Scope 'write_metaobject_definitions' not found. Available scopes:", availableScopes);
+            // Don't block - try anyway, might work if scopes were just updated
+            // return json({ 
+            //   error: "Missing required scope: 'write_metaobject_definitions'. Please ensure the app has been updated with the new scopes and the permissions have been granted. Available scopes: " + availableScopes.join(", ") 
+            // }, { status: 403 });
+          }
+        }
+        
+        // Create and pin the product metafield definition
+        // This will throw an error if scopes are missing, which we'll catch below
+        await ensureProductMetafieldDefinitions(admin);
+        
+        // Verify it was created and pinned
+        const verifyQuery = `#graphql
+          query verifyProductMetafieldDefinition {
+            metafieldDefinitions(first: 10, namespace: "urgify", ownerType: PRODUCT) {
+              nodes {
+                id
+                key
+                pinnedPosition
+              }
+            }
+          }
+        `;
+        
+        const verifyResponse = await admin.graphql(verifyQuery);
+        const verifyData = await verifyResponse.json();
+        
+        // Check for GraphQL errors
+        if (verifyData.errors) {
+          console.error("GraphQL errors when verifying metafield definition:", verifyData.errors);
+          const errorDetails = verifyData.errors.map((e: any) => {
+            return `${e.message}${e.extensions?.code ? ` (${e.extensions.code})` : ''}`;
+          }).join(", ");
+          return json({ 
+            error: `Failed to verify metafield definition: ${errorDetails}` 
+          }, { status: 500 });
+        }
+        
+        const definitions = verifyData.data?.metafieldDefinitions?.nodes || [];
+        const cartUpsellsDefinition = definitions.find((def: any) => def.key === "cart_upsells");
+        
+        if (cartUpsellsDefinition) {
+          const isPinned = cartUpsellsDefinition.pinnedPosition !== null && cartUpsellsDefinition.pinnedPosition !== undefined;
+          if (isPinned) {
+            return json({ 
+              success: true, 
+              message: "Metafield definition created and pinned successfully. It should now be visible in the Shopify Admin." 
+            });
+          } else {
+            return json({ 
+              success: true, 
+              message: "Metafield definition created but may not be pinned. Please check in Shopify Admin." 
+            });
+          }
+        } else {
+          return json({ 
+            error: "Failed to create metafield definition. The definition was not found after creation. Please check the browser console or server logs for detailed error messages." 
+          }, { status: 500 });
+        }
+      } catch (error) {
+        console.error("Error creating metafield definition:", error);
+        
+        // Log full error details
+        let errorDetails = "Unknown error";
+        if (error instanceof Error) {
+          errorDetails = error.message;
+          console.error("Error name:", error.name);
+          console.error("Error message:", error.message);
+          console.error("Error stack:", error.stack);
+        } else if (typeof error === "string") {
+          errorDetails = error;
+        } else {
+          try {
+            errorDetails = JSON.stringify(error);
+          } catch {
+            errorDetails = String(error);
+          }
+        }
+        
+        // Check if it's a scope-related error
+        if (errorDetails.includes("access") || errorDetails.includes("scope") || errorDetails.includes("permission") || errorDetails.includes("unauthorized")) {
+          return json({ 
+            error: `Permission error: ${errorDetails}. Please ensure the app has the 'write_metaobject_definitions' and 'read_metaobject_definitions' scopes and that permissions have been granted.` 
+          }, { status: 403 });
+        }
+        
+        return json({ 
+          error: `Failed to create metafield definition: ${errorDetails}` 
+        }, { status: 500 });
+      }
     }
 
     return json({ error: "Invalid action" }, { status: 400 });
   } catch (error) {
     console.error("Error in cart upsells action:", error);
     return json(
-      { error: "Failed to update upsell products. Please try again." },
+      { error: "Failed to update settings. Please try again." },
       { status: 500 }
     );
   }
 };
 
 export default function CartUpsells() {
-  const loaderData = useLoaderData<CartUpsellsLoaderData>();
+  const loaderData = useLoaderData<typeof loader>();
 
   if ("error" in loaderData) {
     return (
@@ -303,291 +389,319 @@ export default function CartUpsells() {
     );
   }
 
-  return <CartUpsellsForm data={loaderData} />;
+  if ("settings" in loaderData) {
+    return <CartUpsellsForm data={loaderData as CartUpsellsSuccess} />;
+  }
+
+  return (
+    <s-page heading="Cart Upsells">
+      <s-section>
+        <s-banner tone="critical" heading="Error">
+          <s-paragraph>Failed to load settings</s-paragraph>
+        </s-banner>
+      </s-section>
+    </s-page>
+  );
 }
 
 function CartUpsellsForm({ data }: { data: CartUpsellsSuccess }) {
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<ActionData>();
   const revalidator = useRevalidator();
-  const { products, currentPage, searchQuery } = data;
+  const { settings, metafieldDefinitionExists, metafieldDefinitionPinned } = data;
 
-  const [searchTerm, setSearchTerm] = useState(searchQuery || "");
-  const [selectedProducts, setSelectedProducts] = useState<Record<string, string[]>>({});
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
+  const [enabled, setEnabled] = useState(settings.enabled);
+  const [heading, setHeading] = useState(settings.heading);
+  const [maxProducts, setMaxProducts] = useState(String(settings.max_products));
+  const [showPrice, setShowPrice] = useState(settings.show_price);
+  const [showCompareAtPrice, setShowCompareAtPrice] = useState(settings.show_compare_at_price);
+  const [imageSize, setImageSize] = useState(settings.image_size);
+  const [buttonLabel, setButtonLabel] = useState(settings.button_label);
+  const [isDirty, setIsDirty] = useState(false);
 
-  // Initialize selected products from loader data
+  // Reset form when settings change (after save) or when metafield definition is created
   useEffect(() => {
-    const initial: Record<string, string[]> = {};
-    products.forEach((product) => {
-      initial[product.id] = product.upsellProductIds;
-    });
-    setSelectedProducts(initial);
-  }, [products]);
-
-  // Fetch all products for the product selector
-  useEffect(() => {
-    const fetchAllProducts = async () => {
-      setIsLoadingProducts(true);
-      try {
-        const response = await fetch(`/apps/urgify/upsells?shop=${window.location.search.match(/shop=([^&]+)/)?.[1] || ''}&product_ids=`);
-        // For now, we'll use a simpler approach - fetch products via GraphQL in the loader
-        // This is a placeholder - in production, you'd want a dedicated endpoint
-        setIsLoadingProducts(false);
-      } catch (error) {
-        console.error('Failed to fetch products:', error);
-        setIsLoadingProducts(false);
+    if (fetcher.data) {
+      if ("success" in fetcher.data && fetcher.data.success) {
+        setIsDirty(false);
+        setTimeout(() => {
+          revalidator.revalidate();
+        }, 500);
       }
-    };
-    // Don't fetch on initial load - we'll use a different approach
-  }, []);
-
-  const handleSearch = useCallback(() => {
-    const params = new URLSearchParams();
-    if (searchTerm) {
-      params.set("search", searchTerm);
+      // Log errors for debugging
+      if ("error" in fetcher.data && fetcher.data.error) {
+        console.error("Action error:", fetcher.data.error);
+      }
     }
-    params.set("page", "1");
-    window.location.search = params.toString();
-  }, [searchTerm]);
+  }, [fetcher.data, revalidator]);
 
-  const handleUpsellChange = useCallback((productId: string, upsellProductIds: string[]) => {
-    setSelectedProducts((prev) => ({
-      ...prev,
-      [productId]: upsellProductIds,
-    }));
-  }, []);
-
-  const handleSave = useCallback(async (productId: string) => {
-    const upsellIds = selectedProducts[productId] || [];
+  const handleSave = useCallback(() => {
     const formData = new FormData();
     formData.append("action", "update");
-    formData.append("productId", productId);
-    formData.append("upsellProductIds", upsellIds.join(","));
+    formData.append("enabled", enabled ? "true" : "false");
+    formData.append("heading", heading);
+    formData.append("max_products", maxProducts);
+    formData.append("show_price", showPrice ? "true" : "false");
+    formData.append("show_compare_at_price", showCompareAtPrice ? "true" : "false");
+    formData.append("image_size", imageSize);
+    formData.append("button_label", buttonLabel);
 
     fetcher.submit(formData, { method: "post" });
-  }, [selectedProducts, fetcher]);
+  }, [enabled, heading, maxProducts, showPrice, showCompareAtPrice, imageSize, buttonLabel, fetcher]);
 
-  const handleSaveAll = useCallback(async () => {
-    for (const productId of Object.keys(selectedProducts)) {
-      await handleSave(productId);
-    }
-    setTimeout(() => {
-      revalidator.revalidate();
-    }, 1000);
-  }, [selectedProducts, handleSave, revalidator]);
+  const handleChange = useCallback(() => {
+    setIsDirty(true);
+  }, []);
 
   return (
     <s-page heading="Cart Upsells">
       <s-section>
         <s-stack gap="base">
           <s-paragraph>
-            Configure upsell products for each product. When a customer adds a product to their cart,
-            up to 3 recommended upsell products will be displayed in the cart drawer.
-            If you select fewer than 3 products, the system will automatically fill the remaining
-            slots with Shopify product recommendations.
+            Configure cart upsell recommendations. When customers add products to their cart,
+            recommended upsell products from the product metafield (upsell.products) will be
+            displayed in the cart drawer.
           </s-paragraph>
 
-          <s-stack gap="tight" direction="row">
-            <s-textfield
-              label="Search products"
-              value={searchTerm}
-              onChange={(e: any) => setSearchTerm(e.target.value)}
-              onKeyDown={(e: any) => {
-                if (e.key === "Enter") {
-                  handleSearch();
-                }
-              }}
-            />
-            <s-button variant="primary" onClick={handleSearch}>
-              Search
-            </s-button>
-          </s-stack>
-
-          {fetcher.data?.success && (
+          {fetcher.data && "success" in fetcher.data && fetcher.data.success && (
             <s-banner tone="success" heading="Success">
               <s-paragraph>{fetcher.data.message}</s-paragraph>
             </s-banner>
           )}
 
-          {fetcher.data?.error && (
+          {fetcher.data && "error" in fetcher.data && fetcher.data.error && (
             <s-banner tone="critical" heading="Error">
               <s-paragraph>{fetcher.data.error}</s-paragraph>
             </s-banner>
           )}
 
-          <s-stack gap="base">
-            {products.map((product) => (
-              <ProductUpsellEditor
-                key={product.id}
-                product={product}
-                selectedUpsellIds={selectedProducts[product.id] || []}
-                onUpsellChange={(ids) => handleUpsellChange(product.id, ids)}
-                onSave={() => handleSave(product.id)}
-                isSaving={fetcher.state === "submitting"}
-              />
-            ))}
-          </s-stack>
+          <s-card>
+            <s-stack gap="base">
+              <s-heading level={3}>General Settings</s-heading>
+              
+              <s-stack gap="tight">
+                <s-checkbox
+                  checked={enabled}
+                  onChange={(e) => {
+                    setEnabled(e.currentTarget.checked);
+                    handleChange();
+                  }}
+                  label="Enable Cart Upsell"
+                  helpText="Display upsell products in the cart drawer when customers add products to their cart."
+                />
+              </s-stack>
 
-          {products.length === 0 && (
-            <s-banner tone="info" heading="No products found">
-              <s-paragraph>
-                {searchQuery
-                  ? `No products found matching "${searchQuery}". Try a different search term.`
-                  : "No products found."}
-              </s-paragraph>
-            </s-banner>
+              {enabled && (
+                <>
+                  <s-stack gap="tight">
+                    <label htmlFor="heading" style={{ fontWeight: 500 }}>
+                      Heading Text
+                    </label>
+                    <input
+                      id="heading"
+                      type="text"
+                      value={heading}
+                      onChange={(e) => {
+                        setHeading(e.target.value);
+                        handleChange();
+                      }}
+                      placeholder="Recommendations"
+                      style={{
+                        padding: "8px 12px",
+                        border: "1px solid #ccc",
+                        borderRadius: "4px",
+                        width: "100%",
+                      }}
+                    />
+                    <small style={{ color: "#666" }}>
+                      Text displayed above the upsell products in the cart drawer.
+                    </small>
+                  </s-stack>
+
+                  <s-stack gap="tight">
+                    <label htmlFor="max_products" style={{ fontWeight: 500 }}>
+                      Maximum Products
+                    </label>
+                    <input
+                      id="max_products"
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={maxProducts}
+                      onChange={(e) => {
+                        setMaxProducts(e.target.value);
+                        handleChange();
+                      }}
+                      style={{
+                        padding: "8px 12px",
+                        border: "1px solid #ccc",
+                        borderRadius: "4px",
+                        width: "100px",
+                      }}
+                    />
+                    <small style={{ color: "#666" }}>
+                      Maximum number of upsell products to display (1-10).
+                    </small>
+                  </s-stack>
+
+                  <s-stack gap="tight">
+                    <label htmlFor="button_label" style={{ fontWeight: 500 }}>
+                      Button Label
+                    </label>
+                    <input
+                      id="button_label"
+                      type="text"
+                      value={buttonLabel}
+                      onChange={(e) => {
+                        setButtonLabel(e.target.value);
+                        handleChange();
+                      }}
+                      placeholder="Add to cart"
+                      style={{
+                        padding: "8px 12px",
+                        border: "1px solid #ccc",
+                        borderRadius: "4px",
+                        width: "100%",
+                      }}
+                    />
+                    <small style={{ color: "#666" }}>
+                      Text displayed on the add to cart button for upsell products.
+                    </small>
+                  </s-stack>
+                </>
+              )}
+            </s-stack>
+          </s-card>
+
+          {enabled && (
+            <s-card>
+              <s-stack gap="base">
+                <s-heading level={3}>Display Settings</s-heading>
+                
+                <s-stack gap="tight">
+                  <s-checkbox
+                    checked={showPrice}
+                    onChange={(e) => {
+                      setShowPrice(e.currentTarget.checked);
+                      handleChange();
+                    }}
+                    label="Show Price"
+                    helpText="Display product prices in the upsell list."
+                  />
+                </s-stack>
+
+                {showPrice && (
+                  <s-stack gap="tight">
+                    <s-checkbox
+                      checked={showCompareAtPrice}
+                      onChange={(e) => {
+                        setShowCompareAtPrice(e.currentTarget.checked);
+                        handleChange();
+                      }}
+                      label="Show Compare at Price"
+                      helpText="Display original price when product is on sale (strikethrough)."
+                    />
+                  </s-stack>
+                )}
+
+                <s-stack gap="tight">
+                  <label htmlFor="image_size" style={{ fontWeight: 500 }}>
+                    Image Size
+                  </label>
+                  <select
+                    id="image_size"
+                    value={imageSize}
+                    onChange={(e) => {
+                      setImageSize(e.target.value);
+                      handleChange();
+                    }}
+                    style={{
+                      padding: "8px 12px",
+                      border: "1px solid #ccc",
+                      borderRadius: "4px",
+                      width: "200px",
+                    }}
+                  >
+                    <option value="small">Small</option>
+                    <option value="medium">Medium</option>
+                    <option value="large">Large</option>
+                  </select>
+                  <small style={{ color: "#666" }}>
+                    Size of product images in the upsell list.
+                  </small>
+                </s-stack>
+              </s-stack>
+            </s-card>
           )}
 
           <s-stack gap="tight" direction="row">
-            {currentPage > 1 && (
+            <s-button
+              variant="primary"
+              onClick={handleSave}
+              disabled={!isDirty || fetcher.state === "submitting"}
+            >
+              {fetcher.state === "submitting" ? "Saving..." : "Save Settings"}
+            </s-button>
+            {isDirty && (
               <s-button
                 variant="secondary"
                 onClick={() => {
-                  const params = new URLSearchParams(window.location.search);
-                  params.set("page", String(currentPage - 1));
-                  window.location.search = params.toString();
+                  setEnabled(settings.enabled);
+                  setHeading(settings.heading);
+                  setMaxProducts(String(settings.max_products));
+                  setShowPrice(settings.show_price);
+                  setShowCompareAtPrice(settings.show_compare_at_price);
+                  setImageSize(settings.image_size);
+                  setButtonLabel(settings.button_label);
+                  setIsDirty(false);
                 }}
               >
-                Previous
-              </s-button>
-            )}
-            {data.pageInfo.hasNextPage && (
-              <s-button
-                variant="secondary"
-                onClick={() => {
-                  const params = new URLSearchParams(window.location.search);
-                  params.set("page", String(currentPage + 1));
-                  window.location.search = params.toString();
-                }}
-              >
-                Next
+                Reset
               </s-button>
             )}
           </s-stack>
+
+          {metafieldDefinitionExists && metafieldDefinitionPinned ? (
+            <s-banner tone="success" heading="Metafield Definition Ready">
+              <s-paragraph>
+                The product metafield <strong>urgify.cart_upsells</strong> has been created and pinned,
+                making it visible in the Shopify Admin. You can configure upsell products for each product
+                directly in the Shopify Admin under the product's Metafields section. When a customer
+                adds a product to their cart, the upsell products from that product's metafield will
+                be displayed in the cart drawer.
+              </s-paragraph>
+            </s-banner>
+          ) : (
+            <s-card>
+              <s-stack gap="base">
+                <s-heading level={3}>Metafield Definition</s-heading>
+                <s-paragraph>
+                  The product metafield <strong>urgify.cart_upsells</strong> needs to be created to enable
+                  cart upsell functionality. Click the button below to create and pin the metafield definition,
+                  which will make it visible in the Shopify Admin for all products.
+                </s-paragraph>
+                {metafieldDefinitionExists && !metafieldDefinitionPinned && (
+                  <s-banner tone="warning" heading="Definition exists but not pinned">
+                    <s-paragraph>
+                      The metafield definition exists but is not pinned. Click the button below to pin it.
+                    </s-paragraph>
+                  </s-banner>
+                )}
+                <s-button
+                  variant="primary"
+                  onClick={() => {
+                    const formData = new FormData();
+                    formData.append("action", "create-metafield-definition");
+                    fetcher.submit(formData, { method: "post" });
+                  }}
+                  disabled={fetcher.state === "submitting"}
+                >
+                  {fetcher.state === "submitting" ? "Creating..." : "Create Metafield Definition"}
+                </s-button>
+              </s-stack>
+            </s-card>
+          )}
         </s-stack>
       </s-section>
     </s-page>
   );
 }
-
-function ProductUpsellEditor({
-  product,
-  selectedUpsellIds,
-  onUpsellChange,
-  onSave,
-  isSaving,
-}: {
-  product: Product;
-  selectedUpsellIds: string[];
-  onUpsellChange: (ids: string[]) => void;
-  onSave: () => void;
-  isSaving: boolean;
-}) {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [productSearchTerm, setProductSearchTerm] = useState("");
-  const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
-  const [isLoadingProducts, setIsLoadingProducts] = useState(false);
-
-  // Fetch available products for selection
-  const fetchProducts = useCallback(async (search: string = "") => {
-    setIsLoadingProducts(true);
-    try {
-      // In a real implementation, you'd have an endpoint to fetch products
-      // For now, we'll use a simple approach - this would need a dedicated API endpoint
-      // Placeholder: products would be fetched via GraphQL
-      setIsLoadingProducts(false);
-    } catch (error) {
-      console.error("Failed to fetch products:", error);
-      setIsLoadingProducts(false);
-    }
-  }, []);
-
-  const handleProductSearch = useCallback((term: string) => {
-    setProductSearchTerm(term);
-    if (term.length >= 2) {
-      fetchProducts(term);
-    }
-  }, [fetchProducts]);
-
-  const handleAddUpsell = useCallback((productId: string) => {
-    if (!selectedUpsellIds.includes(productId) && selectedUpsellIds.length < 10) {
-      onUpsellChange([...selectedUpsellIds, productId]);
-    }
-  }, [selectedUpsellIds, onUpsellChange]);
-
-  const handleRemoveUpsell = useCallback((productId: string) => {
-    onUpsellChange(selectedUpsellIds.filter(id => id !== productId));
-  }, [selectedUpsellIds, onUpsellChange]);
-
-  const needsAutoFill = selectedUpsellIds.length < MIN_UPSELL_PRODUCTS;
-
-  return (
-    <s-card>
-      <s-stack gap="base">
-        <s-stack gap="tight" direction="row" alignment="space-between">
-          <s-stack gap="tight">
-            <s-heading level={3}>{product.title}</s-heading>
-            <s-paragraph tone="subdued">
-              {product.handle} • {selectedUpsellIds.length} upsell product{selectedUpsellIds.length !== 1 ? 's' : ''} selected
-            </s-paragraph>
-            {needsAutoFill && (
-              <s-banner tone="info" heading="Auto-fill enabled">
-                <s-paragraph>
-                  You have selected {selectedUpsellIds.length} product{selectedUpsellIds.length !== 1 ? 's' : ''}. 
-                  The system will automatically add {MIN_UPSELL_PRODUCTS - selectedUpsellIds.length} more 
-                  product{MIN_UPSELL_PRODUCTS - selectedUpsellIds.length !== 1 ? 's' : ''} from Shopify recommendations 
-                  when saving.
-                </s-paragraph>
-              </s-banner>
-            )}
-          </s-stack>
-          <s-button
-            variant="secondary"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? "Collapse" : "Edit"}
-          </s-button>
-        </s-stack>
-
-        {isExpanded && (
-          <s-stack gap="base">
-            <s-textfield
-              label="Search products to add as upsells"
-              value={productSearchTerm}
-              onChange={(e: any) => handleProductSearch(e.target.value)}
-              placeholder="Type to search products..."
-            />
-
-            {selectedUpsellIds.length > 0 && (
-              <s-stack gap="tight">
-                <s-heading level={4}>Selected Upsell Products</s-heading>
-                <s-stack gap="tight">
-                  {selectedUpsellIds.map((upsellId) => (
-                    <s-chip
-                      key={upsellId}
-                      onRemove={() => handleRemoveUpsell(upsellId)}
-                    >
-                      Product ID: {upsellId}
-                    </s-chip>
-                  ))}
-                </s-stack>
-              </s-stack>
-            )}
-
-            <s-button
-              variant="primary"
-              onClick={onSave}
-              disabled={isSaving}
-            >
-              {isSaving ? "Saving..." : "Save Upsell Products"}
-            </s-button>
-          </s-stack>
-        )}
-      </s-stack>
-    </s-card>
-  );
-}
-
-
-

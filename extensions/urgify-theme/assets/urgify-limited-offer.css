@@ -55,8 +55,8 @@
   align-items: stretch;
   vertical-align: top;
   box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
+  width: auto;
+  max-width: none;
   margin-right: 0;
   margin-left: 0;
   margin-bottom: 24px;
@@ -89,8 +89,34 @@
 }
 
 .urgify-limited-offer-wrapper--side .urgify-limited-offer {
-  width: 100%;
-  max-width: 100%;
+  width: auto;
+  max-width: none;
+}
+
+/* Respect box width settings in side-by-side layout - override the 100% width */
+.urgify-limited-offer-wrapper--side .urgify-limited-offer.offer-width-ultra-narrow {
+  max-width: 460px !important;
+  width: auto !important;
+}
+
+.urgify-limited-offer-wrapper--side .urgify-limited-offer.offer-width-super-narrow {
+  max-width: 600px !important;
+  width: auto !important;
+}
+
+.urgify-limited-offer-wrapper--side .urgify-limited-offer.offer-width-narrow {
+  max-width: 800px !important;
+  width: auto !important;
+}
+
+.urgify-limited-offer-wrapper--side .urgify-limited-offer.offer-width-container {
+  max-width: 1200px !important;
+  width: auto !important;
+}
+
+.urgify-limited-offer-wrapper--side .urgify-limited-offer.offer-width-fullwidth {
+  max-width: 100% !important;
+  width: 100% !important;
 }
 
 .urgify-limited-offer-wrapper--side-match {
@@ -121,14 +147,9 @@
   margin-left: 0;
   margin-bottom: 0;
   width: auto !important;
-  flex: 1 1 calc(
-    (100% - (var(--urgify-side-gap, 24px) * (var(--urgify-side-columns, 2) - 1))) /
-    var(--urgify-side-columns, 2)
-  );
-  max-width: calc(
-    (100% - (var(--urgify-side-gap, 24px) * (var(--urgify-side-columns, 2) - 1))) /
-    var(--urgify-side-columns, 2)
-  );
+  flex: 0 1 auto;
+  max-width: none;
+  align-self: flex-start;
 }
 
 @media (max-width: 768px) {
@@ -301,7 +322,7 @@
   padding: 10px 20px;
   border-radius: 25px;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: var(--urgify-font-size-badge, 0.9rem);
   text-transform: uppercase;
   letter-spacing: 1px;
   animation: badgeBounce 2s infinite;
@@ -314,7 +335,7 @@
 }
 
 .offer-title {
-  font-size: 2.5rem;
+  font-size: var(--urgify-font-size-title, 2.5rem);
   font-weight: 800;
   line-height: 1.2;
   margin: 0;
@@ -335,7 +356,7 @@
 }
 
 .offer-description {
-  font-size: 1.1rem;
+  font-size: var(--urgify-font-size-description, 1.1rem);
   line-height: 1.6;
   opacity: 0.9;
   white-space: pre-line;
@@ -384,7 +405,7 @@
 }
 
 .offer-product-title {
-  font-size: 1.3rem;
+  font-size: var(--urgify-font-size-product-title, 1.3rem);
   font-weight: 700;
   margin: 0 0 6px;
   line-height: 1.3;
@@ -408,17 +429,17 @@
 .offer-product-price-compare {
   text-decoration: line-through;
   opacity: 0.7;
-  font-size: 0.9em;
+  font-size: 1.3em;
 }
 
 .offer-product-price-sale {
   font-weight: 700;
-  font-size: 1.2em;
+  font-size: var(--urgify-font-size-price, 1.8em);
 }
 
 .offer-product-price-regular {
   font-weight: 700;
-  font-size: 1.2em;
+  font-size: var(--urgify-font-size-price, 1.8em);
 }
 
 .offer-timer {
@@ -428,7 +449,7 @@
   padding: 12px 20px;
   border-radius: 24px;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: var(--urgify-font-size-timer-text, 1rem);
   animation: timerPulse 2s infinite;
   margin-bottom: 12px;
 }
@@ -444,7 +465,7 @@
 
 .timer-countdown {
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: var(--urgify-font-size-timer-countdown, 1rem);
 }
 
 .offer-border-animation {
@@ -764,7 +785,7 @@
   border-radius: 0;
   font-family: 'Impact', sans-serif;
   font-weight: 900;
-  font-size: 1.2rem;
+  font-size: var(--urgify-font-size-badge, 1.2rem);
   letter-spacing: 4px;
   padding: 15px 25px;
   text-transform: uppercase;
@@ -778,7 +799,7 @@
   text-shadow: 4px 4px 0px #ff0000;
   font-family: 'Impact', sans-serif;
   font-weight: 900;
-  font-size: 4rem;
+  font-size: var(--urgify-font-size-title, 4rem);
   text-transform: uppercase;
   letter-spacing: 5px;
   line-height: 0.9;
@@ -790,7 +811,7 @@
   color: #ffffff;
   text-transform: uppercase;
   letter-spacing: 2px;
-  font-size: 1.3rem;
+  font-size: var(--urgify-font-size-description, 1.3rem);
   line-height: 1.2;
   text-shadow: 2px 2px 0px #ff0000;
   white-space: pre-line;
@@ -816,6 +837,7 @@
   font-weight: 900;
   color: #ffff00;
   text-shadow: 3px 3px 0px #ff0000;
+  font-size: var(--urgify-font-size-price, 1.2em);
 }
 
 .urgify-limited-offer.offer-style-brutalist .offer-timer {
@@ -827,7 +849,7 @@
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 3px;
-  font-size: 1.1rem;
+  font-size: var(--urgify-font-size-timer-text, 1.1rem);
   padding: 15px 30px;
   box-shadow: 4px 4px 0px #ff0000;
   position: relative;
@@ -876,7 +898,7 @@
   border-radius: 50px;
   font-family: 'SF Pro Display', sans-serif;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--urgify-font-size-badge, 0.9rem);
   letter-spacing: 1px;
   padding: 12px 24px;
   backdrop-filter: blur(16px);
@@ -887,7 +909,7 @@
   text-shadow: none;
   font-family: 'SF Pro Display', sans-serif;
   font-weight: 600;
-  font-size: 3.5rem;
+  font-size: var(--urgify-font-size-title, 3.5rem);
   letter-spacing: -1px;
   line-height: 1.1;
 }
@@ -896,7 +918,7 @@
   font-family: 'SF Pro Display', sans-serif;
   font-weight: 400;
   color: rgba(15, 23, 42, 0.8);
-  font-size: 1.2rem;
+  font-size: var(--urgify-font-size-description, 1.2rem);
   line-height: 1.5;
   letter-spacing: 0.3px;
   white-space: pre-line;
@@ -919,6 +941,7 @@
   font-weight: 600;
   color: rgba(15, 23, 42, 0.95);
   text-shadow: none;
+  font-size: var(--urgify-font-size-price, 1.2em);
 }
 
 .urgify-limited-offer.offer-style-glassmorphism .offer-timer {
@@ -928,7 +951,7 @@
   border-radius: 50px;
   font-family: 'SF Pro Display', sans-serif;
   font-weight: 500;
-  font-size: 1rem;
+  font-size: var(--urgify-font-size-timer-text, 1rem);
   letter-spacing: 1px;
   padding: 12px 24px;
   backdrop-filter: blur(16px);
@@ -961,7 +984,7 @@
   border-radius: 20px;
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--urgify-font-size-badge, 0.9rem);
   letter-spacing: 1px;
   padding: 12px 24px;
   box-shadow: 
@@ -975,7 +998,7 @@
   text-shadow: none;
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
-  font-size: 3rem;
+  font-size: var(--urgify-font-size-title, 3rem);
   letter-spacing: -0.5px;
   line-height: 1.2;
 }
@@ -984,7 +1007,7 @@
   font-family: 'Poppins', sans-serif;
   font-weight: 400;
   color: #4a5568;
-  font-size: 1.1rem;
+  font-size: var(--urgify-font-size-description, 1.1rem);
   line-height: 1.6;
   letter-spacing: 0.2px;
   white-space: pre-line;
@@ -1005,6 +1028,7 @@
   font-family: 'Poppins', sans-serif;
   font-weight: 700;
   color: #2d3748;
+  font-size: var(--urgify-font-size-price, 1.2em);
 }
 
 .urgify-limited-offer.offer-style-neumorphism .offer-timer {
@@ -1014,7 +1038,7 @@
   border-radius: 25px;
   font-family: 'Poppins', sans-serif;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: var(--urgify-font-size-timer-text, 1rem);
   letter-spacing: 1px;
   padding: 15px 30px;
   box-shadow: 
@@ -1323,6 +1347,77 @@
   100% { transform: translate3d(0, 10%, 0); }
 }
 
+/* Animation Deactivation */
+.offer-animations-disabled,
+.offer-animations-disabled * {
+  animation: none !important;
+}
+
+.offer-animations-disabled .urgify-limited-offer,
+.offer-animations-disabled.offer-style-spectacular,
+.offer-animations-disabled.offer-style-spectacular-blue,
+.offer-animations-disabled.offer-style-spectacular-mint,
+.offer-animations-disabled.offer-style-spectacular-purple,
+.offer-animations-disabled.offer-style-spectacular-emerald,
+.offer-animations-disabled.offer-style-spectacular-christmas,
+.offer-animations-disabled.offer-style-custom {
+  animation: none !important;
+}
+
+.offer-animations-disabled .sparkle {
+  animation: none !important;
+}
+
+.offer-animations-disabled .pulse-ring {
+  animation: none !important;
+}
+
+.offer-animations-disabled .offer-badge,
+.offer-animations-disabled .offer-style-spectacular .offer-badge,
+.offer-animations-disabled .offer-style-spectacular-blue .offer-badge,
+.offer-animations-disabled .offer-style-spectacular-mint .offer-badge,
+.offer-animations-disabled .offer-style-spectacular-purple .offer-badge,
+.offer-animations-disabled .offer-style-spectacular-emerald .offer-badge,
+.offer-animations-disabled .offer-style-spectacular-christmas .offer-badge {
+  animation: none !important;
+}
+
+.offer-animations-disabled .title-highlight,
+.offer-animations-disabled .offer-style-spectacular .offer-title,
+.offer-animations-disabled .offer-style-spectacular-blue .offer-title,
+.offer-animations-disabled .offer-style-spectacular-mint .offer-title,
+.offer-animations-disabled .offer-style-spectacular-purple .offer-title,
+.offer-animations-disabled .offer-style-spectacular-emerald .offer-title,
+.offer-animations-disabled .offer-style-spectacular-christmas .offer-title {
+  animation: none !important;
+}
+
+.offer-animations-disabled .title-underline {
+  animation: none !important;
+}
+
+.offer-animations-disabled .offer-timer,
+.offer-animations-disabled .offer-style-spectacular .offer-timer,
+.offer-animations-disabled .offer-style-spectacular-blue .offer-timer,
+.offer-animations-disabled .offer-style-spectacular-mint .offer-timer,
+.offer-animations-disabled .offer-style-spectacular-purple .offer-timer,
+.offer-animations-disabled .offer-style-spectacular-emerald .offer-timer,
+.offer-animations-disabled .offer-style-spectacular-christmas .offer-timer {
+  animation: none !important;
+}
+
+.offer-animations-disabled .timer-icon {
+  animation: none !important;
+}
+
+.offer-animations-disabled .offer-border-animation {
+  animation: none !important;
+}
+
+.offer-animations-disabled.offer-style-spectacular-christmas::after {
+  animation: none !important;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   .urgify-limited-offer {
@@ -1338,19 +1433,19 @@
   }
   
   .offer-title {
-    font-size: 2rem;
+    font-size: calc(var(--urgify-font-size-title, 2.5rem) * 0.8);
   }
   
   .offer-style-brutalist .offer-title {
-    font-size: 2.5rem;
+    font-size: calc(var(--urgify-font-size-title, 4rem) * 0.625);
   }
   
   .offer-style-glassmorphism .offer-title {
-    font-size: 2.5rem;
+    font-size: calc(var(--urgify-font-size-title, 3.5rem) * 0.714);
   }
   
   .offer-style-neumorphism .offer-title {
-    font-size: 2.2rem;
+    font-size: calc(var(--urgify-font-size-title, 3rem) * 0.733);
   }
   
   .offer-timer {
@@ -1363,12 +1458,12 @@
   }
   
   .offer-product-title {
-    font-size: 1.1rem;
+    font-size: calc(var(--urgify-font-size-product-title, 1.3rem) * 0.846);
   }
   
   .offer-product-price-sale,
   .offer-product-price-regular {
-    font-size: 1em;
+    font-size: calc(var(--urgify-font-size-price, 1.2em) * 0.833);
   }
 }
 
@@ -1384,7 +1479,7 @@
   border: 1px solid rgba(255, 255, 255, 0.3);
   border-radius: 25px;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: var(--urgify-font-size-badge, 0.9rem);
   letter-spacing: 1px;
   padding: 12px 24px;
   backdrop-filter: blur(10px);
@@ -1401,7 +1496,7 @@
   color: white;
   text-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
   font-weight: 800;
-  font-size: 3rem;
+  font-size: var(--urgify-font-size-title, 3rem);
   letter-spacing: -0.5px;
   line-height: 1.2;
   animation: titleShimmer 3s infinite;
@@ -1414,7 +1509,7 @@
 .urgify-limited-offer.offer-style-spectacular-emerald .offer-description,
 .urgify-limited-offer.offer-style-spectacular-christmas .offer-description {
   color: rgba(255, 255, 255, 0.9);
-  font-size: 1.2rem;
+  font-size: var(--urgify-font-size-description, 1.2rem);
   line-height: 1.6;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   white-space: pre-line;
@@ -1453,6 +1548,7 @@
 .urgify-limited-offer.offer-style-spectacular-christmas .offer-product-price-regular {
   color: white;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-size: var(--urgify-font-size-price, 1.2em);
 }
 
 .urgify-limited-offer.offer-style-spectacular .offer-timer,
@@ -1466,7 +1562,7 @@
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 25px;
   font-weight: 600;
-  font-size: 1rem;
+  font-size: var(--urgify-font-size-timer-text, 1rem);
   letter-spacing: 1px;
   padding: 12px 24px;
   backdrop-filter: blur(10px);

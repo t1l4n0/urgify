@@ -22,6 +22,12 @@ const SHOP_DEFINITIONS: DefinitionConfig[] = [
     type: "json",
     description: "Serialized popup configuration generated from the Urgify admin.",
   },
+  {
+    key: "cart_upsell_enabled",
+    name: "Urgify cart upsell enabled",
+    type: "boolean",
+    description: "Indicates whether the cart upsell feature is enabled for the storefront.",
+  },
 ];
 
 const PRODUCT_DEFINITIONS: DefinitionConfig[] = [
@@ -56,6 +62,7 @@ const PRODUCT_DEFINITION_QUERY = `#graphql
       nodes {
         id
         key
+        pinnedPosition
         access {
           admin
           storefront
@@ -91,6 +98,23 @@ const UPDATE_DEFINITION_MUTATION = `#graphql
           admin
           storefront
         }
+      }
+      userErrors {
+        field
+        message
+        code
+      }
+    }
+  }
+`;
+
+const PIN_DEFINITION_MUTATION = `#graphql
+  mutation pinUrgifyDefinition($identifier: MetafieldDefinitionIdentifierInput!) {
+    metafieldDefinitionPin(identifier: $identifier) {
+      pinnedDefinition {
+        id
+        key
+        pinnedPosition
       }
       userErrors {
         field
@@ -206,7 +230,7 @@ export async function ensureProductMetafieldDefinitions(admin: AdminApi) {
 
     const existing: Record<
       string,
-      { id: string; access?: { storefront?: string | null; admin?: string | null } }
+      { id: string; pinnedPosition?: number | null; access?: { storefront?: string | null; admin?: string | null } }
     > = {};
 
     const nodes = data?.data?.metafieldDefinitions?.nodes ?? [];
@@ -214,6 +238,7 @@ export async function ensureProductMetafieldDefinitions(admin: AdminApi) {
       if (node?.key) {
         existing[node.key] = {
           id: node.id,
+          pinnedPosition: node.pinnedPosition,
           access: node.access,
         };
       }
@@ -222,7 +247,14 @@ export async function ensureProductMetafieldDefinitions(admin: AdminApi) {
     for (const definition of PRODUCT_DEFINITIONS) {
       const match = existing[definition.key];
       if (!match) {
-        await createProductDefinition(admin, definition);
+        try {
+          await createProductDefinition(admin, definition);
+          // Pin the definition after creation
+          await pinProductDefinition(admin, definition);
+        } catch (createError) {
+          console.error(`Failed to create/pin definition ${definition.key}:`, createError);
+          throw createError; // Re-throw to let caller handle it
+        }
         continue;
       }
 
@@ -232,9 +264,20 @@ export async function ensureProductMetafieldDefinitions(admin: AdminApi) {
       if (!hasStorefrontAccess) {
         await updateProductDefinitionAccess(admin, definition);
       }
+
+      // Pin the definition if it's not already pinned
+      if (match.pinnedPosition === null || match.pinnedPosition === undefined) {
+        try {
+          await pinProductDefinition(admin, definition);
+        } catch (pinError) {
+          console.error(`Failed to pin definition ${definition.key}:`, pinError);
+          // Don't throw here - definition exists, just not pinned
+        }
+      }
     }
   } catch (error) {
     console.error("Failed to ensure Urgify product metafield definitions:", error);
+    throw error; // Re-throw to let caller handle it
   }
 }
 
@@ -249,21 +292,55 @@ async function createProductDefinition(admin: AdminApi, definition: DefinitionCo
           description: definition.description,
           type: definition.type,
           ownerType: "PRODUCT",
-          access: {
-            admin: "MERCHANT_READ_WRITE",
-            storefront: "PUBLIC_READ",
-          },
+          // Don't set access - Shopify will set it automatically
         },
       },
     });
 
     const data = await result.json();
+    
+    // Check for GraphQL errors
+    if (data.errors) {
+      console.error("GraphQL errors when creating metafield definition:", data.errors);
+      throw new Error(`GraphQL errors: ${data.errors.map((e: any) => e.message).join(", ")}`);
+    }
+    
     const userErrors = data?.data?.metafieldDefinitionCreate?.userErrors ?? [];
     if (userErrors.length > 0) {
+      const errorMessages = userErrors.map((e: any) => `${e.field}: ${e.message} (${e.code})`).join(", ");
       console.error("Failed to create Urgify product metafield definition:", userErrors);
+      throw new Error(`User errors: ${errorMessages}`);
     }
+    
+    return true;
   } catch (error) {
     console.error("Error creating Urgify product metafield definition:", error);
+    throw error; // Re-throw to let caller handle it
+  }
+}
+
+async function pinProductDefinition(admin: AdminApi, definition: DefinitionConfig) {
+  try {
+    const result = await admin.graphql(PIN_DEFINITION_MUTATION, {
+      variables: {
+        identifier: {
+          namespace: URGIFY_NAMESPACE,
+          key: definition.key,
+          ownerType: "PRODUCT",
+        },
+      },
+    });
+
+    const data = await result.json();
+    const userErrors = data?.data?.metafieldDefinitionPin?.userErrors ?? [];
+    if (userErrors.length > 0) {
+      console.error("Failed to pin Urgify product metafield definition:", userErrors);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("Error pinning Urgify product metafield definition:", error);
+    return false;
   }
 }
 

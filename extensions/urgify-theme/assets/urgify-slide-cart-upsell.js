@@ -7,11 +7,14 @@
     error: () => {},
   };
 
+  // Immediate log to confirm script is loaded (after console is defined)
+  globalConsole.log('Urgify Cart Upsell Script v578 loaded');
+
+  // Enable debug mode only when explicitly requested or in design mode
   let debugEnabled =
-    (typeof window !== "undefined" &&
-      (window.UrgifyDebug === true ||
-        (window.Shopify && window.Shopify.designMode === true))) ||
-    false;
+    typeof window !== "undefined" &&
+    (window.UrgifyDebug === true ||
+      (window.Shopify && window.Shopify.designMode === true));
 
   const console = {
     log: (...args) => {
@@ -31,33 +34,114 @@
 
   /**
    * Urgify Slide-in Cart Upsell
-   * Hybrid upsell logic with priority:
-   * 1. Product metafield upsells (urgify.cart_upsells)
-   * 2. Shopify product recommendations (Search & Discovery)
-   * 3. Global fallback products from block settings
-   * 
-   * Always guarantees at least 3 products when possible.
+   * Displays upsell products from product metafield (upsell.products)
    */
   class UrgifySlideCartUpsell {
     constructor(container) {
       this.container = container;
+      this.positionObserver = null;
       this.blockId = container.dataset.blockId;
       this.config = this.parseConfig();
       this.initialized = false;
       this.currentCartProductIds = new Set();
+      this.version = '578';
     }
 
     /**
-     * Parse configuration from data attribute
+     * Parse configuration from script tag or data attribute
      */
     parseConfig() {
+      let configStr = null;
+      
       try {
-        const configStr = this.container.getAttribute('data-urgify-config');
-        if (!configStr) {
+        // First, try to get config from script tag (more reliable for JSON)
+        const configScript = document.getElementById('urgify-cart-upsell-config');
+        
+        if (configScript && configScript.textContent) {
+          configStr = configScript.textContent.trim();
+          console.log('Urgify Cart Upsell: Found config in script tag');
+        } else {
+          // Fallback to data attribute
+          configStr = this.container.getAttribute('data-urgify-config');
+          console.log('Urgify Cart Upsell: Using config from data attribute');
+        }
+        
+        if (!configStr || configStr === '{}' || configStr === '' || configStr.trim() === '{') {
+          console.log('Urgify Cart Upsell: No config string found or invalid JSON, using defaults', { configStr });
+          // Check data-config-enabled as fallback - this is set by Liquid based on shop metafield
+          const configEnabled = this.container.getAttribute('data-config-enabled');
+          console.log('Urgify Cart Upsell: Checking data-config-enabled attribute:', configEnabled);
+          if (configEnabled === 'true') {
+            const defaultConfig = this.getDefaultConfig();
+            defaultConfig.enabled = true;
+            console.log('Urgify Cart Upsell: Enabled via data-config-enabled attribute, using default config with enabled=true');
+            return defaultConfig;
+          }
+          console.log('Urgify Cart Upsell: Not enabled via data-config-enabled, returning default config with enabled=false');
           return this.getDefaultConfig();
         }
-        return JSON.parse(configStr);
+        
+        // Validate JSON string before parsing (check if it looks like valid JSON)
+        const trimmedStr = configStr.trim();
+        if (!trimmedStr.startsWith('{') || !trimmedStr.endsWith('}')) {
+          console.warn('Urgify Cart Upsell: Config string does not look like valid JSON', { configStr: trimmedStr });
+          const configEnabled = this.container.getAttribute('data-config-enabled');
+          if (configEnabled === 'true') {
+            const defaultConfig = this.getDefaultConfig();
+            defaultConfig.enabled = true;
+            return defaultConfig;
+          }
+          return this.getDefaultConfig();
+        }
+        
+        // Try to parse as JSON
+        let config;
+        try {
+          config = JSON.parse(trimmedStr);
+        } catch (parseError) {
+          console.error('Urgify Cart Upsell: JSON parse error', parseError, { configStr: trimmedStr });
+          // Fallback to defaults
+          const configEnabled = this.container.getAttribute('data-config-enabled');
+          if (configEnabled === 'true') {
+            const defaultConfig = this.getDefaultConfig();
+            defaultConfig.enabled = true;
+            return defaultConfig;
+          }
+          return this.getDefaultConfig();
+        }
+        
+        // Ensure enabled is a boolean (handle string "true"/"false" from Liquid)
+        if (typeof config.enabled === 'string') {
+          config.enabled = config.enabled === 'true' || config.enabled === '1';
+        }
+        
+        // Also check data-config-enabled attribute as fallback/override
+        // This is set by Liquid based on shop.metafields.urgify.cart_upsell_config
+        const configEnabled = this.container.getAttribute('data-config-enabled');
+        console.log('Urgify Cart Upsell: data-config-enabled attribute value:', configEnabled);
+        if (configEnabled === 'true') {
+          config.enabled = true;
+          console.log('Urgify Cart Upsell: Enabled via data-config-enabled attribute (overriding JSON config)');
+        } else if (configEnabled === 'false') {
+          config.enabled = false;
+          console.log('Urgify Cart Upsell: Disabled via data-config-enabled attribute (overriding JSON config)');
+        } else if (!config.enabled && configEnabled === null) {
+          // If JSON config doesn't have enabled and data attribute is not set, check if config is empty
+          // This might mean the metafield exists but is empty, so we should check the actual metafield
+          console.log('Urgify Cart Upsell: No enabled flag in config and no data-config-enabled attribute');
+        }
+        
+        console.log('Urgify Cart Upsell: Parsed config', config);
+        return config;
       } catch (error) {
+        console.error('Urgify Cart Upsell: Failed to parse config', error, 'Config string:', configStr || this.container.getAttribute('data-urgify-config'));
+        // Fallback: check data-config-enabled attribute
+        const configEnabled = this.container.getAttribute('data-config-enabled');
+        if (configEnabled === 'true') {
+          const defaultConfig = this.getDefaultConfig();
+          defaultConfig.enabled = true;
+          return defaultConfig;
+        }
         return this.getDefaultConfig();
       }
     }
@@ -67,10 +151,11 @@
      */
     getDefaultConfig() {
       return {
+        enabled: false,
         heading: 'Recommendations',
         max_products: 3,
         enable_metafield_upsells: true,
-        enable_recommendations: true,
+        enable_recommendations: false,
         fallback_products: [],
         show_price: true,
         show_compare_at_price: true,
@@ -87,10 +172,76 @@
         return;
       }
 
+      // Always log initialization (not just in debug mode) for troubleshooting
+      console.log(`Urgify Cart Upsell v${this.version} initializing...`, {
+        blockId: this.blockId,
+        config: this.config,
+        container: this.container
+      });
+
+      // CRITICAL: Check if enabled BEFORE doing anything else
+      // If not explicitly enabled, hide container and return immediately
+      const configEnabled = this.container.getAttribute('data-config-enabled');
+      if (configEnabled !== 'true') {
+        // Not enabled via Liquid - try to fetch from backend as last resort
+        if (!this.config.enabled || this.config.enabled === false || this.config.enabled === 'false') {
+          console.log('Urgify Cart Upsell: Config disabled or empty, trying to fetch from Storefront API');
+          const storefrontConfig = await this.fetchConfigFromStorefront();
+          if (storefrontConfig && storefrontConfig.enabled === true) {
+            console.log('Urgify Cart Upsell: Found enabled config from Storefront API', storefrontConfig);
+            this.config = { ...this.config, ...storefrontConfig };
+          } else {
+            // Explicitly disabled - hide container and stop
+            console.log('Urgify Cart Upsell: Disabled - hiding container and stopping initialization', { 
+              enabled: this.config.enabled, 
+              storefrontEnabled: storefrontConfig?.enabled,
+              configEnabled 
+            });
+            this.container.style.display = 'none';
+            this.container.removeAttribute('data-dialog-open');
+            this.renderEmpty();
+            return;
+          }
+        }
+      }
+
+      // Final check: if enabled is explicitly false, stop immediately
+      if (this.config.enabled === false || this.config.enabled === 'false' || this.config.enabled === 0) {
+        console.log('Urgify Cart Upsell: Explicitly disabled in config - hiding container', { enabled: this.config.enabled });
+        this.container.style.display = 'none';
+        this.container.removeAttribute('data-dialog-open');
+        this.renderEmpty();
+        return;
+      }
+      
+      // Additional safety check: if enabled is not explicitly true, stop
+      if (this.config.enabled !== true && this.config.enabled !== 'true' && this.config.enabled !== 1) {
+        console.log('Urgify Cart Upsell: Not explicitly enabled - hiding container', { enabled: this.config.enabled });
+        this.container.style.display = 'none';
+        this.container.removeAttribute('data-dialog-open');
+        this.renderEmpty();
+        return;
+      }
+
       try {
         // For auto-injected blocks, inject into cart drawer first
         if (this.blockId === 'auto') {
-          this.injectIntoCartDrawer();
+          // Check if dialog is open before injecting
+          const dialog = document.querySelector('cart-drawer-component dialog[open], .cart-drawer dialog[open]');
+          if (dialog) {
+            this.injectIntoCartDrawer();
+            // Ensure correct position after injection (only if cart-drawer__inner exists)
+            const cartInner = dialog.querySelector('.cart-drawer__inner');
+            if (cartInner && cartInner.parentElement === dialog) {
+              this.ensureCorrectPosition();
+            }
+          } else {
+            // Dialog is closed - hide container
+            this.container.style.display = 'none';
+            this.container.removeAttribute('data-dialog-open');
+          }
+          // Start monitoring for position changes and dialog open/close
+          this.startPositionMonitoring();
         }
 
         // Wait for cart drawer to be available
@@ -98,7 +249,9 @@
         
         // Fetch current cart
         const cart = await this.fetchCart();
+        console.log('Urgify Cart Upsell: Cart fetched', cart);
         if (!cart || !cart.items || cart.items.length === 0) {
+          console.log('Urgify Cart Upsell: Cart is empty');
           this.renderEmpty();
           return;
         }
@@ -107,27 +260,28 @@
         this.currentCartProductIds = new Set(
           cart.items.map(item => item.product_id)
         );
+        console.log('Urgify Cart Upsell: Cart product IDs', Array.from(this.currentCartProductIds));
 
-        // Resolve upsell candidates using hybrid logic
+        // Resolve upsell candidates from metafield
         const candidates = await this.resolveUpsellCandidates();
+        console.log('Urgify Cart Upsell: Upsell candidates', candidates);
 
         if (Array.isArray(candidates) && candidates.length === 0) {
+          console.log('Urgify Cart Upsell: No upsell candidates found');
           this.renderEmpty();
           return;
         }
 
-        // Handle both product objects and IDs
+        // Candidates should be full product objects from the backend
         let products = [];
-        if (typeof candidates === 'object' && candidates.products) {
-          // We have some products already and need to fetch more
-          const remainingProducts = await this.fetchProductDetails(candidates.ids);
-          products = [...candidates.products, ...remainingProducts];
-        } else if (Array.isArray(candidates) && candidates.length > 0 && typeof candidates[0] === 'object') {
-          // Already have full product objects
-          products = candidates;
-        } else {
-          // Need to fetch all product details
-          products = await this.fetchProductDetails(candidates);
+        if (Array.isArray(candidates) && candidates.length > 0) {
+          if (typeof candidates[0] === 'object') {
+            // Already have full product objects
+            products = candidates;
+          } else {
+            // Just IDs - fetch product details (shouldn't happen with current backend)
+            products = await this.fetchProductDetails(candidates);
+          }
         }
 
         if (products.length === 0) {
@@ -136,9 +290,13 @@
         }
 
         // Render the upsell list
+        console.log('Urgify Cart Upsell: Rendering products', products);
         this.render(products);
         this.initialized = true;
+        
+        console.log(`Urgify Cart Upsell v${this.version} initialized with ${products.length} product(s)`);
       } catch (error) {
+        console.error('Urgify Cart Upsell: Initialization error', error);
         this.renderError();
       }
     }
@@ -153,19 +311,31 @@
           this.injectIntoCartDrawer();
         }
         
-        // Check if already available
-        if (this.container.closest('[id*="cart"], [class*="cart"], [class*="drawer"]')) {
+        // Check if already available (including web components)
+        const isInCartDrawer = this.container.closest('cart-drawer-component, [id*="cart"], [class*="cart"], [class*="drawer"]');
+        if (isInCartDrawer) {
           resolve();
           return;
         }
 
-        // Wait for cart drawer to open (listen for common events)
+        // Check if cart drawer dialog is open
+        const cartDrawer = document.querySelector('cart-drawer-component dialog[open], .cart-drawer dialog[open], [class*="cart-drawer"] dialog[open]');
+        if (cartDrawer && this.blockId === 'auto') {
+          this.injectIntoCartDrawer();
+          if (this.container.closest('cart-drawer-component, [id*="cart"], [class*="cart"], [class*="drawer"]')) {
+            resolve();
+            return;
+          }
+        }
+
+        // Wait for cart drawer to open (listen for common events and mutations)
         const checkInterval = setInterval(() => {
           if (this.blockId === 'auto') {
             this.injectIntoCartDrawer();
           }
           
-          if (this.container.closest('[id*="cart"], [class*="cart"], [class*="drawer"]')) {
+          const isInCartDrawer = this.container.closest('cart-drawer-component, [id*="cart"], [class*="cart"], [class*="drawer"]');
+          if (isInCartDrawer) {
             clearInterval(checkInterval);
             resolve();
           }
@@ -180,66 +350,383 @@
     }
 
     /**
-     * Inject the upsell container into the cart drawer
+     * Ensure container is correctly positioned as sibling of cart-drawer__inner, not inside it
      */
-    injectIntoCartDrawer() {
-      // Try to find cart drawer by common selectors
-      const cartDrawerSelectors = [
-        '[id*="cart-drawer"]',
-        '[id*="CartDrawer"]',
-        '[class*="cart-drawer"]',
-        '[class*="CartDrawer"]',
-        '[data-cart-drawer]',
-        '[data-cart-drawer-container]',
-        '.drawer[data-drawer="cart"]',
-        '.js-cart-drawer',
-        '#cart-drawer',
-        '#CartDrawer'
-      ];
-
-      let cartDrawer = null;
-      for (const selector of cartDrawerSelectors) {
-        cartDrawer = document.querySelector(selector);
-        if (cartDrawer) break;
-      }
-
-      if (!cartDrawer) {
-        // Try to find by common cart drawer content areas
-        const cartContentSelectors = [
-          '[id*="cart-items"]',
-          '[class*="cart-items"]',
-          '[class*="cart__items"]',
-          '.cart-drawer__content',
-          '.cart-drawer__inner',
-          '[data-cart-items]'
-        ];
-
-        for (const selector of cartContentSelectors) {
-          const element = document.querySelector(selector);
-          if (element) {
-            cartDrawer = element.closest('[id*="cart"], [class*="cart"], [class*="drawer"]') || element.parentElement;
-            if (cartDrawer) break;
+    ensureCorrectPosition() {
+      try {
+        // Check if container is inside cart-drawer__inner (wrong position)
+        const cartInner = this.container.closest('.cart-drawer__inner');
+        if (cartInner) {
+          // Container is inside cart-drawer__inner - move it out
+          const dialog = cartInner.closest('dialog');
+          if (dialog) {
+            // Verify cartInner is still a direct child of dialog before inserting
+            // Double-check right before insertBefore to avoid race conditions
+            if (cartInner.parentElement === dialog && cartInner.isConnected) {
+              try {
+                // Remove container from its current position
+                if (this.container.parentElement) {
+                  this.container.remove();
+                }
+                // Insert before cart-drawer__inner (verify one more time)
+                if (cartInner.parentElement === dialog && cartInner.isConnected) {
+                  dialog.insertBefore(this.container, cartInner);
+                  // Ensure classes and styles are correct
+                  this.container.classList.add('urgify-cart-upsell-sidebar');
+                  this.container.style.display = '';
+                  this.container.style.removeProperty('display');
+                  dialog.classList.add('urgify-has-upsell');
+                  
+                  if (debugEnabled) {
+                    console.log('Urgify Cart Upsell: Repositioned container outside cart-drawer__inner');
+                  }
+                  return true; // Position was corrected
+                } else {
+                  // cartInner was moved between checks - fallback to appendChild
+                  dialog.appendChild(this.container);
+                  this.container.classList.add('urgify-cart-upsell-sidebar');
+                  this.container.style.display = '';
+                  this.container.style.removeProperty('display');
+                  dialog.classList.add('urgify-has-upsell');
+                  
+                  if (debugEnabled) {
+                    console.log('Urgify Cart Upsell: Repositioned container to dialog (cartInner moved during operation)');
+                  }
+                  return true;
+                }
+              } catch (insertError) {
+                // insertBefore failed - fallback to appendChild
+                console.warn('Urgify Cart Upsell: insertBefore failed, using appendChild fallback', insertError);
+                if (this.container.parentElement !== dialog) {
+                  if (this.container.parentElement) {
+                    this.container.remove();
+                  }
+                  dialog.appendChild(this.container);
+                  this.container.classList.add('urgify-cart-upsell-sidebar');
+                  this.container.style.display = '';
+                  this.container.style.removeProperty('display');
+                  dialog.classList.add('urgify-has-upsell');
+                  
+                  if (debugEnabled) {
+                    console.log('Urgify Cart Upsell: Repositioned container to dialog (insertBefore error fallback)');
+                  }
+                  return true;
+                }
+              }
+            } else {
+              // cartInner is not a direct child of dialog - append container to dialog instead
+              if (this.container.parentElement !== dialog) {
+                if (this.container.parentElement) {
+                  this.container.remove();
+                }
+                dialog.appendChild(this.container);
+                this.container.classList.add('urgify-cart-upsell-sidebar');
+                this.container.style.display = '';
+                this.container.style.removeProperty('display');
+                dialog.classList.add('urgify-has-upsell');
+                
+                if (debugEnabled) {
+                  console.log('Urgify Cart Upsell: Repositioned container to dialog (cartInner not direct child)');
+                }
+                return true;
+              }
+            }
+          }
+        } else {
+          // Container is not inside cart-drawer__inner - verify it's in the right place
+          const dialog = this.container.closest('dialog');
+          const cartInnerSibling = dialog ? dialog.querySelector('.cart-drawer__inner') : null;
+          
+          if (dialog && cartInnerSibling) {
+            // Verify cartInnerSibling is still a direct child of dialog
+            if (cartInnerSibling.parentElement === dialog) {
+              // Check if container is a direct child of dialog and before cart-drawer__inner
+              const containerParent = this.container.parentElement;
+              const isCorrectPosition = containerParent === dialog && 
+                                         this.container.nextSibling === cartInnerSibling;
+              
+              if (!isCorrectPosition) {
+                // Container is in dialog but not before cart-drawer__inner - fix it
+                try {
+                  // Double-check right before insertBefore
+                  if (cartInnerSibling.parentElement === dialog && cartInnerSibling.isConnected) {
+                    if (this.container.parentElement) {
+                      this.container.remove();
+                    }
+                    // Verify one more time before insertBefore
+                    if (cartInnerSibling.parentElement === dialog && cartInnerSibling.isConnected) {
+                      dialog.insertBefore(this.container, cartInnerSibling);
+                      this.container.classList.add('urgify-cart-upsell-sidebar');
+                      this.container.style.display = '';
+                      this.container.style.removeProperty('display');
+                      dialog.classList.add('urgify-has-upsell');
+                      
+                      if (debugEnabled) {
+                        console.log('Urgify Cart Upsell: Repositioned container before cart-drawer__inner');
+                      }
+                      return true; // Position was corrected
+                    } else {
+                      // cartInnerSibling was moved - fallback to appendChild
+                      dialog.appendChild(this.container);
+                      this.container.classList.add('urgify-cart-upsell-sidebar');
+                      this.container.style.display = '';
+                      this.container.style.removeProperty('display');
+                      dialog.classList.add('urgify-has-upsell');
+                      
+                      if (debugEnabled) {
+                        console.log('Urgify Cart Upsell: Repositioned container to dialog (cartInnerSibling moved)');
+                      }
+                      return true;
+                    }
+                  } else {
+                    // cartInnerSibling is not a direct child - use appendChild
+                    if (this.container.parentElement !== dialog) {
+                      if (this.container.parentElement) {
+                        this.container.remove();
+                      }
+                      dialog.appendChild(this.container);
+                      this.container.classList.add('urgify-cart-upsell-sidebar');
+                      this.container.style.display = '';
+                      this.container.style.removeProperty('display');
+                      dialog.classList.add('urgify-has-upsell');
+                      
+                      if (debugEnabled) {
+                        console.log('Urgify Cart Upsell: Repositioned container to dialog (cartInnerSibling not direct child)');
+                      }
+                      return true;
+                    }
+                  }
+                } catch (insertError) {
+                  // insertBefore failed - fallback to appendChild
+                  console.warn('Urgify Cart Upsell: insertBefore failed, using appendChild fallback', insertError);
+                  if (this.container.parentElement !== dialog) {
+                    if (this.container.parentElement) {
+                      this.container.remove();
+                    }
+                    dialog.appendChild(this.container);
+                    this.container.classList.add('urgify-cart-upsell-sidebar');
+                    this.container.style.display = '';
+                    this.container.style.removeProperty('display');
+                    dialog.classList.add('urgify-has-upsell');
+                    
+                    if (debugEnabled) {
+                      console.log('Urgify Cart Upsell: Repositioned container to dialog (insertBefore error fallback)');
+                    }
+                    return true;
+                  }
+                }
+              }
+            } else {
+              // cartInnerSibling is not a direct child - just ensure container is in dialog
+              if (this.container.parentElement !== dialog) {
+                this.container.remove();
+                dialog.appendChild(this.container);
+                this.container.classList.add('urgify-cart-upsell-sidebar');
+                this.container.style.display = '';
+                this.container.style.removeProperty('display');
+                dialog.classList.add('urgify-has-upsell');
+                
+                if (debugEnabled) {
+                  console.log('Urgify Cart Upsell: Repositioned container to dialog (cartInnerSibling not direct child)');
+                }
+                return true;
+              }
+            }
+          } else if (dialog && !cartInnerSibling) {
+            // Dialog exists but no cart-drawer__inner yet - just ensure container is in dialog
+            if (this.container.parentElement !== dialog) {
+              this.container.remove();
+              dialog.appendChild(this.container);
+              this.container.classList.add('urgify-cart-upsell-sidebar');
+              this.container.style.display = '';
+              this.container.style.removeProperty('display');
+              dialog.classList.add('urgify-has-upsell');
+              
+              if (debugEnabled) {
+                console.log('Urgify Cart Upsell: Repositioned container to dialog (no cartInner found)');
+              }
+              return true;
+            }
           }
         }
+        return false; // Position was already correct
+      } catch (error) {
+        console.error('Urgify Cart Upsell: Error in ensureCorrectPosition', error);
+        return false;
+      }
+    }
+
+    /**
+     * Start monitoring container position to prevent it from being moved inside cart-drawer__inner
+     * Also monitors dialog open/close state to show/hide container
+     */
+    startPositionMonitoring() {
+      if (this.positionObserver) {
+        return; // Already monitoring
       }
 
-      if (cartDrawer && !cartDrawer.contains(this.container)) {
-        // Find a good insertion point (usually after cart items, before cart footer)
-        const cartItems = cartDrawer.querySelector('[id*="cart-items"], [class*="cart-items"], [class*="cart__items"], [data-cart-items]');
-        const cartFooter = cartDrawer.querySelector('[id*="cart-footer"], [class*="cart-footer"], [class*="cart__footer"], [data-cart-footer]');
+      // Monitor for DOM changes that might move the container
+      // Also monitor dialog open/close state
+      this.positionObserver = new MutationObserver((mutations) => {
+        let needsReposition = false;
+        let dialogStateChanged = false;
         
-        if (cartFooter && cartFooter.previousElementSibling) {
-          // Insert before footer
-          cartFooter.parentElement.insertBefore(this.container, cartFooter);
-        } else if (cartItems && cartItems.nextElementSibling) {
-          // Insert after cart items
-          cartItems.parentElement.insertBefore(this.container, cartItems.nextElementSibling);
-        } else {
-          // Fallback: append to cart drawer
-          cartDrawer.appendChild(this.container);
+        mutations.forEach((mutation) => {
+          // Check if dialog open state changed
+          if (mutation.type === 'attributes' && mutation.attributeName === 'open') {
+            const dialog = mutation.target.closest('dialog');
+            if (dialog && (dialog === this.container.closest('dialog') || dialog.contains(this.container))) {
+              dialogStateChanged = true;
+            }
+          }
+          
+          // Check if container was moved
+          if (mutation.type === 'childList') {
+            mutation.addedNodes.forEach((node) => {
+              if (node === this.container || (node.nodeType === 1 && node.contains(this.container))) {
+                // Container or its parent was added - check position
+                const cartInner = this.container.closest('.cart-drawer__inner');
+                if (cartInner) {
+                  needsReposition = true;
+                }
+              }
+            });
+          }
+        });
+        
+        // Handle dialog open/close state
+        if (dialogStateChanged) {
+          const dialog = this.container.closest('dialog');
+          if (dialog) {
+            if (dialog.hasAttribute('open')) {
+              // Dialog opened - show container and ensure correct position
+              this.container.setAttribute('data-dialog-open', 'true');
+              this.container.style.display = '';
+              this.container.style.removeProperty('display');
+              this.injectIntoCartDrawer();
+              if (this.ensureCorrectPosition()) {
+                if (debugEnabled) {
+                  console.log('Urgify Cart Upsell: Container shown and repositioned (dialog opened)');
+                }
+              }
+            } else {
+              // Dialog closed - hide container
+              this.container.style.display = 'none';
+              this.container.removeAttribute('data-dialog-open');
+              if (debugEnabled) {
+                console.log('Urgify Cart Upsell: Container hidden (dialog closed)');
+              }
+            }
+          }
         }
         
+        if (needsReposition) {
+          // Debounce to avoid excessive repositioning
+          clearTimeout(this.positionCheckTimeout);
+          this.positionCheckTimeout = setTimeout(() => {
+            const dialog = this.container.closest('dialog');
+            // Only reposition if dialog is open
+            if (dialog && dialog.hasAttribute('open')) {
+              if (this.ensureCorrectPosition()) {
+                if (debugEnabled) {
+                  console.log('Urgify Cart Upsell: Container position corrected by observer');
+                }
+              }
+            }
+          }, 100);
+        }
+      });
+
+      // Observe the document body for changes
+      this.positionObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['open']
+      });
+      
+      // Also observe the dialog directly if it exists
+      const dialog = this.container.closest('dialog');
+      if (dialog) {
+        this.positionObserver.observe(dialog, {
+          attributes: true,
+          attributeFilter: ['open'],
+          childList: true
+        });
+      }
+    }
+
+    /**
+     * Inject the upsell container into the cart drawer
+     * Places it as a sibling of cart-drawer__inner within the dialog, so it appears side-by-side
+     * Only injects when dialog is open
+     */
+    injectIntoCartDrawer() {
+      // Only inject if dialog is open
+      const dialog = document.querySelector('cart-drawer-component dialog[open], cart-drawer-component dialog.cart-drawer__dialog, .cart-drawer dialog[open], .cart-drawer dialog.cart-drawer__dialog');
+      
+      if (!dialog || !dialog.hasAttribute('open')) {
+        // Dialog is closed - hide container and return
+        this.container.style.display = 'none';
+        this.container.removeAttribute('data-dialog-open');
+        return;
+      }
+      
+      // Dialog is open - proceed with injection
+      const cartInner = dialog.querySelector('.cart-drawer__inner');
+      
+      if (cartInner && !dialog.contains(this.container)) {
+        // Insert before cart-drawer__inner so it appears on the left
+        try {
+          if (cartInner.parentElement === dialog && cartInner.isConnected) {
+            dialog.insertBefore(this.container, cartInner);
+            this.container.classList.add('urgify-cart-upsell-sidebar');
+            this.container.setAttribute('data-dialog-open', 'true');
+            this.container.style.display = '';
+            this.container.style.removeProperty('display');
+            
+            // Add class to dialog to enable flex layout
+            dialog.classList.add('urgify-has-upsell');
+            
+            if (debugEnabled) {
+              console.log('Urgify Cart Upsell: Injected into dialog before cart-drawer__inner');
+            }
+            return;
+          }
+        } catch (error) {
+          console.warn('Urgify Cart Upsell: insertBefore failed, using appendChild', error);
+        }
+        
+        // Fallback: append to dialog
+        dialog.appendChild(this.container);
+        this.container.classList.add('urgify-cart-upsell-sidebar');
+        this.container.setAttribute('data-dialog-open', 'true');
         this.container.style.display = '';
+        this.container.style.removeProperty('display');
+        dialog.classList.add('urgify-has-upsell');
+        
+        if (debugEnabled) {
+          console.log('Urgify Cart Upsell: Appended to dialog (insertBefore fallback)');
+        }
+        return;
+      } else if (!dialog.contains(this.container)) {
+        // Container not in dialog yet - append it
+        dialog.appendChild(this.container);
+        this.container.classList.add('urgify-cart-upsell-sidebar');
+        this.container.setAttribute('data-dialog-open', 'true');
+        this.container.style.display = '';
+        this.container.style.removeProperty('display');
+        dialog.classList.add('urgify-has-upsell');
+        
+        if (debugEnabled) {
+          console.log('Urgify Cart Upsell: Appended to dialog (no cart-drawer__inner found)');
+        }
+        return;
+      } else {
+        // Container already in dialog - just update visibility
+        this.container.setAttribute('data-dialog-open', 'true');
+        this.container.style.display = '';
+        this.container.style.removeProperty('display');
       }
     }
 
@@ -259,16 +746,14 @@
     }
 
     /**
-     * Resolve upsell candidates using hybrid priority logic
-     * Always guarantees at least 3 products when possible
+     * Resolve upsell candidates from product metafield (upsell.products)
      */
     async resolveUpsellCandidates() {
+      const maxProducts = this.config.max_products || 3;
       const candidates = [];
       const candidateProducts = []; // Store full product objects when available
-      const MIN_PRODUCTS = 3;
-      const maxProducts = Math.max(MIN_PRODUCTS, this.config.max_products || 3);
 
-      // Step 1: Metafield-based upsells (highest priority)
+      // Fetch metafield-based upsells
       if (this.config.enable_metafield_upsells) {
         const metafieldUpsells = await this.fetchMetafieldUpsells();
         
@@ -283,33 +768,6 @@
         }
       }
 
-      // Step 2: Shopify recommendations (second priority) - auto-fill to MIN_PRODUCTS
-      if (this.config.enable_recommendations && candidates.length < MIN_PRODUCTS) {
-        const recommendations = await this.fetchRecommendations();
-        // Add recommendations until we have at least MIN_PRODUCTS
-        for (const recId of recommendations) {
-          if (candidates.length >= MIN_PRODUCTS) break;
-          if (!candidates.includes(recId) && !this.currentCartProductIds.has(recId)) {
-            candidates.push(recId);
-          }
-        }
-      }
-
-      // Step 3: Fallback products (third priority) - only if still below MIN_PRODUCTS
-      if (candidates.length < MIN_PRODUCTS && this.config.fallback_products) {
-        const fallbackIds = this.config.fallback_products
-          .map(p => typeof p === 'object' ? p.id : p)
-          .filter(id => id && !this.currentCartProductIds.has(id));
-        
-        // Add fallback products until we have MIN_PRODUCTS
-        for (const fallbackId of fallbackIds) {
-          if (candidates.length >= MIN_PRODUCTS) break;
-          if (!candidates.includes(fallbackId)) {
-            candidates.push(fallbackId);
-          }
-        }
-      }
-
       // Deduplicate and exclude cart items
       const uniqueCandidateIds = Array.from(new Set(candidates))
         .filter(id => id && !this.currentCartProductIds.has(id))
@@ -318,25 +776,13 @@
       // If we have full product objects from metafield upsells, use those
       if (candidateProducts.length > 0) {
         const filteredProducts = candidateProducts
-          .filter(p => uniqueCandidateIds.includes(p.id));
+          .filter(p => uniqueCandidateIds.includes(p.id))
+          .slice(0, maxProducts);
         
-        // If we have at least MIN_PRODUCTS from metafields, return them (up to maxProducts)
-        if (filteredProducts.length >= MIN_PRODUCTS) {
-          return filteredProducts.slice(0, maxProducts);
-        }
-        
-        // Otherwise, we'll need to fetch remaining products to reach MIN_PRODUCTS
-        const remainingIds = uniqueCandidateIds
-          .filter(id => !filteredProducts.some(p => p.id === id))
-          .slice(0, Math.max(MIN_PRODUCTS - filteredProducts.length, maxProducts - filteredProducts.length));
-        
-        return { products: filteredProducts, ids: remainingIds };
+        return filteredProducts;
       }
 
-      // Ensure we return at least MIN_PRODUCTS if possible
-      return uniqueCandidateIds.length >= MIN_PRODUCTS 
-        ? uniqueCandidateIds 
-        : uniqueCandidateIds; // Return what we have, even if less than MIN_PRODUCTS
+      return uniqueCandidateIds;
     }
 
     /**
@@ -355,10 +801,17 @@
           return [];
         }
 
-        const url = new URL('/apps/urgify/upsells', window.location.origin);
+        // Use app backend URL (same as config endpoint)
+        const appBackendUrl = this.container.getAttribute('data-app-backend-url') ||
+                            document.querySelector('[data-urgify-app-url]')?.getAttribute('data-urgify-app-url') ||
+                            'https://urgify.fly.dev';
+
+        const url = new URL('/apps/urgify/upsells', appBackendUrl);
         url.searchParams.set('product_ids', productIds.join(','));
         url.searchParams.set('limit', String(this.config.max_products || 3));
         url.searchParams.set('shop', shopDomain);
+
+        console.log('Urgify Cart Upsell: Fetching upsell products from', url.toString());
 
         const response = await fetch(url.toString());
         if (!response.ok) {
@@ -577,8 +1030,100 @@
 
       this.container.innerHTML = html;
 
+      // Only show and position if dialog is open
+      const dialog = this.container.closest('dialog');
+      if (!dialog || !dialog.hasAttribute('open')) {
+        // Dialog is closed - hide container
+        this.container.style.display = 'none';
+        this.container.removeAttribute('data-dialog-open');
+        return;
+      }
+      
+      // Dialog is open - show container and ensure correct position
+      this.container.setAttribute('data-dialog-open', 'true');
+      this.container.style.display = '';
+      this.container.style.removeProperty('display');
+      
+      // Ensure container is correctly positioned (not inside cart-drawer__inner)
+      // Only try to reposition if cart-drawer__inner exists, otherwise just ensure it's in dialog
+      const cartInner = dialog.querySelector('.cart-drawer__inner');
+      
+      if (cartInner && cartInner.parentElement === dialog) {
+        // cart-drawer__inner exists and is direct child - ensure correct position
+        this.ensureCorrectPosition();
+      } else {
+        // cart-drawer__inner doesn't exist yet - just ensure container is in dialog
+        if (this.container.parentElement !== dialog) {
+          this.container.remove();
+          dialog.appendChild(this.container);
+          this.container.classList.add('urgify-cart-upsell-sidebar');
+          dialog.classList.add('urgify-has-upsell');
+          
+          if (debugEnabled) {
+            console.log('Urgify Cart Upsell: Container appended to dialog (cart-drawer__inner not found yet)');
+          }
+        }
+        
+        // Wait for cart-drawer__inner to appear, then reposition
+        this.waitForCartInnerAndReposition(dialog);
+      }
+
       // Attach event listeners
       this.attachEventListeners();
+    }
+
+    /**
+     * Wait for cart-drawer__inner to appear in dialog, then reposition container before it
+     */
+    waitForCartInnerAndReposition(dialog) {
+      // Check if already exists
+      const cartInner = dialog.querySelector('.cart-drawer__inner');
+      if (cartInner && cartInner.parentElement === dialog) {
+        // Already exists - reposition now
+        try {
+          if (this.container.parentElement === dialog && this.container.nextSibling !== cartInner) {
+            this.container.remove();
+            dialog.insertBefore(this.container, cartInner);
+            if (debugEnabled) {
+              console.log('Urgify Cart Upsell: Repositioned container before cart-drawer__inner (after wait)');
+            }
+          }
+        } catch (error) {
+          console.error('Urgify Cart Upsell: Error repositioning after cartInner appeared', error);
+        }
+        return;
+      }
+
+      // Set up observer to watch for cart-drawer__inner
+      const observer = new MutationObserver((mutations) => {
+        const cartInner = dialog.querySelector('.cart-drawer__inner');
+        if (cartInner && cartInner.parentElement === dialog) {
+          // Found it - reposition and stop observing
+          observer.disconnect();
+          try {
+            if (this.container.parentElement === dialog && this.container.nextSibling !== cartInner) {
+              this.container.remove();
+              dialog.insertBefore(this.container, cartInner);
+              if (debugEnabled) {
+                console.log('Urgify Cart Upsell: Repositioned container before cart-drawer__inner (via observer)');
+              }
+            }
+          } catch (error) {
+            console.error('Urgify Cart Upsell: Error repositioning via observer', error);
+          }
+        }
+      });
+
+      // Observe dialog for child additions
+      observer.observe(dialog, {
+        childList: true,
+        subtree: false
+      });
+
+      // Stop observing after 5 seconds to avoid memory leaks
+      setTimeout(() => {
+        observer.disconnect();
+      }, 5000);
     }
 
     /**
@@ -683,6 +1228,57 @@
     }
 
     /**
+     * Fetch configuration from our backend endpoint (as fallback if Liquid config is empty)
+     */
+    async fetchConfigFromStorefront() {
+      try {
+        // Try to get config from our backend endpoint
+        // This endpoint should return the cart upsell config
+        const shopDomain = this.getShopDomain();
+        if (!shopDomain) {
+          console.log('Urgify Cart Upsell: Cannot determine shop domain, skipping config fetch');
+          return null;
+        }
+
+        // Use our backend endpoint to get the config
+        // The app backend URL - try to get from data attribute or use default
+        const appBackendUrl = this.container.getAttribute('data-app-backend-url') || 
+                              document.querySelector('[data-urgify-app-url]')?.getAttribute('data-urgify-app-url') ||
+                              'https://urgify.fly.dev';
+        
+        const url = new URL('/apps/urgify/cart-upsells-config', appBackendUrl);
+        url.searchParams.set('shop', shopDomain);
+        
+        console.log('Urgify Cart Upsell: Fetching config from', url.toString());
+
+        const response = await fetch(url.toString(), {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          console.log('Urgify Cart Upsell: Backend config endpoint not available or returned error', response.status);
+          return null;
+        }
+
+        const data = await response.json();
+        const config = data?.config || data?.settings;
+
+        if (config && typeof config === 'object') {
+          console.log('Urgify Cart Upsell: Fetched config from backend', config);
+          return config;
+        }
+
+        return null;
+      } catch (error) {
+        console.log('Urgify Cart Upsell: Failed to fetch config from backend', error);
+        return null;
+      }
+    }
+
+    /**
      * Get shop domain from current URL
      */
     getShopDomain() {
@@ -747,12 +1343,16 @@
    */
   function initUpsellBlocks() {
     const blocks = document.querySelectorAll('.urgify-slide-cart-upsell[data-urgify="slide-cart-upsell"]');
+    console.log(`Urgify Cart Upsell: Found ${blocks.length} block(s) to initialize`);
     
-    blocks.forEach(block => {
+    blocks.forEach((block, index) => {
       if (!block.dataset.initialized) {
+        console.log(`Urgify Cart Upsell: Initializing block ${index + 1}`, block);
         block.dataset.initialized = 'true';
         const upsell = new UrgifySlideCartUpsell(block);
         upsell.init();
+      } else {
+        console.log(`Urgify Cart Upsell: Block ${index + 1} already initialized`);
       }
     });
   }
@@ -763,6 +1363,22 @@
   } else {
     initUpsellBlocks();
   }
+  
+  // Also check immediately if cart drawer is already open
+  setTimeout(() => {
+    const openDialog = document.querySelector('cart-drawer-component dialog[open], cart-drawer-component dialog, .cart-drawer dialog[open], .cart-drawer dialog');
+    if (openDialog) {
+      initUpsellBlocks();
+      // Also try to inject immediately
+      const blocks = document.querySelectorAll('.urgify-slide-cart-upsell[data-urgify="slide-cart-upsell"]');
+      blocks.forEach(block => {
+        if (block.dataset.blockId === 'auto') {
+          const upsell = new UrgifySlideCartUpsell(block);
+          upsell.injectIntoCartDrawer();
+        }
+      });
+    }
+  }, 100);
 
   // Re-initialize when cart drawer opens (listen for common events)
   document.addEventListener('cart:open', () => {
@@ -778,15 +1394,117 @@
     setTimeout(initUpsellBlocks, 100);
   });
   
+  // Listen for dialog open events (for web component cart drawers)
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    // Check if clicked element opens cart drawer
+    if (target && (target.closest('[aria-label*="cart" i]') || target.closest('[data-testid*="cart" i]') || target.closest('cart-icon'))) {
+      setTimeout(() => {
+        const dialog = document.querySelector('cart-drawer-component dialog[open]');
+        if (dialog) {
+          setTimeout(initUpsellBlocks, 300);
+        }
+      }, 100);
+    }
+  });
+  
   // Watch for cart drawer visibility changes
   const cartDrawerObserver = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
-      if (mutation.type === 'attributes' && mutation.attributeName === 'aria-hidden') {
+      if (mutation.type === 'attributes') {
         const target = mutation.target;
-        if (target.getAttribute('aria-hidden') === 'false') {
-          // Cart drawer opened
-          setTimeout(initUpsellBlocks, 200);
+        
+        // Check for dialog open attribute
+        if (mutation.attributeName === 'open' && target.tagName === 'DIALOG') {
+          if (target.hasAttribute('open')) {
+            // Cart drawer dialog opened
+            setTimeout(() => {
+              initUpsellBlocks();
+              // Also try to inject immediately
+              const blocks = document.querySelectorAll('.urgify-slide-cart-upsell[data-urgify="slide-cart-upsell"]:not([data-initialized="true"])');
+              blocks.forEach(block => {
+                if (block.dataset.blockId === 'auto') {
+                  const upsell = new UrgifySlideCartUpsell(block);
+                  upsell.injectIntoCartDrawer();
+                  upsell.init();
+                }
+              });
+            }, 200);
+          }
         }
+        
+        // Check for aria-hidden
+        if (mutation.attributeName === 'aria-hidden') {
+          if (target.getAttribute('aria-hidden') === 'false') {
+            // Cart drawer opened
+            setTimeout(() => {
+              initUpsellBlocks();
+              const blocks = document.querySelectorAll('.urgify-slide-cart-upsell[data-urgify="slide-cart-upsell"]:not([data-initialized="true"])');
+              blocks.forEach(block => {
+                if (block.dataset.blockId === 'auto') {
+                  const upsell = new UrgifySlideCartUpsell(block);
+                  upsell.injectIntoCartDrawer();
+                  upsell.init();
+                }
+              });
+            }, 200);
+          }
+        }
+        
+        // Check for class changes that might indicate opening
+        if (mutation.attributeName === 'class') {
+          const cartDrawer = target.closest('cart-drawer-component, .cart-drawer, [class*="cart-drawer"]');
+          if (cartDrawer) {
+            const dialog = cartDrawer.querySelector('dialog[open]');
+            if (dialog) {
+              setTimeout(() => {
+                initUpsellBlocks();
+                const blocks = document.querySelectorAll('.urgify-slide-cart-upsell[data-urgify="slide-cart-upsell"]:not([data-initialized="true"])');
+                blocks.forEach(block => {
+                  if (block.dataset.blockId === 'auto') {
+                    const upsell = new UrgifySlideCartUpsell(block);
+                    upsell.injectIntoCartDrawer();
+                    upsell.init();
+                  }
+                });
+              }, 200);
+            }
+          }
+        }
+      }
+      
+      // Watch for added nodes (cart drawer might be dynamically added)
+      if (mutation.type === 'childList') {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === 1) { // Element node
+            if (node.matches && (node.matches('cart-drawer-component') || node.querySelector('cart-drawer-component'))) {
+              setTimeout(() => {
+                initUpsellBlocks();
+                const blocks = document.querySelectorAll('.urgify-slide-cart-upsell[data-urgify="slide-cart-upsell"]:not([data-initialized="true"])');
+                blocks.forEach(block => {
+                  if (block.dataset.blockId === 'auto') {
+                    const upsell = new UrgifySlideCartUpsell(block);
+                    upsell.injectIntoCartDrawer();
+                    upsell.init();
+                  }
+                });
+              }, 200);
+            }
+            if (node.matches && node.matches('dialog[open]') && node.closest('cart-drawer-component')) {
+              setTimeout(() => {
+                initUpsellBlocks();
+                const blocks = document.querySelectorAll('.urgify-slide-cart-upsell[data-urgify="slide-cart-upsell"]:not([data-initialized="true"])');
+                blocks.forEach(block => {
+                  if (block.dataset.blockId === 'auto') {
+                    const upsell = new UrgifySlideCartUpsell(block);
+                    upsell.injectIntoCartDrawer();
+                    upsell.init();
+                  }
+                });
+              }, 200);
+            }
+          }
+        });
       }
     });
   });
@@ -794,6 +1512,8 @@
   // Observe common cart drawer elements
   const observeCartDrawer = () => {
     const cartDrawerSelectors = [
+      'cart-drawer-component',
+      'cart-drawer-component dialog',
       '[id*="cart-drawer"]',
       '[id*="CartDrawer"]',
       '[class*="cart-drawer"]',
@@ -805,9 +1525,17 @@
       if (element) {
         cartDrawerObserver.observe(element, {
           attributes: true,
-          attributeFilter: ['aria-hidden', 'class']
+          attributeFilter: ['open', 'aria-hidden', 'class'],
+          childList: true,
+          subtree: true
         });
       }
+    });
+    
+    // Also observe the document body for dynamically added cart drawers
+    cartDrawerObserver.observe(document.body, {
+      childList: true,
+      subtree: true
     });
   };
   

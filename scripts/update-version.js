@@ -25,6 +25,12 @@ const files = [
     patterns: [
       { search: /this\.version = ['"]\d+['"];/, replace: `this.version = '${version}';` }
     ]
+  },
+  {
+    path: join(rootDir, 'extensions/urgify-theme/assets/urgify-slide-cart-upsell.js'),
+    patterns: [
+      { search: /this\.version = ['"]\d+['"];/, replace: `this.version = '${version}';` }
+    ]
   }
 ];
 

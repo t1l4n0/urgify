@@ -109,12 +109,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
       // Build settings object
       const settings = {
         enabled: formData.get("enabled") === "true",
-        heading: formData.get("heading") || "Recommendations",
-        max_products: parseInt(formData.get("max_products") || "3", 10),
+        heading: String(formData.get("heading") || "Recommendations"),
+        max_products: parseInt(String(formData.get("max_products") || "3"), 10),
         show_price: formData.get("show_price") === "true",
         show_compare_at_price: formData.get("show_compare_at_price") === "true",
-        image_size: formData.get("image_size") || "medium",
-        button_label: formData.get("button_label") || "Add to cart",
+        image_size: String(formData.get("image_size") || "medium"),
+        button_label: String(formData.get("button_label") || "Add to cart"),
       };
 
       // Validate max_products
@@ -275,7 +275,7 @@ function CartUpsellsForm({ data }: { data: CartUpsellsSuccess }) {
 
           <s-card>
             <s-stack gap="base">
-              <s-heading level={3}>General Settings</s-heading>
+              <s-heading level="3">General Settings</s-heading>
               
               <s-stack gap="tight">
                 <s-checkbox
@@ -374,7 +374,7 @@ function CartUpsellsForm({ data }: { data: CartUpsellsSuccess }) {
           {enabled && (
             <s-card>
               <s-stack gap="base">
-                <s-heading level={3}>Display Settings</s-heading>
+                <s-heading level="3">Display Settings</s-heading>
                 
                 <s-stack gap="tight">
                   <s-checkbox

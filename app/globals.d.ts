@@ -129,7 +129,9 @@ declare global {
         label?: string;
         checked?: boolean;
         onChange?: (e: any) => void;
+        helpText?: string;
       }, HTMLElement>;
+      's-card': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
       's-select': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement> & {
         label?: string;
         value?: string;

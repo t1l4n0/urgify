@@ -1166,7 +1166,7 @@ function StockAlertsForm({ data }: { data: StockAlertsSuccess }) {
     return () => clearInterval(interval);
   }, [isMobile]);
 
-  const safeProducts = Array.isArray(products) ? products : [];
+  const safeProducts = useMemo(() => Array.isArray(products) ? products : [], [products]);
   const availableLocations = Array.isArray(locations) ? locations : [];
   const currentLocationLabel =
     availableLocations.find((loc: any) => loc.id === locationId)?.name ||

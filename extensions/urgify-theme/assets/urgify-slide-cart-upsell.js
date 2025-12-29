@@ -724,7 +724,6 @@
      * Handle add to cart action
      */
     async handleAddToCart(button) {
-      const productId = button.dataset.productId;
       const variantId = button.dataset.variantId;
 
       if (!variantId) {
@@ -835,7 +834,7 @@
         const scripts = document.querySelectorAll('script[src*="shopify"]');
         for (const script of scripts) {
           const src = script.getAttribute('src') || '';
-          const match = src.match(/https?:\/\/([^\/]+)\.myshopify\.com/);
+          const match = src.match(/https?:\/\/([^/]+)\.myshopify\.com/);
           if (match) {
             return `${match[1]}.myshopify.com`;
           }

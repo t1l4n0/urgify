@@ -19,7 +19,7 @@ type ActionData =
   | undefined;
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { admin, session } = await authenticate.admin(request);
+  const { admin } = await authenticate.admin(request);
   
   // Ensure shop metafield definitions exist
   await ensureShopMetafieldDefinitions(admin);
@@ -81,7 +81,7 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 };
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { admin, session } = await authenticate.admin(request);
+  const { admin } = await authenticate.admin(request);
 
   try {
     // Note: Rate limiting checks removed for admin UI actions to avoid blocking legitimate saves

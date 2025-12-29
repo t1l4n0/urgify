@@ -1,60 +1,109 @@
 import type { ActionFunctionArgs } from "@remix-run/node";
+import { json } from "@remix-run/node";
 import { authenticate } from "../shopify.server";
-import { shouldRateLimitByShop } from "../utils/rateLimiting";
 import { WebhookProcessor, WEBHOOK_EVENTS } from "../utils/webhooks";
-// Quickstart entfernt: kein Embed-Status-Check mehr nötig
+import { processWebhookSafely } from "../utils/webhookHelpers";
 
 export const action = async ({ request }: ActionFunctionArgs) => {
-  const { shop, admin, payload } = await authenticate.webhook(request);
-  
-  // Check rate limiting for webhooks by shop (after authentication)
-  const rateLimitCheck = await shouldRateLimitByShop(shop, 'webhook');
-  if (rateLimitCheck.limited) {
-    console.warn(`Webhook rate limited for shop ${shop}: ${rateLimitCheck.error}`);
-    return new Response('Rate limited', { 
-      status: 429, 
-      headers: { 
-        'Retry-After': rateLimitCheck.retryAfter?.toString() || '60' 
-      } 
-    });
-  }
-
-  if (!admin) {
-    // The admin context isn't returned if the webhook fired after a shop was uninstalled.
-    console.warn(`❌ Theme publish webhook failed: No admin context for shop ${shop}`);
-    throw new Response();
-  }
-
-  console.log(`🎨 Theme Publish Webhook empfangen für Shop: ${shop}`);
-  console.log("Payload:", JSON.stringify(payload, null, 2));
-
   try {
-    // Use WebhookProcessor for robust handling
-    const webhookProcessor = new WebhookProcessor(shop, admin);
-    const result = await webhookProcessor.processWebhook(WEBHOOK_EVENTS.THEMES_PUBLISH, payload);
-    
-    if (result.success) {
-      console.log("✅ Theme publish processed successfully");
+    const hmac = request.headers.get("X-Shopify-Hmac-Sha256");
+
+    if (hmac) {
+      const webhookId = request.headers.get("X-Shopify-Webhook-Id") || crypto.randomUUID();
       
-      // Quickstart entfernt: keine DB-Aktualisierung mehr nötig
-      
-      return new Response("OK", { status: 200 });
-    } else {
-      console.error("❌ Theme publish processing failed:", result.error);
-      return new Response("Error processing webhook", { 
-        status: 500,
-        headers: {
-          'Retry-After': result.retryAfter?.toString() || '60'
+      try {
+        // Verifiziertes Webhook-Auth (HMAC, Shop, Topic, Payload)
+        const { admin, topic, shop, payload } = await authenticate.webhook(request);
+
+        if (topic?.toUpperCase() !== "THEMES/PUBLISH") {
+          console.warn(`Unexpected topic at /webhooks/themes/publish: ${topic}`);
         }
-      });
-    }
-  } catch (error) {
-    console.error("❌ Theme publish webhook error:", error);
-    return new Response("Internal server error", { 
-      status: 500,
-      headers: {
-        'Retry-After': '60'
+
+        // Rate-Limiting für Webhooks entfernt: Verarbeitung läuft asynchron,
+        // Shopify hat eigene Rate-Limits, und Idempotenz verhindert doppelte Verarbeitung
+
+        if (shop && admin) {
+          // Asynchrone, idempotente Verarbeitung im Hintergrund; 200 sofort
+          Promise.resolve().then(async () => {
+            await processWebhookSafely(
+              webhookId,
+              topic || WEBHOOK_EVENTS.THEMES_PUBLISH,
+              shop,
+              payload,
+              async () => {
+                console.log(`🎨 Theme Publish Webhook empfangen für Shop: ${shop}`);
+                
+                // Use WebhookProcessor for robust handling
+                const webhookProcessor = new WebhookProcessor(shop, admin);
+                const result = await webhookProcessor.processWebhook(WEBHOOK_EVENTS.THEMES_PUBLISH, payload);
+                
+                if (!result.success) {
+                  console.error("❌ Theme publish processing failed:", result.error);
+                  throw new Error(result.error || 'Theme publish processing failed');
+                }
+                
+                console.log("✅ Theme publish processed successfully");
+              }
+            );
+          }).catch((error) => {
+            console.error("❌ Background theme publish processing error:", error);
+          });
+        } else {
+          // The admin context isn't returned if the webhook fired after a shop was uninstalled.
+          console.warn(`❌ Theme publish webhook failed: No admin context for shop ${shop}`);
+        }
+      } catch (authError) {
+        // Spezielle Behandlung für Authentifizierungsfehler
+        if (authError instanceof Response && authError.status === 401) {
+          // HMAC ungültig → HTTP 401 zurückgeben
+          throw authError;
+        }
+        
+        const errorMessage = authError instanceof Error ? authError.message : String(authError);
+        if (
+          errorMessage.includes('HMAC') ||
+          errorMessage.includes('unauthorized') ||
+          errorMessage.includes('invalid signature') ||
+          errorMessage.includes('Invalid HMAC') ||
+          errorMessage.includes('authentication')
+        ) {
+          console.error("THEMES/PUBLISH: HMAC validation failed");
+          return json({ error: 'Invalid HMAC' }, { status: 401 });
+        }
+        
+        // Andere Authentifizierungsfehler → 200 (um Retries zu vermeiden)
+        console.error("THEMES/PUBLISH: authentication error:", authError);
       }
-    });
+    } else {
+      console.log("THEMES/PUBLISH: no HMAC (test request) → respond 200");
+    }
+
+    // Immer 200 OK innerhalb von 5s zurückgeben
+    return json({ ok: true }, { status: 200 });
+  } catch (err) {
+    // Prüfe ob es ein HMAC-Validierungsfehler ist
+    if (err instanceof Response && err.status === 401) {
+      // HMAC ungültig → HTTP 401 zurückgeben
+      return err;
+    }
+    
+    // Prüfe Error-Message nach HMAC-spezifischen Fehlern
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    if (
+      errorMessage.includes('HMAC') ||
+      errorMessage.includes('unauthorized') ||
+      errorMessage.includes('invalid signature') ||
+      errorMessage.includes('Invalid HMAC') ||
+      errorMessage.includes('authentication')
+    ) {
+      console.error("THEMES/PUBLISH: HMAC validation failed");
+      return json({ error: 'Invalid HMAC' }, { status: 401 });
+    }
+    
+    // Andere Fehler → HTTP 200 (um Retries zu vermeiden)
+    console.error("THEMES/PUBLISH: webhook error:", err);
+    return json({ ok: true }, { status: 200 });
   }
 };
+
+export const loader = () => new Response(null, { status: 405 });

@@ -95,11 +95,21 @@ export async function adminCall(
  * Prüft, ob Webhook bereits verarbeitet wurde (Idempotenz)
  */
 export async function isWebhookProcessed(webhookId: string): Promise<boolean> {
-  const existing = await prisma.webhookEvent.findUnique({
-    where: { id: webhookId }
-  });
-  
-  return !!existing;
+  try {
+    const existing = await prisma.webhookEvent.findUnique({
+      where: { id: webhookId }
+    });
+    
+    return !!existing;
+  } catch (error) {
+    // Bei DB-Fehlern annehmen, dass Webhook nicht verarbeitet wurde
+    // (besser als hängen zu bleiben)
+    log("warn", "Failed to check webhook idempotency, assuming not processed", {
+      webhookId,
+      error: error instanceof Error ? error.message : String(error)
+    });
+    return false;
+  }
 }
 
 /**
@@ -110,14 +120,25 @@ export async function markWebhookProcessed(
   topic: string, 
   shop: string
 ): Promise<void> {
-  await prisma.webhookEvent.create({
-    data: { 
-      id: webhookId, 
-      topic, 
+  try {
+    await prisma.webhookEvent.create({
+      data: { 
+        id: webhookId, 
+        topic, 
+        shop,
+        processedAt: new Date()
+      }
+    });
+  } catch (error) {
+    // Bei DB-Fehlern loggen, aber nicht fehlschlagen
+    // (Webhook wurde bereits verarbeitet, nur Tracking fehlgeschlagen)
+    log("warn", "Failed to mark webhook as processed", {
+      webhookId,
+      topic,
       shop,
-      processedAt: new Date()
-    }
-  });
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
 }
 
 // ============================================================================
@@ -183,7 +204,7 @@ export async function processWebhookSafely(
   processor: () => Promise<void>
 ): Promise<void> {
   try {
-    // 1. Idempotenz prüfen
+    // 1. Idempotenz prüfen (fehlertolerant)
     if (await isWebhookProcessed(webhookId)) {
       log("info", "Webhook already processed", { webhookId, topic, shop });
       return;
@@ -192,13 +213,23 @@ export async function processWebhookSafely(
     // 2. Verarbeitung ausführen
     await processor();
 
-    // 3. Als verarbeitet markieren
+    // 3. Als verarbeitet markieren (fehlertolerant)
     await markWebhookProcessed(webhookId, topic, shop);
     
     log("info", "Webhook processed successfully", { webhookId, topic, shop });
   } catch (error) {
-    // 4. Fehler in Dead-Letter-Queue speichern
-    await addToDeadLetterQueue(topic, shop, payload, error as Error);
+    // 4. Fehler in Dead-Letter-Queue speichern (fehlertolerant)
+    try {
+      await addToDeadLetterQueue(topic, shop, payload, error as Error);
+    } catch (dlqError) {
+      // Wenn Dead-Letter-Queue auch fehlschlägt, nur loggen
+      log("error", "Failed to add to dead letter queue", {
+        topic,
+        shop,
+        originalError: error instanceof Error ? error.message : String(error),
+        dlqError: dlqError instanceof Error ? dlqError.message : String(dlqError)
+      });
+    }
     
     // 5. Fehler weiterwerfen (für Logging)
     throw error;

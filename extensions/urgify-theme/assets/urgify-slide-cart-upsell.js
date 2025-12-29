@@ -43,7 +43,7 @@
       this.config = this.parseConfig();
       this.initialized = false;
       this.currentCartProductIds = new Set();
-      this.version = '593';
+      this.version = '594';
     }
 
     /**

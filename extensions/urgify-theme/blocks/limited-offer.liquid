@@ -59,16 +59,26 @@
 
 {{ 'urgify-limited-offer.css' | asset_url | stylesheet_tag }}
 
+{% liquid
+  assign enable_animations = block.settings.enable_animations
+  assign animations_class = ''
+  # In Liquid sind Checkbox-Werte Strings: 'true' wenn aktiviert, 'false' wenn deaktiviert, oder leer
+  # Nur wenn explizit 'true' (String) oder true (Boolean), dann Animationen aktivieren
+  if enable_animations != true and enable_animations != 'true'
+    assign animations_class = 'offer-animations-disabled'
+  endif
+%}
+
 {% capture urgify_offer_block %}
-<div class="urgify-limited-offer offer-style-{{ block.settings.offer_style | default: 'spectacular' }} offer-width-{{ block.settings.width | default: 'fullwidth' }} {% if block.settings.layout == 'side-by-side' %}offer-layout-side-by-side{% endif %}" 
+<div class="urgify-limited-offer offer-style-{{ block.settings.offer_style | default: 'spectacular' }} offer-width-{{ block.settings.width | default: 'fullwidth' }} offer-layout-side-by-side {{ animations_class }}" 
      data-urgify="limited-offer" 
      data-block-id="{{ block.id }}"
      data-end-date="{{ end_iso }}"
      data-end-epoch="{{ end_epoch }}"
-     data-layout="{{ block.settings.layout | default: 'stacked' }}"
-     data-side-columns="{{ block.settings.side_columns | default: '2' }}"
+     data-layout="side-by-side"
+     data-side-columns="3"
      data-match-height="true"
-     data-side-gap="{{ block.settings.side_gap | default: 24 }}"
+     data-side-gap="16"
      style="
        {% if block.settings.text_align != blank %}
          text-align: {{ block.settings.text_align }};
@@ -377,9 +387,9 @@ function urgifyApplySideWrapperParity(parent) {
     return;
   }
   const columns = parseInt(
-    getComputedStyle(parent).getPropertyValue('--urgify-side-columns') || '2',
+    getComputedStyle(parent).getPropertyValue('--urgify-side-columns') || '3',
     10
-  ) || 2;
+  ) || 3;
   wrappers.forEach((wrapper, index) => {
     wrapper.classList.remove(
       'urgify-limited-offer-wrapper--side--odd',
@@ -392,16 +402,19 @@ function urgifyApplySideWrapperParity(parent) {
       '.urgify-limited-offer[data-layout="side-by-side"]'
     );
     if (hasSideChild) {
-      if (columns === 2) {
+      if (columns === 3) {
+        // 3 columns: always add col classes to force fit
+        const colIndex = index % 3;
+        wrapper.classList.add(`urgify-limited-offer-wrapper--side--col-${colIndex}`);
+      } else if (columns === 2) {
+        // 2 columns: use odd/even for spacing, but respect width
         if (index % 2 === 0) {
           wrapper.classList.add('urgify-limited-offer-wrapper--side--odd');
         } else {
           wrapper.classList.add('urgify-limited-offer-wrapper--side--even');
         }
-      } else if (columns === 3) {
-        const colIndex = index % 3;
-        wrapper.classList.add(`urgify-limited-offer-wrapper--side--col-${colIndex}`);
       }
+      // 1 column: no special class needed, width is respected
     }
   });
 }
@@ -429,16 +442,8 @@ function urgifyApplyLimitedOfferLayout(root) {
 
     const parent = wrapper ? wrapper.parentElement : null;
     if (parent) {
-      const details = parentDetails.get(parent) || { count: 0, gaps: [], columns: [] };
+      const details = parentDetails.get(parent) || { count: 0 };
       details.count += 1;
-      const blockGap = Number(block.dataset.sideGap || 24);
-      if (!isNaN(blockGap)) {
-        details.gaps.push(blockGap);
-      }
-      const blockColumns = Number(block.dataset.sideColumns || 2);
-      if (!isNaN(blockColumns) && blockColumns > 1) {
-        details.columns.push(blockColumns);
-      }
       parentDetails.set(parent, details);
     }
   });
@@ -450,7 +455,7 @@ function urgifyApplyLimitedOfferLayout(root) {
   const existingContainers = containerScope.querySelectorAll('.urgify-limited-offer-side-container');
   existingContainers.forEach((container) => {
     const wrapperCount = container.querySelectorAll('.urgify-limited-offer-wrapper--side').length;
-    if (wrapperCount < 2) {
+    if (wrapperCount < 1) {
       container.classList.remove('urgify-limited-offer-side-container');
       container.style.removeProperty('--urgify-side-gap');
       container.style.removeProperty('--urgify-side-columns');
@@ -459,31 +464,17 @@ function urgifyApplyLimitedOfferLayout(root) {
   });
 
   parentDetails.forEach((details, parent) => {
-    if (details.count > 1) {
-      const gapValue =
-        details.gaps.length > 0
-          ? Math.max(...details.gaps)
-          : 24;
+    if (details.count >= 1) {
+      // Always use 16px gap
+      const gapValue = 16;
       parent.classList.add('urgify-limited-offer-side-container');
       parent.style.setProperty('--urgify-side-gap', `${gapValue}px`);
       
-      // Use the most common column value (mode) instead of max to respect individual block settings
-      let columnValue = 2;
-      if (details.columns.length > 0) {
-        const columnCounts = {};
-        details.columns.forEach(col => {
-          columnCounts[col] = (columnCounts[col] || 0) + 1;
-        });
-        const sortedColumns = Object.entries(columnCounts).sort((a, b) => b[1] - a[1]);
-        const mostCommon = parseInt(sortedColumns[0][0], 10);
-        // If there's a tie, prefer the lower value (2 over 3)
-        if (sortedColumns.length > 1 && sortedColumns[0][1] === sortedColumns[1][1]) {
-          columnValue = Math.min(mostCommon, parseInt(sortedColumns[1][0], 10));
-        } else {
-          columnValue = mostCommon;
-        }
-        columnValue = Math.min(Math.max(columnValue, 2), 3);
-      }
+      // Automatically determine columns based on number of blocks (max 3)
+      // 3 blocks: always 3 columns (force fit)
+      // 2 blocks: 2 columns (respect width)
+      // 1 block: 1 column (respect width)
+      let columnValue = Math.min(details.count, 3);
       parent.style.setProperty('--urgify-side-columns', `${columnValue}`);
     } else {
       parent.classList.remove('urgify-limited-offer-side-container');
@@ -709,53 +700,68 @@ window.addEventListener('resize', function() {
         {"value": "custom", "label": "Custom Colors"}
       ],
       "default": "spectacular",
-      "info": "Choose the visual style for your offer block"
+      "info": "Choose the visual style for your offer block. Select \"Custom Colors\" to unlock the color controls below."
     },
     {
-      "type": "paragraph",
-      "content": "Enable \"Custom Colors\" above to unlock the color controls below."
+      "type": "header",
+      "content": "Custom Colors",
+      "visible_if": "{{ block.settings.offer_style == 'custom' }}"
     },
     {
       "type": "color",
       "id": "custom_background_start",
       "label": "Custom background (start)",
-      "default": "#0f172a"
+      "default": "#0f172a",
+      "visible_if": "{{ block.settings.offer_style == 'custom' }}"
     },
     {
       "type": "color",
       "id": "custom_background_end",
       "label": "Custom background (end)",
-      "default": "#312e81"
+      "default": "#312e81",
+      "visible_if": "{{ block.settings.offer_style == 'custom' }}"
     },
     {
       "type": "color",
       "id": "custom_text_color",
       "label": "Text color",
-      "default": "#f8fafc"
+      "default": "#f8fafc",
+      "visible_if": "{{ block.settings.offer_style == 'custom' }}"
     },
     {
       "type": "color",
       "id": "custom_accent_color",
       "label": "Accent color",
-      "default": "#facc15"
+      "default": "#facc15",
+      "visible_if": "{{ block.settings.offer_style == 'custom' }}"
     },
     {
       "type": "color",
       "id": "custom_surface_color",
       "label": "Badge & timer background",
-      "default": "#1f2937"
+      "default": "#1f2937",
+      "visible_if": "{{ block.settings.offer_style == 'custom' }}"
     },
     {
       "type": "color",
       "id": "custom_button_background",
       "label": "Button background",
-      "default": "#facc15"
+      "default": "#facc15",
+      "visible_if": "{{ block.settings.offer_style == 'custom' }}"
     },
     {
       "type": "color",
       "id": "custom_button_text_color",
       "label": "Button text color",
-      "default": "#0f172a"
+      "default": "#0f172a",
+      "visible_if": "{{ block.settings.offer_style == 'custom' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_animations",
+      "label": "Enable Animations",
+      "default": true,
+      "info": "Enable or disable all animations (sparkles, pulses, shimmer effects, etc.)"
     },
     {
       "type": "header",
@@ -763,50 +769,18 @@ window.addEventListener('resize', function() {
     },
     {
       "type": "select",
-      "id": "layout",
-      "label": "Layout Mode",
-      "options": [
-        {"value": "stacked", "label": "Stacked (Standard)"},
-        {"value": "side-by-side", "label": "Side by Side"}
-      ],
-      "default": "stacked",
-      "info": "Choose 'Side by Side' to display multiple blocks next to each other. On mobile devices, blocks will automatically stack vertically."
-    },
-    {
-      "type": "select",
-      "id": "side_columns",
-      "label": "Blocks per row (desktop)",
-      "options": [
-        {"value": "2", "label": "2 blocks"},
-        {"value": "3", "label": "3 blocks"}
-      ],
-      "default": "2",
-      "info": "Applies when layout mode is set to side by side on desktop screens."
-    },
-    {
-      "type": "select",
       "id": "width",
       "label": "Width",
       "options": [
         {"value": "fullwidth", "label": "Full Width"},
-        {"value": "container", "label": "Container"},
-        {"value": "narrow", "label": "Narrow"},
-        {"value": "super-narrow", "label": "Super Narrow"},
-        {"value": "ultra-narrow", "label": "Ultra Narrow"}
+        {"value": "container", "label": "Container (1200px)"},
+        {"value": "narrow", "label": "Medium (800px)"},
+        {"value": "super-narrow", "label": "Small (600px)"},
+        {"value": "ultra-narrow", "label": "Extra Small (460px)"},
+        {"value": "tiny", "label": "Tiny (320px)"}
       ],
       "default": "fullwidth",
-      "info": "Control the width of the offer block"
-    },
-    {
-      "type": "range",
-      "id": "side_gap",
-      "label": "Side-by-side spacing",
-      "min": 0,
-      "max": 80,
-      "step": 2,
-      "default": 24,
-      "unit": "px",
-      "info": "Distance between two offers when they are shown next to each other."
+      "info": "Control the width of the offer block. Note: When 3 blocks are placed side-by-side, they will always fit next to each other regardless of this setting."
     },
     {
       "type": "header",

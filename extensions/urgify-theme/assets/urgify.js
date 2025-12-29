@@ -73,7 +73,7 @@
       this.blocks = new Map();
       this.config = window.UrgifyCore?.config || {};
       this.initialized = false;
-      this.version = '578';
+      this.version = '592';
     }
 
     /**

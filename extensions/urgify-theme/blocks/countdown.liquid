@@ -109,8 +109,15 @@
        }
      </script>
 
+     {% liquid
+       assign animation_setting = block.settings.animation | default: 'none'
+       assign animation_class = ''
+       if animation_setting == 'none'
+         assign animation_class = 'countdown-no-animation'
+       endif
+     %}
      <div id="urgify-countdown-{{ block.id }}"
-          class="urgify-countdown countdown-theme-{{ block.settings.color_theme | default: 'primary' }}"
+          class="urgify-countdown countdown-theme-{{ block.settings.color_theme | default: 'primary' }} {{ animation_class }}"
           data-urgify="countdown"
           data-block-id="{{ block.id }}"
           data-settings="{{ settings_json | escape }}"

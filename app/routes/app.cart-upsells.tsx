@@ -6,8 +6,7 @@ import {
 } from "@remix-run/node";
 import { useLoaderData, useFetcher, useRevalidator } from "@remix-run/react";
 import { authenticate } from "../shopify.server";
-import { ensureShopMetafieldDefinitions, ensureProductMetafieldDefinitions } from "../utils/metafieldDefinitions";
-import prisma from "../db.server";
+import { ensureShopMetafieldDefinitions } from "../utils/metafieldDefinitions";
 // Polaris Web Components - no imports needed, components are global
 import { useState, useCallback, useEffect } from "react";
 
@@ -21,46 +20,32 @@ type ActionData =
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin, session } = await authenticate.admin(request);
+  
+  // Ensure shop metafield definitions exist
+  await ensureShopMetafieldDefinitions(admin);
 
   try {
     // Note: Rate limiting checks removed for admin UI pages to avoid blocking legitimate user actions
     // Shopify's own rate limits will still apply
 
-    // Check if product metafield definition exists and is pinned
-    const definitionQuery = `#graphql
-      query getProductMetafieldDefinition {
-        metafieldDefinitions(first: 10, namespace: "urgify", ownerType: PRODUCT) {
-          nodes {
-            id
-            key
-            pinnedPosition
+    // Fetch shop metafield for cart upsell settings
+    const metafieldResponse = await admin.graphql(`
+      query getShopMetafield {
+        shop {
+          id
+          metafield(namespace: "urgify", key: "cart_upsell_config") {
+            value
+            type
           }
         }
       }
-    `;
-
-    const definitionResponse = await admin.graphql(definitionQuery);
-    const definitionData = await definitionResponse.json();
-    const definitions = definitionData.data?.metafieldDefinitions?.nodes || [];
-    const cartUpsellsDefinition = definitions.find((def: any) => def.key === "cart_upsells");
-    const metafieldDefinitionExists = !!cartUpsellsDefinition;
-    const metafieldDefinitionPinned = cartUpsellsDefinition?.pinnedPosition !== null && cartUpsellsDefinition?.pinnedPosition !== undefined;
-
-    // Get shop ID
-    const shopResponse = await admin.graphql(`
-      query getShop {
-        shop {
-          id
-        }
-      }
     `);
-    const shopData = await shopResponse.json();
-    const shopId = shopData.data?.shop?.id;
 
-    // Normalize shop name (remove .myshopify.com if present for consistency)
-    const normalizedShop = session.shop.replace(/\.myshopify\.com$/, '');
+    const metafieldData = await metafieldResponse.json();
+    const configValue = metafieldData.data?.shop?.metafield?.value;
+    const shopId = metafieldData.data?.shop?.id;
     
-    // Fetch cart upsell settings from database
+    // Parse JSON metafield or use defaults
     let settings = {
       enabled: false,
       heading: "Recommendations",
@@ -71,30 +56,18 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       button_label: "Add to cart",
     };
 
-    const dbSettings = await prisma.cartUpsellSettings.findUnique({
-      where: { shop: normalizedShop },
-    });
-
-    if (dbSettings) {
-      settings = {
-        enabled: dbSettings.enabled,
-        heading: dbSettings.heading,
-        max_products: dbSettings.maxProducts,
-        show_price: dbSettings.showPrice,
-        show_compare_at_price: dbSettings.showCompareAtPrice,
-        image_size: dbSettings.imageSize,
-        button_label: dbSettings.buttonLabel,
-      };
-      console.log(`[Cart Upsells] Loaded settings for shop: "${normalizedShop}"`, settings);
-    } else {
-      console.log(`[Cart Upsells] No settings found for shop: "${normalizedShop}", using defaults`);
+    if (configValue) {
+      try {
+        const parsedConfig = JSON.parse(configValue);
+        settings = { ...settings, ...parsedConfig };
+      } catch (error) {
+        console.error("Error parsing cart upsell config:", error);
+      }
     }
 
     return json({
       settings,
       shopId,
-      metafieldDefinitionExists,
-      metafieldDefinitionPinned,
     }, {
       headers: { "Cache-Control": "no-store" },
     });
@@ -149,219 +122,51 @@ export const action = async ({ request }: ActionFunctionArgs) => {
         return json({ error: "Max products must be between 1 and 10" }, { status: 400 });
       }
 
-      // Normalize shop name (remove .myshopify.com if present for consistency)
-      const normalizedShop = session.shop.replace(/\.myshopify\.com$/, '');
-      
-      console.log(`[Cart Upsells] Saving settings for shop: "${normalizedShop}" (original: "${session.shop}")`, settings);
-
-      // Save settings to database
-      await prisma.cartUpsellSettings.upsert({
-        where: { shop: normalizedShop },
-        update: {
-          enabled: settings.enabled,
-          heading: settings.heading,
-          maxProducts: settings.max_products,
-          showPrice: settings.show_price,
-          showCompareAtPrice: settings.show_compare_at_price,
-          imageSize: settings.image_size,
-          buttonLabel: settings.button_label,
-        },
-        create: {
-          shop: normalizedShop,
-          enabled: settings.enabled,
-          heading: settings.heading,
-          maxProducts: settings.max_products,
-          showPrice: settings.show_price,
-          showCompareAtPrice: settings.show_compare_at_price,
-          imageSize: settings.image_size,
-          buttonLabel: settings.button_label,
-        },
-      });
-
-      console.log(`[Cart Upsells] Settings saved successfully for shop: "${normalizedShop}"`);
-
-      // Set shop metafield to enable/disable cart upsell in Liquid templates
-      try {
-        await ensureShopMetafieldDefinitions(admin);
-        
-        const metafieldMutation = `#graphql
-          mutation metafieldsSet($metafields: [MetafieldsSetInput!]!) {
-            metafieldsSet(metafields: $metafields) {
-              metafields {
-                id
-                namespace
-                key
-                value
-              }
-              userErrors {
-                field
-                message
-              }
+      // Update metafield
+      const updateMutation = `#graphql
+        mutation updateShopMetafield($metafields: [MetafieldsSetInput!]!) {
+          metafieldsSet(metafields: $metafields) {
+            metafields {
+              id
+              namespace
+              key
+              value
+            }
+            userErrors {
+              field
+              message
             }
           }
-        `;
+        }
+      `;
 
-        const metafieldVariables = {
+      const metafieldValue = JSON.stringify(settings);
+
+      const updateResponse = await admin.graphql(updateMutation, {
+        variables: {
           metafields: [
             {
               ownerId: shopId,
               namespace: "urgify",
-              key: "cart_upsell_enabled",
-              type: "boolean",
-              value: String(settings.enabled),
+              key: "cart_upsell_config",
+              type: "json",
+              value: metafieldValue,
             },
           ],
-        };
+        },
+      });
 
-        const metafieldResponse = await admin.graphql(metafieldMutation, {
-          variables: metafieldVariables,
-        });
+      const updateData = await updateResponse.json();
+      const userErrors = updateData?.data?.metafieldsSet?.userErrors || [];
 
-        const metafieldData = await metafieldResponse.json();
-
-        if (metafieldData.errors) {
-          console.error("GraphQL errors in metafieldsSet:", metafieldData.errors);
-        }
-
-        const userErrors = metafieldData?.data?.metafieldsSet?.userErrors || [];
-        if (userErrors.length > 0) {
-          console.error("User errors in metafieldsSet:", userErrors);
-        } else {
-          console.log(`[Cart Upsells] Shop metafield 'cart_upsell_enabled' set to: ${settings.enabled}`);
-        }
-      } catch (metafieldError) {
-        console.error("[Cart Upsells] Error setting shop metafield:", metafieldError);
-        // Don't fail the request if metafield update fails - settings are already saved to DB
+      if (userErrors.length > 0) {
+        return json(
+          { error: userErrors.map((e: any) => e.message).join(", ") },
+          { status: 400 }
+        );
       }
 
       return json({ success: true, message: "Cart Upsell settings updated successfully" });
-    }
-
-    if (action === "create-metafield-definition") {
-      try {
-        // Check available scopes for debugging
-        let availableScopes: string[] = [];
-        try {
-          const scopeResponse = await admin.graphql(`
-            query getCurrentAppInstallation {
-              currentAppInstallation {
-                accessScopes {
-                  handle
-                }
-              }
-            }
-          `);
-          const scopeData = await scopeResponse.json();
-          
-          // Check for GraphQL errors in scope query
-          if (scopeData.errors) {
-            console.error("GraphQL errors when checking scopes:", scopeData.errors);
-            // Continue anyway - might still work
-          } else {
-            availableScopes = scopeData.data?.currentAppInstallation?.accessScopes?.map((s: any) => s.handle) || [];
-            console.log("Available scopes:", availableScopes);
-          }
-        } catch (scopeError) {
-          console.error("Error checking scopes:", scopeError);
-          // Continue anyway - might still work
-        }
-        
-        // Check if required scopes are present (but don't block if check failed)
-        if (availableScopes.length > 0) {
-          const hasWriteMetaobjectDefinitions = availableScopes.includes("write_metaobject_definitions");
-          
-          if (!hasWriteMetaobjectDefinitions) {
-            console.warn("Scope 'write_metaobject_definitions' not found. Available scopes:", availableScopes);
-            // Don't block - try anyway, might work if scopes were just updated
-            // return json({ 
-            //   error: "Missing required scope: 'write_metaobject_definitions'. Please ensure the app has been updated with the new scopes and the permissions have been granted. Available scopes: " + availableScopes.join(", ") 
-            // }, { status: 403 });
-          }
-        }
-        
-        // Create and pin the product metafield definition
-        // This will throw an error if scopes are missing, which we'll catch below
-        await ensureProductMetafieldDefinitions(admin);
-        
-        // Verify it was created and pinned
-        const verifyQuery = `#graphql
-          query verifyProductMetafieldDefinition {
-            metafieldDefinitions(first: 10, namespace: "urgify", ownerType: PRODUCT) {
-              nodes {
-                id
-                key
-                pinnedPosition
-              }
-            }
-          }
-        `;
-        
-        const verifyResponse = await admin.graphql(verifyQuery);
-        const verifyData = await verifyResponse.json();
-        
-        // Check for GraphQL errors
-        if (verifyData.errors) {
-          console.error("GraphQL errors when verifying metafield definition:", verifyData.errors);
-          const errorDetails = verifyData.errors.map((e: any) => {
-            return `${e.message}${e.extensions?.code ? ` (${e.extensions.code})` : ''}`;
-          }).join(", ");
-          return json({ 
-            error: `Failed to verify metafield definition: ${errorDetails}` 
-          }, { status: 500 });
-        }
-        
-        const definitions = verifyData.data?.metafieldDefinitions?.nodes || [];
-        const cartUpsellsDefinition = definitions.find((def: any) => def.key === "cart_upsells");
-        
-        if (cartUpsellsDefinition) {
-          const isPinned = cartUpsellsDefinition.pinnedPosition !== null && cartUpsellsDefinition.pinnedPosition !== undefined;
-          if (isPinned) {
-            return json({ 
-              success: true, 
-              message: "Metafield definition created and pinned successfully. It should now be visible in the Shopify Admin." 
-            });
-          } else {
-            return json({ 
-              success: true, 
-              message: "Metafield definition created but may not be pinned. Please check in Shopify Admin." 
-            });
-          }
-        } else {
-          return json({ 
-            error: "Failed to create metafield definition. The definition was not found after creation. Please check the browser console or server logs for detailed error messages." 
-          }, { status: 500 });
-        }
-      } catch (error) {
-        console.error("Error creating metafield definition:", error);
-        
-        // Log full error details
-        let errorDetails = "Unknown error";
-        if (error instanceof Error) {
-          errorDetails = error.message;
-          console.error("Error name:", error.name);
-          console.error("Error message:", error.message);
-          console.error("Error stack:", error.stack);
-        } else if (typeof error === "string") {
-          errorDetails = error;
-        } else {
-          try {
-            errorDetails = JSON.stringify(error);
-          } catch {
-            errorDetails = String(error);
-          }
-        }
-        
-        // Check if it's a scope-related error
-        if (errorDetails.includes("access") || errorDetails.includes("scope") || errorDetails.includes("permission") || errorDetails.includes("unauthorized")) {
-          return json({ 
-            error: `Permission error: ${errorDetails}. Please ensure the app has the 'write_metaobject_definitions' and 'read_metaobject_definitions' scopes and that permissions have been granted.` 
-          }, { status: 403 });
-        }
-        
-        return json({ 
-          error: `Failed to create metafield definition: ${errorDetails}` 
-        }, { status: 500 });
-      }
     }
 
     return json({ error: "Invalid action" }, { status: 400 });
@@ -407,7 +212,7 @@ export default function CartUpsells() {
 function CartUpsellsForm({ data }: { data: CartUpsellsSuccess }) {
   const fetcher = useFetcher<ActionData>();
   const revalidator = useRevalidator();
-  const { settings, metafieldDefinitionExists, metafieldDefinitionPinned } = data;
+  const { settings } = data;
 
   const [enabled, setEnabled] = useState(settings.enabled);
   const [heading, setHeading] = useState(settings.heading);
@@ -418,19 +223,13 @@ function CartUpsellsForm({ data }: { data: CartUpsellsSuccess }) {
   const [buttonLabel, setButtonLabel] = useState(settings.button_label);
   const [isDirty, setIsDirty] = useState(false);
 
-  // Reset form when settings change (after save) or when metafield definition is created
+  // Reset form when settings change (after save)
   useEffect(() => {
-    if (fetcher.data) {
-      if ("success" in fetcher.data && fetcher.data.success) {
-        setIsDirty(false);
-        setTimeout(() => {
-          revalidator.revalidate();
-        }, 500);
-      }
-      // Log errors for debugging
-      if ("error" in fetcher.data && fetcher.data.error) {
-        console.error("Action error:", fetcher.data.error);
-      }
+    if (fetcher.data && "success" in fetcher.data && fetcher.data.success) {
+      setIsDirty(false);
+      setTimeout(() => {
+        revalidator.revalidate();
+      }, 500);
     }
   }, [fetcher.data, revalidator]);
 
@@ -660,46 +459,14 @@ function CartUpsellsForm({ data }: { data: CartUpsellsSuccess }) {
             )}
           </s-stack>
 
-          {metafieldDefinitionExists && metafieldDefinitionPinned ? (
-            <s-banner tone="success" heading="Metafield Definition Ready">
-              <s-paragraph>
-                The product metafield <strong>urgify.cart_upsells</strong> has been created and pinned,
-                making it visible in the Shopify Admin. You can configure upsell products for each product
-                directly in the Shopify Admin under the product's Metafields section. When a customer
-                adds a product to their cart, the upsell products from that product's metafield will
-                be displayed in the cart drawer.
-              </s-paragraph>
-            </s-banner>
-          ) : (
-            <s-card>
-              <s-stack gap="base">
-                <s-heading level={3}>Metafield Definition</s-heading>
-                <s-paragraph>
-                  The product metafield <strong>urgify.cart_upsells</strong> needs to be created to enable
-                  cart upsell functionality. Click the button below to create and pin the metafield definition,
-                  which will make it visible in the Shopify Admin for all products.
-                </s-paragraph>
-                {metafieldDefinitionExists && !metafieldDefinitionPinned && (
-                  <s-banner tone="warning" heading="Definition exists but not pinned">
-                    <s-paragraph>
-                      The metafield definition exists but is not pinned. Click the button below to pin it.
-                    </s-paragraph>
-                  </s-banner>
-                )}
-                <s-button
-                  variant="primary"
-                  onClick={() => {
-                    const formData = new FormData();
-                    formData.append("action", "create-metafield-definition");
-                    fetcher.submit(formData, { method: "post" });
-                  }}
-                  disabled={fetcher.state === "submitting"}
-                >
-                  {fetcher.state === "submitting" ? "Creating..." : "Create Metafield Definition"}
-                </s-button>
-              </s-stack>
-            </s-card>
-          )}
+          <s-banner tone="info" heading="How it works">
+            <s-paragraph>
+              Cart Upsell uses the product metafield <strong>upsell.products</strong> to display
+              recommended products. Make sure to configure this metafield for your products in the
+              Shopify Admin. When a customer adds a product to their cart, the upsell products
+              from that product's metafield will be displayed in the cart drawer.
+            </s-paragraph>
+          </s-banner>
         </s-stack>
       </s-section>
     </s-page>

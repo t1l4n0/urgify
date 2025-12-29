@@ -2,53 +2,66 @@
   Automatically injects the cart upsell block into the cart drawer
   when enabled via Admin UI settings. This avoids manual placement.
   
-  Uses product metafields (urgify.cart_upsells) for upsell products.
-  Configuration is loaded from database via backend endpoint.
-  
-  IMPORTANT: Only renders if explicitly enabled. If not enabled, nothing is rendered.
+  Uses product metafields (upsell.products) for upsell products.
+  Configuration is loaded from shop metafield (urgify.cart_upsell_config).
 {% endcomment %}
 
 {% liquid
-  # Check if cart upsell is enabled via shop metafield (set by app when saving settings)
-  assign cart_upsell_enabled = shop.metafields.urgify.cart_upsell_enabled.value | default: false
-  
-  # Also check if there's a config metafield (legacy support)
+  # Get configuration from shop metafield
   assign cart_upsell_config = shop.metafields.urgify.cart_upsell_config.value | default: '{}'
   
-  # Parse config if it exists
-  if cart_upsell_config != '{}' and cart_upsell_config != ''
-    # Try to extract enabled from JSON config
-    assign config_enabled = false
-    if cart_upsell_config contains '"enabled":true' or cart_upsell_config contains '"enabled": true'
+  # Basic check if enabled (simplified JSON parsing in Liquid)
+  # Check multiple variations of enabled:true in JSON
+  assign config_enabled = false
+  if cart_upsell_config != '{}' and cart_upsell_config != '' and cart_upsell_config != null
+    # Check various formats of enabled:true (Liquid doesn't support 'or' in if, so check separately)
+    if cart_upsell_config contains '"enabled":true'
+      assign config_enabled = true
+    elsif cart_upsell_config contains '"enabled": true'
+      assign config_enabled = true
+    elsif cart_upsell_config contains '"enabled":true,'
+      assign config_enabled = true
+    elsif cart_upsell_config contains '"enabled": true,'
+      assign config_enabled = true
+    elsif cart_upsell_config contains '"enabled":1'
+      assign config_enabled = true
+    elsif cart_upsell_config contains '"enabled": 1'
+      assign config_enabled = true
+    elsif cart_upsell_config contains 'enabled":true'
       assign config_enabled = true
     endif
   endif
-  
-  # Only proceed if explicitly enabled
-  if cart_upsell_enabled == true or cart_upsell_enabled == 'true' or config_enabled == true
-    assign should_render = true
-  else
-    assign should_render = false
-  endif
 %}
 
-{% if should_render %}
+{% comment %}Only render if enabled - this prevents unnecessary script loading and initialization{% endcomment %}
+{% if config_enabled %}
   {{ 'urgify-slide-cart-upsell.css' | asset_url | stylesheet_tag }}
 
-  {% comment %}Config will be fetched by JavaScript from backend endpoint{% endcomment %}
-  <script type="application/json" id="urgify-cart-upsell-config">{{ cart_upsell_config }}</script>
+  {% comment %}Store config in script tag for reliable JSON parsing{% endcomment %}
+  {% comment %}Ensure we have valid JSON - if cart_upsell_config is empty or invalid, use empty object{% endcomment %}
+  {% liquid
+    assign safe_config = cart_upsell_config
+    if safe_config == blank or safe_config == '' or safe_config == null
+      assign safe_config = '{}'
+    endif
+    # Ensure it's valid JSON format (starts with { and ends with })
+    unless safe_config contains '{'
+      assign safe_config = '{}'
+    endunless
+  %}
+  <script type="application/json" id="urgify-cart-upsell-config">{{ safe_config }}</script>
 
   <div 
     id="urgify-slide-cart-upsell-auto"
     class="urgify-slide-cart-upsell"
     data-urgify="slide-cart-upsell"
     data-block-id="auto"
-    data-app-backend-url="https://urgify.fly.dev"
+    data-config-enabled="{{ config_enabled }}"
     style="display: none;"
   ></div>
 
   <script src="{{ 'urgify-slide-cart-upsell.js' | asset_url }}" defer></script>
-{% else %}
-  {% comment %}Cart Upsell is disabled - render nothing{% endcomment %}
 {% endif %}
+
+{% comment %}End of enabled check{% endcomment %}
 

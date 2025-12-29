@@ -7,6 +7,14 @@
   box-shadow: none !important;
   padding: 0 !important;
   margin: 0 !important;
+  display: block;
+  width: auto;
+}
+
+.urgify-countdown .countdown-container.countdown-minimal {
+  display: inline-flex !important;
+  width: auto !important;
+  max-width: none !important;
 }
 
 .urgify-countdown.hidden {
@@ -41,7 +49,9 @@
   box-shadow: none !important;
   border-radius: var(--urgify-countdown-border-radius, 12px);
   color: var(--urgify-countdown-minimal-text, #ffffff);
-  display: inline-flex;
+  display: inline-flex !important;
+  width: auto !important;
+  max-width: none !important;
   justify-content: flex-start;
   align-items: center;
   gap: 0;
@@ -381,6 +391,33 @@
 }
 
 /* Animations */
+.countdown-container.none,
+.countdown-container.none *,
+.countdown-container.none *::before,
+.countdown-container.none *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Deaktiviere Flip-Card-Animationen wenn animation: none */
+.countdown-container.none .flip-card,
+.countdown-container.none .flip-card *,
+.countdown-container.none .flip-card.animating .flip-card-inner,
+.countdown-container.none .flip-card.flipped .flip-card-inner {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Deaktiviere auch Animationen auf dem Parent-Element wenn animation: none */
+.urgify-countdown:has(.countdown-container.none),
+.urgify-countdown.countdown-no-animation,
+.urgify-countdown.countdown-no-animation *,
+.urgify-countdown.countdown-no-animation *::before,
+.urgify-countdown.countdown-no-animation *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
 .countdown-container.pulse {
   animation: countdownPulse 2s infinite;
 }

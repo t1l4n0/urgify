@@ -450,7 +450,7 @@ function ProductBadgesForm({ data }: { data: ProductBadgesSuccess }) {
                                   value={badgeText}
                                   onChange={(e: any) => setBadgeText(e.target.value)}
                                   placeholder="z.B. Bestseller, -7%, wenige verfügbar"
-                                  helpText="Der Text, der auf dem Badge angezeigt wird."
+                                  details="Der Text, der auf dem Badge angezeigt wird."
                                 />
                               </s-stack>
 

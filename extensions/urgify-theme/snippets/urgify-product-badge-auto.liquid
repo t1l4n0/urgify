@@ -1,0 +1,49 @@
+{% comment %}
+  Automatically injects product badges into product cards
+  when products have badge metafields configured.
+  
+  This snippet loads the CSS and JavaScript, and provides badge data
+  for JavaScript processing.
+{% endcomment %}
+
+{{ 'urgify-product-badge.css' | asset_url | stylesheet_tag }}
+
+{% comment %}
+  Collect badge data for products on collection/product pages
+  We'll inject this data into product cards via JavaScript
+{% endcomment %}
+{% liquid
+  assign badge_count = 0
+  assign first_badge = true
+%}
+{% if collection.products %}
+  {%- for product in collection.products -%}
+    {%- if product.metafields.urgify.product_badge.value -%}
+      {%- assign badge_count = badge_count | plus: 1 -%}
+    {%- endif -%}
+  {%- endfor -%}
+  {%- if badge_count > 0 -%}
+    <script type="application/json" id="urgify-product-badges-data">
+    {
+      {%- for product in collection.products -%}
+        {%- if product.metafields.urgify.product_badge.value -%}
+          {%- unless first_badge -%},{%- endunless -%}
+          "{{ product.handle }}": {{ product.metafields.urgify.product_badge.value | json }}
+          {%- assign first_badge = false -%}
+        {%- endif -%}
+      {%- endfor -%}
+    }
+    </script>
+  {%- endif -%}
+{% elsif product %}
+  {%- if product.metafields.urgify.product_badge.value -%}
+    <script type="application/json" id="urgify-product-badges-data">
+    {
+      "{{ product.handle }}": {{ product.metafields.urgify.product_badge.value | json }}
+    }
+    </script>
+  {%- endif -%}
+{% endif %}
+
+<script src="{{ 'urgify-product-badge.js' | asset_url }}" defer></script>
+

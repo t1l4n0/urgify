@@ -45,4 +45,11 @@
 {% endcomment %}
 {% render 'urgify-slide-cart-upsell-auto' %}
 
+{% comment %}Product Badges load independently of subscription{% endcomment %}
+{% comment %}
+  Product Badges are controlled by product metafields (urgify.product_badge).
+  They load independently of subscription status.
+{% endcomment %}
+{% render 'urgify-product-badge-auto' %}
+
 

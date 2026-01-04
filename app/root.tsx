@@ -2,22 +2,30 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "@remix-run/reac
 import type { HeadersFunction } from "@remix-run/node";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import stockAlertPreviewStyles from "./styles/stock-alert-preview.css?url";
-import { trackCoreWebVitals } from "./utils/performance";
-import { useEffect } from "react";
 
 export default function App() {
-  useEffect(() => {
-    // Track Core Web Vitals
-    trackCoreWebVitals();
-  }, []);
+  // Get API key from environment (only available on server)
+  // Always render meta tag with suppressHydrationWarning to prevent React error 418
+  // App Bridge reads this meta tag before React hydrates, so empty value on client is fine
+  // Using typeof window check ensures apiKey is only set on server
+  const apiKey = typeof window === "undefined" && typeof process !== "undefined" && process.env?.SHOPIFY_API_KEY 
+    ? process.env.SHOPIFY_API_KEY 
+    : "";
 
   return (
-    <html>
+    <html suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         {/* App Bridge API Key - Required for app-bridge.js initialization */}
-        <meta name="shopify-api-key" content={process.env.SHOPIFY_API_KEY || ""} />
+        {/* This meta tag is read by App Bridge before React hydrates */}
+        {/* suppressHydrationWarning prevents React error 418 - value differs on server/client */}
+        {/* The meta tag is always rendered, but content is only set on server */}
+        <meta 
+          name="shopify-api-key" 
+          content={apiKey} 
+          suppressHydrationWarning 
+        />
         {/* App Bridge - MUST be the first script tag (Shopify best practice) */}
         {/* Load synchronously without async/defer to ensure proper initialization */}
         <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
@@ -33,7 +41,7 @@ export default function App() {
         <Meta />
         <Links />
       </head>
-      <body>
+      <body suppressHydrationWarning>
         <div style={{ minHeight: '100vh' }}>
           <Outlet />
         </div>

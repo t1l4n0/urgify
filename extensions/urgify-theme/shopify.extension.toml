@@ -40,6 +40,14 @@ destination = "assets/urgify-slide-cart-upsell.js"
 source = "assets/urgify-slide-cart-upsell.css"
 destination = "assets/urgify-slide-cart-upsell.css"
 
+[[assets]]
+source = "assets/urgify-product-badge.js"
+destination = "assets/urgify-product-badge.js"
+
+[[assets]]
+source = "assets/urgify-product-badge.css"
+destination = "assets/urgify-product-badge.css"
+
 # Blocks definition
 [[blocks]]
 type = "liquid"

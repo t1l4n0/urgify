@@ -37,6 +37,12 @@ const PRODUCT_DEFINITIONS: DefinitionConfig[] = [
     type: "list.product_reference",
     description: "List of recommended upsell products to display in the cart drawer for this product.",
   },
+  {
+    key: "product_badge",
+    name: "Urgify product badge",
+    type: "json",
+    description: "Custom badge configuration for product cards (text, colors, position).",
+  },
 ];
 
 const URGIFY_NAMESPACE = "urgify";
